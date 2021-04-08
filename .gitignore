@@ -5,3 +5,7 @@ __pycache__/
 OldCode/
 preprocessinFingerprints/
 sampleImages/
+*.bmp
+*.tif
+*.jpeg
+*.png
