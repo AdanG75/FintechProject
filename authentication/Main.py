@@ -44,6 +44,7 @@ def local_test():
             return True
         quality_index = fingerprint.get_quality_index()
         print(quality_index)
+        fingerprint.fingerprint_enhance()
         
     elif (option == '9'):
         return True

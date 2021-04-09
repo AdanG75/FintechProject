@@ -9,9 +9,10 @@ from skimage.morphology import skeletonize as skelt
 #from matplotlib import pyplot as plt
 
 class PreprocessingFingerprint(object):
-    def __init__(self, name_fingerprint = 'figerprint', ridge_segment_blksze=16, ridge_segment_thresh=0.1, gradient_sigma=1, block_sigma=7, orient_smooth_sigma=7,
+    def __init__(self, name_fingerprint = 'figerprint', address_output='./preprocessingFingerprints/', ridge_segment_blksze=16, ridge_segment_thresh=0.1, gradient_sigma=1, block_sigma=7, orient_smooth_sigma=7,
                  ridge_freq_blksze=38, ridge_freq_windsze=5, min_wave_length=5, max_wave_length=15, kx=0.65, ky=0.65, angleInc=3.0, ridge_filter_thresh=-3):
         self.name_fingerprint = name_fingerprint
+        self.address_output = address_output
         self.ridge_segment_blksze = ridge_segment_blksze
         self.ridge_segment_thresh = ridge_segment_thresh
         self.gradient_sigma = gradient_sigma
@@ -26,8 +27,10 @@ class PreprocessingFingerprint(object):
         self.angleInc = angleInc
         self.ridge_filter_thresh = ridge_filter_thresh
 
+        self._quality_avr = 0.0
 
         self._mask = []
+        self._stddevim = []
         self._normim = []
         self._orientim = []
         self._mean_freq = []
@@ -41,6 +44,9 @@ class PreprocessingFingerprint(object):
     def __normalise(self, img):
         normed = (img - np.mean(img)) / (np.std(img))
         return (normed)
+
+    def __quality_average(self):
+        self._quality_avr = np.mean(self._stddevim)
 
     def __ridge_segment(self, img):
         # RIDGESEGMENT - Normalises fingerprint image and segments ridge region
@@ -91,20 +97,20 @@ class PreprocessingFingerprint(object):
         new_cols = np.int(self.ridge_segment_blksze * np.ceil((np.float(cols)) / (np.float(self.ridge_segment_blksze))))
 
         padded_img = np.zeros((new_rows, new_cols))
-        stddevim = np.zeros((new_rows, new_cols))
+        self._stddevim = np.zeros((new_rows, new_cols))
         padded_img[0:rows][:, 0:cols] = im
         for i in range(0, new_rows, self.ridge_segment_blksze):
             for j in range(0, new_cols, self.ridge_segment_blksze):
                 box = [i, j, min(i + self.ridge_segment_blksze, new_rows), min(j + self.ridge_segment_blksze, new_cols)]
                 block = padded_img[box[0]:box[2]][:, box[1]:box[3]]
-                stddevim[box[0]:box[2]][:, box[1]:box[3]] = np.std(block)
+                self._stddevim[box[0]:box[2]][:, box[1]:box[3]] = np.std(block)
 
-        stddevim = stddevim[0:rows][:, 0:cols]
-        self._mask = stddevim > self.ridge_segment_thresh
+        self._stddevim = self._stddevim[0:rows][:, 0:cols]
+        self._mask = self._stddevim > self.ridge_segment_thresh
         mean_val = np.mean(im[self._mask])
         std_val = np.std(im[self._mask])
         self._normim = (im - mean_val) / (std_val)
-        print('promedio de calidad: ', np.mean(stddevim))
+        
 
     def __ridge_orient(self):
         # RIDGEORIENT - Estimates the local orientation of ridges in a fingerprint
@@ -547,7 +553,7 @@ class PreprocessingFingerprint(object):
                     self._skeleton [i: i + filter_size, j: j + filter_size] = np.zeros((filter_size, filter_size))
 
 
-    def get_morphology_Mask(self):
+    def __get_morphology_Mask(self):
         # Get morphology mask - turn into mask to a morphology mask
         #
         # Function to turn into mask to a morphology mask
@@ -644,12 +650,12 @@ class PreprocessingFingerprint(object):
         normin_image = self.__turn_into_normin_to_image()
         # cv.imshow('Fingerprint', normin_image)
         # cv.waitKey(0)
-        cv.imwrite('./preprocessingFingerprints/normalized_' +  self.name_fingerprint +'.bmp', (normin_image))
-        cv.imwrite('./preprocessingFingerprints/binary_' +  self.name_fingerprint +'.bmp', (bin_image))
-        cv.imwrite('./preprocessingFingerprints/skeletoned' +  self.name_fingerprint +'.bmp', (skel_image))
+        cv.imwrite(self.address_output + 'normalized_' +  self.name_fingerprint +'.bmp', (normin_image))
+        cv.imwrite(self.address_output + 'binary_' +  self.name_fingerprint +'.bmp', (bin_image))
+        cv.imwrite(self.address_output + 'skeletoned' +  self.name_fingerprint +'.bmp', (skel_image))
 
 
-    def enhance(self, img, resize=False, ridge_color = 'white', values_return = True, show_fingerprints = False, save_fingerprints = False):
+    def enhance(self, img, resize=False, ridge_color = 'white', return_as_image = True, show_fingerprints = False, save_fingerprints = False):
         # main function to enhance the image.
         # calls all other subroutines
 
@@ -669,7 +675,8 @@ class PreprocessingFingerprint(object):
         self.__ridge_freq()         # compute major frequency of ridges
         self.__ridge_filter()       # filter the image using oriented gabor filter
         self.__skeletonize()        # skeletonize image using Zha84
-        
+        self.__get_morphology_Mask()
+        self.__quality_average()
         
         if (ridge_color == 'white'):
             binary_image = self.__white_ridges(self._binim)
@@ -685,11 +692,11 @@ class PreprocessingFingerprint(object):
         if (save_fingerprints):
             self.__save_Fingerprints(bin_image=binary_image, skel_image=skeleton_image)
 
-        if (values_return):
-            self.get_morphology_Mask()
-            return (skeleton_image, self._morphology_mask, self._orientim)
+        
+        if (return_as_image):
+            return (skeleton_image, self._morphology_mask, self._orientim, self._stddevim, self._quality_avr)
         else:
-            return (skeleton_image)
+            return (self._skeleton, self._morphology_mask, self._orientim, self._stddevim, self._quality_avr)
 
         
 
@@ -701,4 +708,4 @@ class PreprocessingFingerprint(object):
 
 #     image_enhancer = PreprocessingFingerprint(ridge_segment_blksze, ridge_segment_thresh, gradient_sigma, block_sigma, orient_smooth_sigma,
 #                  ridge_freq_blksze, ridge_freq_windsze, min_wave_length, max_wave_length, kx, ky, angleInc, ridge_filter_thresh)  # Create object called image_enhancer
-#     return(image_enhancer.enhance(img, resize), image_enhancer.get_morphology_Mask, image_enhancer.get_ridge_angles)
+#     return(image_enhancer.enhance(img, resize), image_enhancer.__get_morphology_Mask, image_enhancer.get_ridge_angles)

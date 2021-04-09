@@ -5,13 +5,14 @@ import cv2 as cv
 from matplotlib import pyplot as plt
 
 class Quality_Fingerprint(object):
-    def __init__(self, numberFilters = 16, columnsImage = 256, rowsImage = 288, dataFilters = 'data.txt', address_output='./data/', showGraphs = False):
+    def __init__(self, numberFilters = 16, columnsImage = 256, rowsImage = 288, dataFilters = 'data.txt', address_output='./data/', showGraphs = False, name_fingerprint='fingerprint'):
         self.numberFilters = numberFilters
         self.columnsImage = columnsImage
         self.rowsImage =rowsImage
         self.dataFilters = dataFilters
         self.address_output = address_output
         self.showGraphs = showGraphs
+        self.name_fingerprint = name_fingerprint
 
         self._qualityFingerprint = 0 
         self._fileExist = False
@@ -108,9 +109,9 @@ class Quality_Fingerprint(object):
                 n += 1
 
     def __getEnergyImage(self):
-        E = np.zeros((self.numberFilters))
+        E = np.zeros((self.numberFilters - 1))
         
-        for i in range(self.numberFilters - 2):
+        for i in range(self.numberFilters - 1):
             E[i] = np.sum( self._powerImage * self._R[i][:][:])
 
         totalEnergy = np.sum(E)
@@ -131,16 +132,17 @@ class Quality_Fingerprint(object):
         entropyFingerprint *= (-1)
         self._qualityFingerprint = np.log(T[0]) - entropyFingerprint
 
-    def __printEntropyImage(self, img):
-        ax1 = plt.subplot(221)
+    def __printEntropyImage(self, img, save_plot):
+        fig = plt.figure()
+        ax1 = fig.add_subplot(221)
         ax1.imshow(img, cmap='gray')
         ax1.set_title('Fingerprint')
 
-        ax2 = plt.subplot(222)
+        ax2 = fig.add_subplot(222)
         ax2.imshow((20 * np.log(self.magnitude)), cmap='jet')
         ax2.set_title('Power of image')
 
-        ax3 = plt.subplot(212)
+        ax3 = fig.add_subplot(212)
         ax3.plot(self._normalizeEnergy)
         ax3.set_title('Energy per Filter')
         ax3.set_xlabel('Filters')
@@ -148,7 +150,10 @@ class Quality_Fingerprint(object):
         
         plt.show()
 
-    def getQualityFingerprint(self, img):
+        if(save_plot):
+            fig.savefig(self.address_output + 'Quality_' + self.name_fingerprint + '.png', bbox_inches='tight', dpi=125)
+
+    def getQualityFingerprint(self, img, save_graphs = False):
         img = np.asarray(img)
         self.__optimizeDFT(img)
         self.__loadFilters()
@@ -157,15 +162,15 @@ class Quality_Fingerprint(object):
         self.__getEnergyImage()
         self.__qualityImage()
         if (self.showGraphs):
-            self.__printEntropyImage(img)
+            self.__printEntropyImage(img, save_graphs)
         
         return self._qualityFingerprint
 
 if __name__ == '__main__': 
 
-    img = cv.imread('./sampleImages/HuellaI4.bmp',0)
-    qualityFingerprint = Quality_Fingerprint(showGraphs=True)
-    qualityIndex = qualityFingerprint.getQualityFingerprint(img)
+    img = cv.imread('./authentication/Huella72.bmp',0)
+    qualityFingerprint = Quality_Fingerprint(numberFilters = 16, columnsImage = 256, rowsImage = 288, dataFilters = 'dataFilter.txt', showGraphs = True, address_output='./authentication/data/')
+    qualityIndex = qualityFingerprint.getQualityFingerprint(img, save_graphs = True)
     print(qualityIndex)
 
 
