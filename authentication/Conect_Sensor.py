@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import serial
 import numpy as np
 
@@ -24,7 +26,7 @@ class Conect_Sensor(object):
         except Exception as e:
             print('Invalid port settings:', e)
             print()
-            return
+            return self.default_response
         while ser.isOpen():
             try:
                 # assumes everything recved at first is printable ascii
@@ -43,9 +45,9 @@ class Conect_Sensor(object):
                         return self.default_response
                     # make each nibble a high nibble
                     if count < self.fingerprint_length:
-                        self.data_fingerprint[count] = (byte[0] >> 4)
+                        self.data_fingerprint[count] = ((byte[0] >> 4) * 17)
                         count += 1
-                        self.data_fingerprint[count] = (byte[0] & self.mask)
+                        self.data_fingerprint[count] = ((byte[0] & self.mask) *17)
                         count += 1
                     
                 

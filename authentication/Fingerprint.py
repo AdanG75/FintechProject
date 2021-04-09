@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import numpy as np
+from Quality_Image import Quality_Fingerprint
 
 class Fingerprint(object):
     def __init__(self, fingerprint_rows = 288, figerprint_columns = 256):
@@ -28,13 +31,17 @@ class Fingerprint(object):
             else:
                 x += 1
 
+        
         return self.raw_image
 
     def fingerprint_enhance(self):
         pass
 
     def get_quality_index(self):
-        pass
+        quality_image = Quality_Fingerprint(numberFilters = 16, columnsImage = 256, rowsImage = 288, dataFilters = 'dataFilter.txt', showGraphs = True, address_output='./authentication/data/')
+        self.quality_index = quality_image.getQualityFingerprint(self.raw_image)
+
+        return self.quality_index
 
     def get_corepoints(self):
         pass
