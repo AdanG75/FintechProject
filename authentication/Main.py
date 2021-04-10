@@ -20,7 +20,7 @@ def get_raw_fingerprint(fingerprint, in_cloud = True, data_fingerprint = []):
     return raw_image
 
 def create_fingerprint_samples():
-    bank_fp = Bank_fingerprint(num_fingerprints= 1, address_output='./authentication/sampleImages/', name= 'Fingerprint_Test', extension= '.bmp')
+    bank_fp = Bank_fingerprint(num_fingerprints= 20, address_output='./authentication/sampleImages/', name= 'Fingerprint_Test', extension= '.bmp')
     bank_fp.generate_bank_fingerprint(auto_named = False)
 
 def local_test():
