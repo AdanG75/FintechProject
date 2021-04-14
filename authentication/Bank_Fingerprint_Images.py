@@ -3,6 +3,8 @@
 from Conect_Sensor import Conect_Sensor
 from Fingerprint import Fingerprint
 import cv2 as cv
+import numpy as np
+from glob import glob
 
 class Bank_fingerprint(object):
     def __init__(self, num_fingerprints= 20, address_output='./sampleImages/', name= 'Fingerprint_Test', extension= '.bmp'):
@@ -29,4 +31,8 @@ class Bank_fingerprint(object):
             raw_image = fingerprint.reconstruction_fingerprint(data_fingerprint)
             
             cv.imwrite(self.address_output + self.name + str(_) + self.extension, (raw_image))
+
+    def get_bank_fingerprints(self):
+        images_paths = glob(self.address_output)
+        return np.array([cv.imread(img_path,0) for img_path in images_paths])
 
