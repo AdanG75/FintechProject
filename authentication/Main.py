@@ -8,7 +8,7 @@ from Bank_Fingerprint_Images import Bank_fingerprint
 
 import cv2 as cv
 
-def get_raw_fingerprint(fingerprint, in_cloud = True, data_fingerprint = []):
+def get_data_fingerprint(fingerprint, in_cloud = True, data_fingerprint = []):
     if in_cloud == False:
         conect_sensor = Conect_Sensor(serial_port = 'COM5', baud_rate = 57600, width = 256, height = 288)
         data_fingerprint = conect_sensor.catch_data_fingerprint()
@@ -16,8 +16,8 @@ def get_raw_fingerprint(fingerprint, in_cloud = True, data_fingerprint = []):
     if data_fingerprint[0] == False:
         return (False,)
     
-    raw_image = fingerprint.reconstruction_fingerprint(data_fingerprint)
-    return raw_image
+    
+    return data_fingerprint
 
 def create_fingerprint_samples():
     bank_fp = Bank_fingerprint(num_fingerprints= 20, address_output='./authentication/sampleImages/', name= 'Fingerprint_Test', extension= '.bmp')
@@ -38,13 +38,11 @@ def local_test():
         create_fingerprint_samples()
     elif (option == '2'):
         fingerprint = Fingerprint()
-        raw_image = get_raw_fingerprint(fingerprint=fingerprint, in_cloud=False)
-        if type(raw_image) == 'tuple':
+        data_image = get_data_fingerprint(fingerprint=fingerprint, in_cloud=False)
+        if len(data_image) < 2:
             print('Error to get the fingerprint image')
             return True
-        quality_index = fingerprint.get_quality_index()
-        print(quality_index)
-        fingerprint.fingerprint_enhance()
+        fingerprint.describe_fingerprint(data_image, angles_tolerance=1)
         
     elif (option == '9'):
         return True
