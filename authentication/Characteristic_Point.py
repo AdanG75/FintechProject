@@ -2,11 +2,11 @@
 
 
 class Characteristic_Point(object):
-    def __init__(self, posy= 0, posx= 0, angle= 0.0, type='n'):
+    def __init__(self, posy= 0, posx= 0, angle= 0.0, point_type='n'):
         self.posy = posy
         self.posx = posx
         self.angle = angle
-        self.type = type
+        self.point_type = point_type
 
         #self.marked_image = []
 
@@ -19,8 +19,8 @@ class Characteristic_Point(object):
     def get_angle(self):
         return self.angle
 
-    def get_type(self):
-        return self.type
+    def get_point_type(self):
+        return self.point_type
 
     
 

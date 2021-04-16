@@ -623,9 +623,11 @@ class PreprocessingFingerprint(object):
         # See also: RIDGEFILTER, SKELETONIZE
         return ((255 * img)).astype('uint8')
 
-    def __show_Fingerprints(self, bin_image, skel_image):
+    def __show_Fingerprints(self, bin_image, skel_image, roi_image):
         # Function to print fingerprint images  
         cv.imshow('Normalized Image', self._normim)
+        cv.waitKey(0)
+        cv.imshow('ROI Image', roi_image)
         cv.waitKey(0)
         cv.imshow('Binary Image', bin_image)
         cv.waitKey(0)
@@ -646,11 +648,12 @@ class PreprocessingFingerprint(object):
         normin_image = normin_image.astype('uint8')
         return normin_image
 
-    def __save_Fingerprints(self, bin_image, skel_image):
+    def __save_Fingerprints(self, bin_image, skel_image, roi_image):
         normin_image = self.__turn_into_normin_to_image()
         # cv.imshow('Fingerprint', normin_image)
         # cv.waitKey(0)
         cv.imwrite(self.address_output + 'normalized_' +  self.name_fingerprint +'.bmp', (normin_image))
+        cv.imwrite(self.address_output + 'roi_' +  self.name_fingerprint +'.bmp', (roi_image))
         cv.imwrite(self.address_output + 'binary_' +  self.name_fingerprint +'.bmp', (bin_image))
         cv.imwrite(self.address_output + 'skeletoned' +  self.name_fingerprint +'.bmp', (skel_image))
 
@@ -679,22 +682,24 @@ class PreprocessingFingerprint(object):
         self.__quality_average()
         
         if (ridge_color == 'white'):
+            roi_image = self.__white_ridges(self._morphology_mask)
             binary_image = self.__white_ridges(self._binim)
             skeleton_image = self.__white_ridges(self._skeleton)
         else:
+            roi_image = self.__black_ridges(self._morphology_mask)
             binary_image = self.__black_ridges(self._binim)
             skeleton_image = self.__black_ridges(self._skeleton)
 
         if (show_fingerprints):
             print('Printing charts')
-            self.__show_Fingerprints(bin_image=binary_image, skel_image=skeleton_image)
+            self.__show_Fingerprints(bin_image=binary_image, skel_image=skeleton_image, roi_image=roi_image)
         
         if (save_fingerprints):
-            self.__save_Fingerprints(bin_image=binary_image, skel_image=skeleton_image)
+            self.__save_Fingerprints(bin_image=binary_image, skel_image=skeleton_image, roi_image=roi_image)
 
         
         if (return_as_image):
-            return (skeleton_image, self._morphology_mask, self._orientim, self._stddevim, self._quality_avr)
+            return (skeleton_image, roi_image, self._orientim, self._stddevim, self._quality_avr)
         else:
             return (self._skeleton, self._morphology_mask, self._orientim, self._stddevim, self._quality_avr)
 
