@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-
+import uuid
 
 class Characteristic_Point(object):
     def __init__(self, posy= 0, posx= 0, angle= 0.0, point_type='n'):
+        self.uid_point = uuid.uuid4().hex
         self.posy = posy
         self.posx = posx
         self.angle = angle
@@ -21,6 +22,9 @@ class Characteristic_Point(object):
 
     def get_point_type(self):
         return self.point_type
+
+    def get_description(self):
+        return (self.uid_point, self.posy, self.posx, self.angle, self.point_type)
 
     
 

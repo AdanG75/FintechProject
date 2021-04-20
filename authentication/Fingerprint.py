@@ -24,6 +24,7 @@ class Fingerprint(object):
 
         self._varian_index = 0.0
         self._quality_index = 0.0
+        self._void_image = False
         self._rows = 0
         self._columns = 0
 
@@ -38,6 +39,7 @@ class Fingerprint(object):
         self._list_core_points = []
         self._minutiae_cell = []
         self._core_cell = []
+        self._ezquel_as_image = [] 
 
     def __reconstruction_fingerprint(self, data_fingerprint):
         self._raw_image = np.zeros((self.fingerprint_rows, self.figerprint_columns))
@@ -91,23 +93,9 @@ class Fingerprint(object):
         self.__mark_characteristic_point(colors, figure, to_show)
         
 
-    def __mark_characteristic_point(self, colors, figure, to_show):
-        ezquel_as_image = np.zeros(shape=(self._rows, self._columns), dtype=np.uint8)
-        im_max = self._ezquel_fingerprint.max()
-
-        void_image = False
-        if im_max == 1:
-            ezquel_as_image[0:self._rows][:, 0:self._columns] = (((-255) * ezquel_as_image.astype('int')) + 255).astype('uint8')
-        elif im_max == 0:
-            void_image = True
-        else:
-            ezquel_as_image[0:self._rows][:, 0:self._columns] = (((-255) * (ezquel_as_image/im_max)) + 255).astype('uint8')
-
-        print(ezquel_as_image.min())
-        print(ezquel_as_image.max())
-        
-        if void_image == False:
-            result = cv.cvtColor(ezquel_as_image, cv.COLOR_GRAY2RGB)
+    def __mark_characteristic_point(self, colors, figure, to_show):   
+        if self._void_image == False:
+            result = cv.cvtColor(self._ezquel_as_image, cv.COLOR_GRAY2RGB)
             characteristic_list = []
 
             if to_show == 'core':
@@ -115,20 +103,20 @@ class Fingerprint(object):
             elif to_show == 'minutiae':
                 characteristic_list = self._list_minutias.copy()
             else:
-                void_image = True
+                self._void_image = True
                 
-            if (not void_image):
+            if (not self._void_image):
                 for characteristic_point in characteristic_list:
                     singularity = characteristic_point.get_point_type()
-                    i = characteristic_point.get_posy()
-                    j = characteristic_point.get_posx()
+                    j = characteristic_point.get_posy()
+                    i = characteristic_point.get_posx()
 
                     if figure == 'circle':
                         cv.circle(result, (i,j), radius=2, color=colors[singularity], thickness=2)
                     elif figure == 'rectangle':
-                        cv.rectangle(result, ((j+0)*self.size_window_core, (i+0)*self.size_window_core), ((j+1)*self.size_window_core, (i+1)*self.size_window_core), colors[singularity], 3)
+                        cv.rectangle(result, ((i-1)*self.size_window_core, (j-1)*self.size_window_core), ((i+1)*self.size_window_core, (j+1)*self.size_window_core), colors[singularity], 3)
                     else:
-                        pts = np.array([[j, i+1], [j-1, i-1], [j+1, i-1]], np.int32)
+                        pts = np.array([[i, j+1], [i-1, j-1], [i+1, j-1]], np.uint8)
                         cv.polylines(result, pts=[pts], isClosed=True, color=colors[singularity], thickness=2)
 
                 if to_show == 'core':
@@ -170,32 +158,32 @@ class Fingerprint(object):
         """
         # if middle pixel is black (represents ridge)
         if self._ezquel_fingerprint[j][i] == 1:
+            if self._varian_mask[j][i] > 0.65:
+                values = [self._ezquel_fingerprint[j + l][i + k] for k, l in self._minutiae_cell]
+                #values = np.asarray(values).astype('uint8')
+                #print(values)
 
-            values = [self._ezquel_fingerprint[j + l][i + k] for k, l in self._minutiae_cell]
-            #values = np.asarray(values).astype('uint8')
-            #print(values)
+                non_border = 0
+                region = ((j-15, i), (j+15, i), (j, i-15), (j, i+15))
+                for _ in range(len(region)):
+                    if ((region[_][0] >= self._rows) or (region[_][1] >= self._columns)):
+                        non_border = 0
+                        break
+                    else:
+                        non_border += self._roi[region[_][0]][region[_][1]]
 
-            non_border = 0
-            region = ((j-15, i), (j+15, i), (j, i-15), (j, i+15))
-            for _ in range(len(region)):
-                if ((region[_][0] >= self._rows) or (region[_][1] >= self._columns)):
-                    non_border = 0
-                    break
-                else:
-                    non_border += self._roi[region[_][0]][region[_][1]]
+                # count crossing how many times it goes from 0 to 1
+                crossings = 0
+                for k in range(0, len(values)-1):
+                    crossings += abs(int(values[k]) - int(values[k + 1]))
+                crossings //= 2
 
-            # count crossing how many times it goes from 0 to 1
-            crossings = 0
-            for k in range(0, len(values)-1):
-                crossings += abs(int(values[k]) - int(values[k + 1]))
-            crossings //= 2
+                if crossings == 1:
+                    if non_border >= 4:
+                        self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='e'))
 
-            if crossings == 1:
-                if non_border >= 4:
-                    self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='e'))
-
-            if crossings == 3:
-                self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='b'))
+                if crossings == 3:
+                    self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='b'))
 
     def __get_cells(self):
         if self.size_window_minutiae == 3:
@@ -221,30 +209,38 @@ class Fingerprint(object):
         :param tolerance:
         :return:
         """
-        
+        if self._varian_mask[j][i] > 0.65:
+            angles_around_index = [math.degrees(self._angles[j - k][i - l]) for k, l in self._core_map]
+            index = 0
+            for k in range(0, 8):
 
-        angles_around_index = [math.degrees(self._angles[j - k][i - l]) for k, l in self._core_map]
-        index = 0
-        for k in range(0, 8):
+                # calculate the difference
+                difference = angles_around_index[k] - angles_around_index[k + 1]
+                if difference > 90:
+                    difference -= 180
+                elif difference < -90:
+                    difference += 180
 
-            # calculate the difference
-            difference = angles_around_index[k] - angles_around_index[k + 1]
-            if difference > 90:
-                difference -= 180
-            elif difference < -90:
-                difference += 180
+                index += difference
 
-            index += difference
+            if 180 - tolerance <= index <= 180 + tolerance:
+                #delta
+                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='d'))
+            if -180 - tolerance <= index <= -180 + tolerance:
+                #loop
+                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='l'))
+            if 360 - tolerance <= index <= 360 + tolerance:
+                #whorl
+                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='w'))
 
-        if 180 - tolerance <= index <= 180 + tolerance:
-            #delta
-            self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='d'))
-        if -180 - tolerance <= index <= -180 + tolerance:
-            #loop
-            self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='l'))
-        if 360 - tolerance <= index <= 360 + tolerance:
-            #whorl
-            self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='w'))
+    def __ezquel_to_image(self):
+        self._ezquel_as_image = np.zeros(shape=(self._rows, self._columns), dtype='uint8')
+        im_max = self._ezquel_fingerprint.max()
+
+        if im_max >= 1:
+            self._ezquel_as_image[0:self._rows][:, 0:self._columns] = (((-255) * (self._ezquel_fingerprint/im_max)) + 255).astype('uint8')
+        else:
+            self._void_image = True
 
         
 
@@ -254,6 +250,12 @@ class Fingerprint(object):
         self.__fingerprint_enhance()
         self._ezquel_fingerprint = self._ezquel_fingerprint.astype('uint8')
         print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
-        self.__get_cells()
-        self.__get_minutias()
-        self.__get_corepoints(angles_tolerance)
+        self.__ezquel_to_image()
+        if not self._void_image:
+            self.__get_cells()
+            self.__get_minutias()
+            self.__get_corepoints(angles_tolerance)
+            for core in self._list_core_points:
+                print(core.get_description())
+            for minutia in self._list_minutias:
+                print(minutia.get_description())
