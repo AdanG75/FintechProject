@@ -11,16 +11,26 @@ from Core_Point import Core_Point
 class Fingerprint(object):
     def __init__(self, fingerprint_rows = 288, figerprint_columns = 256, name_fingerprint = 'fingerprint', 
                 show_result = True, save_result = True, size_window_minutiae = 3, size_window_core = 1, 
-                address_image = './authentication/preprocessingFingerprints/', address_data = './authentication/data/'):
-        self.fingerprint_rows = fingerprint_rows
-        self.figerprint_columns = figerprint_columns
-        self.name_fingerprint = name_fingerprint
-        self.show_result = show_result
-        self.save_result = save_result
-        self.size_window_minutiae = size_window_minutiae
-        self.size_window_core = size_window_core
-        self.address_image  = address_image 
-        self.address_data = address_data
+                address_image = './authentication/preprocessingFingerprints/', address_data = './authentication/data/', 
+                characteritic_point_thresh = 0.6, ridge_segment_thresh = 0.25, authentication_index_score = 0.62,
+                authentication_image_score = 0.45, register_index_score = 0.55, register_cpthresh = 0.3,
+                register_rsthresh = 0.15):
+        self._fingerprint_rows = fingerprint_rows
+        self._figerprint_columns = figerprint_columns
+        self._name_fingerprint = name_fingerprint
+        self._show_result = show_result
+        self._save_result = save_result
+        self._size_window_minutiae = size_window_minutiae
+        self._size_window_core = size_window_core
+        self._address_image  = address_image 
+        self._address_data = address_data
+        self._characteritic_point_thresh = characteritic_point_thresh
+        self._ridge_segment_thresh = ridge_segment_thresh
+        self._authentication_index_score = authentication_index_score
+        self._authentication_image_score = authentication_image_score
+        self._register_index_score = register_index_score
+        self._register_cpthresh = register_cpthresh
+        self._register_rsthresh = register_rsthresh
 
         self._varian_index = 0.0
         self._quality_index = 0.0
@@ -42,12 +52,12 @@ class Fingerprint(object):
         self._ezquel_as_image = [] 
 
     def __reconstruction_fingerprint(self, data_fingerprint):
-        self._raw_image = np.zeros((self.fingerprint_rows, self.figerprint_columns))
+        self._raw_image = np.zeros((self._fingerprint_rows, self._figerprint_columns))
         x = 0
         y = 0
         for pixel in data_fingerprint:
             self._raw_image[y][x] = pixel
-            if (x == (self.figerprint_columns - 1)):
+            if (x == (self._figerprint_columns - 1)):
                 y += 1
                 x = 0
             else:
@@ -55,23 +65,23 @@ class Fingerprint(object):
 
 
     def __fingerprint_enhance(self):
-        preprocessing_fp = PreprocessingFingerprint(name_fingerprint= self.name_fingerprint, address_output= self.address_image, ridge_segment_thresh=0.25)
-        (self._ezquel_fingerprint, self._roi, self._angles, self._varian_mask, self._varian_index ) = preprocessing_fp.enhance(img=self._raw_image, resize=False, return_as_image = False, show_fingerprints = self.show_result, save_fingerprints = self.save_result)
+        preprocessing_fp = PreprocessingFingerprint(name_fingerprint= self._name_fingerprint, address_output= self._address_image, ridge_segment_thresh= self._ridge_segment_thresh)
+        (self._ezquel_fingerprint, self._roi, self._angles, self._varian_mask, self._varian_index ) = preprocessing_fp.enhance(img=self._raw_image, resize=False, return_as_image = False, show_fingerprints = self._show_result, save_fingerprints = self._save_result)
         (self._rows, self._columns) = self._ezquel_fingerprint.shape
         
 
     def __get_quality_index(self):
-        quality_image = Quality_Fingerprint(numberFilters = 16, columnsImage = self.figerprint_columns, rowsImage = self.fingerprint_rows, dataFilters = 'dataFilter.txt', showGraphs = self.show_result, address_output= self.address_data, name_fingerprint=self.name_fingerprint)
-        self._quality_index = quality_image.getQualityFingerprint(self._raw_image, save_graphs = self.save_result)
+        quality_image = Quality_Fingerprint(numberFilters = 16, columnsImage = self._figerprint_columns, rowsImage = self._fingerprint_rows, dataFilters = 'dataFilter.txt', showGraphs = self._show_result, address_output= self._address_data, name_fingerprint=self._name_fingerprint)
+        self._quality_index = quality_image.getQualityFingerprint(self._raw_image, save_graphs = self._save_result)
 
 
     def __get_corepoints(self, angles_tolerance):
         for i in range(3, len(self._angles) - 2):             # Y
             for j in range(3, len(self._angles[i]) - 2):      # x
                 # mask any singularity outside of the mask
-                mask_slice = self._roi[(i-2)*self.size_window_core:(i+3)*self.size_window_core, (j-2)*self.size_window_core:(j+3)*self.size_window_core]
+                mask_slice = self._roi[(i-2)*self._size_window_core:(i+3)*self._size_window_core, (j-2)*self._size_window_core:(j+3)*self._size_window_core]
                 mask_flag = np.sum(mask_slice)
-                if mask_flag == (self.size_window_core*5)**2:
+                if mask_flag == (self._size_window_core*5)**2:
                     self.__poincare_index_at(i, j, angles_tolerance)
                     
         
@@ -82,8 +92,8 @@ class Fingerprint(object):
         
 
     def __get_minutias(self):
-        for i in range(1, self._columns - self.size_window_minutiae//2):
-            for j in range(1, self._rows - self.size_window_minutiae//2):
+        for i in range(1, self._columns - self._size_window_minutiae//2):
+            for j in range(1, self._rows - self._size_window_minutiae//2):
                 self.__minutiae_at(j, i)
                 
         
@@ -114,7 +124,7 @@ class Fingerprint(object):
                     if figure == 'circle':
                         cv.circle(result, (i,j), radius=2, color=colors[singularity], thickness=2)
                     elif figure == 'rectangle':
-                        cv.rectangle(result, ((i-1)*self.size_window_core, (j-1)*self.size_window_core), ((i+1)*self.size_window_core, (j+1)*self.size_window_core), colors[singularity], 3)
+                        cv.rectangle(result, ((i-1)*self._size_window_core, (j-1)*self._size_window_core), ((i+1)*self._size_window_core, (j+1)*self._size_window_core), colors[singularity], 3)
                     else:
                         pts = np.array([[i, j+1], [i-1, j-1], [i+1, j-1]], np.uint8)
                         cv.polylines(result, pts=[pts], isClosed=True, color=colors[singularity], thickness=2)
@@ -122,23 +132,23 @@ class Fingerprint(object):
                 if to_show == 'core':
                     self._core_map = result.copy()
 
-                    if self.show_result:
+                    if self._show_result:
                         cv.imshow('Core points', self._core_map)
                         cv.waitKey(0)
                         cv.destroyAllWindows()
 
-                    if self.save_result:
-                        cv.imwrite(self.address_image + 'core_' +  self.name_fingerprint +'.bmp', (self._core_map))
+                    if self._save_result:
+                        cv.imwrite(self._address_image + 'core_' +  self._name_fingerprint +'.bmp', (self._core_map))
                 else:
                     self._minutiae_map = result.copy()
 
-                    if self.show_result:
+                    if self._show_result:
                         cv.imshow('Minutiaes', self._minutiae_map)
                         cv.waitKey(0)
                         cv.destroyAllWindows()
 
-                    if self.save_result:
-                        cv.imwrite(self.address_image + 'minutiae_' +  self.name_fingerprint +'.bmp', (self._minutiae_map))
+                    if self._save_result:
+                        cv.imwrite(self._address_image + 'minutiae_' +  self._name_fingerprint +'.bmp', (self._minutiae_map))
             
 
     def __minutiae_at(self, j, i):
@@ -158,7 +168,7 @@ class Fingerprint(object):
         """
         # if middle pixel is black (represents ridge)
         if self._ezquel_fingerprint[j][i] == 1:
-            if self._varian_mask[j][i] > 0.65:
+            if self._varian_mask[j][i] > self._characteritic_point_thresh:
                 values = [self._ezquel_fingerprint[j + l][i + k] for k, l in self._minutiae_cell]
                 #values = np.asarray(values).astype('uint8')
                 #print(values)
@@ -186,7 +196,7 @@ class Fingerprint(object):
                     self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='b'))
 
     def __get_cells(self):
-        if self.size_window_minutiae == 3:
+        if self._size_window_minutiae == 3:
             self._minutiae_cell = [(-1, -1), (-1, 0), (-1, 1),          # p1 p2 p3
                 (0, 1),  (1, 1),  (1, 0),                               # p8    p4
                 (1, -1), (0, -1), (-1, -1)]                             # p7 p6 p5
@@ -209,7 +219,7 @@ class Fingerprint(object):
         :param tolerance:
         :return:
         """
-        if self._varian_mask[j][i] > 0.65:
+        if self._varian_mask[j][i] > self._characteritic_point_thresh:
             angles_around_index = [math.degrees(self._angles[j - k][i - l]) for k, l in self._core_map]
             index = 0
             for k in range(0, 8):
@@ -247,10 +257,14 @@ class Fingerprint(object):
     def describe_fingerprint(self, data_fingerprint, angles_tolerance=1):
         self.__reconstruction_fingerprint(data_fingerprint)
         self.__get_quality_index()
+        if self._quality_index > self._register_index_score:
+            self._ridge_segment_thresh = self._register_rsthresh
         self.__fingerprint_enhance()
         self._ezquel_fingerprint = self._ezquel_fingerprint.astype('uint8')
         print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
         self.__ezquel_to_image()
+        if ((self._quality_index > self._register_index_score) and (self._varian_index > self._authentication_image_score)):
+            self._characteritic_point_thresh = self._register_cpthresh
         if not self._void_image:
             self.__get_cells()
             self.__get_minutias()

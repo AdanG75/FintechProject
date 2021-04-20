@@ -37,7 +37,7 @@ def local_test():
     if (option == '1'):
         create_fingerprint_samples()
     elif (option == '2'):
-        fingerprint = Fingerprint()
+        fingerprint = Fingerprint(characteritic_point_thresh = 0.8)
         data_image = get_data_fingerprint(fingerprint=fingerprint, in_cloud=False)
         if len(data_image) < 2:
             print('Error to get the fingerprint image')

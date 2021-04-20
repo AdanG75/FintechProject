@@ -11,21 +11,21 @@ from skimage.morphology import skeletonize as skelt
 class PreprocessingFingerprint(object):
     def __init__(self, name_fingerprint = 'figerprint', address_output='./preprocessingFingerprints/', ridge_segment_blksze=16, ridge_segment_thresh=0.1, gradient_sigma=1, block_sigma=7, orient_smooth_sigma=7,
                  ridge_freq_blksze=38, ridge_freq_windsze=5, min_wave_length=5, max_wave_length=15, kx=0.65, ky=0.65, angleInc=3.0, ridge_filter_thresh=-3):
-        self.name_fingerprint = name_fingerprint
-        self.address_output = address_output
-        self.ridge_segment_blksze = ridge_segment_blksze
-        self.ridge_segment_thresh = ridge_segment_thresh
-        self.gradient_sigma = gradient_sigma
-        self.block_sigma = block_sigma
-        self.orient_smooth_sigma = orient_smooth_sigma
-        self.ridge_freq_blksze = ridge_freq_blksze
-        self.ridge_freq_windsze = ridge_freq_windsze
-        self.min_wave_length = min_wave_length
-        self.max_wave_length = max_wave_length
-        self.kx = kx
-        self.ky = ky
-        self.angleInc = angleInc
-        self.ridge_filter_thresh = ridge_filter_thresh
+        self._name_fingerprint = name_fingerprint
+        self._address_output = address_output
+        self._ridge_segment_blksze = ridge_segment_blksze
+        self._ridge_segment_thresh = ridge_segment_thresh
+        self._gradient_sigma = gradient_sigma
+        self._block_sigma = block_sigma
+        self._orient_smooth_sigma = orient_smooth_sigma
+        self._ridge_freq_blksze = ridge_freq_blksze
+        self._ridge_freq_windsze = ridge_freq_windsze
+        self._min_wave_length = min_wave_length
+        self._max_wave_length = max_wave_length
+        self._kx = kx
+        self._ky = ky
+        self._angleInc = angleInc
+        self._ridge_filter_thresh = ridge_filter_thresh
 
         self._quality_avr = 0.0
 
@@ -93,20 +93,20 @@ class PreprocessingFingerprint(object):
         rows, cols = img.shape
         im = self.__normalise(img)  # normalise to get zero mean and unit standard deviation
 
-        new_rows = np.int(self.ridge_segment_blksze * np.ceil((np.float(rows)) / (np.float(self.ridge_segment_blksze))))
-        new_cols = np.int(self.ridge_segment_blksze * np.ceil((np.float(cols)) / (np.float(self.ridge_segment_blksze))))
+        new_rows = np.int(self._ridge_segment_blksze * np.ceil((np.float(rows)) / (np.float(self._ridge_segment_blksze))))
+        new_cols = np.int(self._ridge_segment_blksze * np.ceil((np.float(cols)) / (np.float(self._ridge_segment_blksze))))
 
         padded_img = np.zeros((new_rows, new_cols))
         self._stddevim = np.zeros((new_rows, new_cols))
         padded_img[0:rows][:, 0:cols] = im
-        for i in range(0, new_rows, self.ridge_segment_blksze):
-            for j in range(0, new_cols, self.ridge_segment_blksze):
-                box = [i, j, min(i + self.ridge_segment_blksze, new_rows), min(j + self.ridge_segment_blksze, new_cols)]
+        for i in range(0, new_rows, self._ridge_segment_blksze):
+            for j in range(0, new_cols, self._ridge_segment_blksze):
+                box = [i, j, min(i + self._ridge_segment_blksze, new_rows), min(j + self._ridge_segment_blksze, new_cols)]
                 block = padded_img[box[0]:box[2]][:, box[1]:box[3]]
                 self._stddevim[box[0]:box[2]][:, box[1]:box[3]] = np.std(block)
 
         self._stddevim = self._stddevim[0:rows][:, 0:cols]
-        self._mask = self._stddevim > self.ridge_segment_thresh
+        self._mask = self._stddevim > self._ridge_segment_thresh
         mean_val = np.mean(im[self._mask])
         std_val = np.std(im[self._mask])
         self._normim = (im - mean_val) / (std_val)
@@ -161,11 +161,11 @@ class PreprocessingFingerprint(object):
 
         rows,cols = self._normim.shape
         #Calculate image gradients.
-        sze = np.fix(6*self.gradient_sigma)
+        sze = np.fix(6*self._gradient_sigma)
         if np.remainder(sze,2) == 0:
             sze = sze+1
 
-        gauss = cv.getGaussianKernel(np.int(sze),self.gradient_sigma)
+        gauss = cv.getGaussianKernel(np.int(sze),self._gradient_sigma)
         f = gauss * gauss.T
 
         fy,fx = np.gradient(f)                               #Gradient of Gaussian
@@ -178,9 +178,9 @@ class PreprocessingFingerprint(object):
         Gxy = Gx*Gy
 
         #Now smooth the covariance data to perform a weighted summation of the data.
-        sze = np.fix(6*self.block_sigma)
+        sze = np.fix(6*self._block_sigma)
 
-        gauss = cv.getGaussianKernel(np.int(sze), self.block_sigma)
+        gauss = cv.getGaussianKernel(np.int(sze), self._block_sigma)
         f = gauss * gauss.T
 
         Gxx = ndimage.convolve(Gxx,f)
@@ -194,11 +194,11 @@ class PreprocessingFingerprint(object):
         cos2theta = (Gxx-Gyy)/denom
 
 
-        if self.orient_smooth_sigma:
-            sze = np.fix(6*self.orient_smooth_sigma)
+        if self._orient_smooth_sigma:
+            sze = np.fix(6*self._orient_smooth_sigma)
             if np.remainder(sze,2) == 0:
                 sze = sze+1
-            gauss = cv.getGaussianKernel(np.int(sze), self.orient_smooth_sigma)
+            gauss = cv.getGaussianKernel(np.int(sze), self._orient_smooth_sigma)
             f = gauss * gauss.T
             cos2theta = ndimage.convolve(cos2theta,f)                   # Smoothed sine and cosine of
             sin2theta = ndimage.convolve(sin2theta,f)                   # doubled angles
@@ -258,12 +258,12 @@ class PreprocessingFingerprint(object):
         rows, cols = self._normim.shape
         freq = np.zeros((rows, cols))
 
-        for r in range(0, rows - self.ridge_freq_blksze, self.ridge_freq_blksze):
-            for c in range(0, cols - self.ridge_freq_blksze, self.ridge_freq_blksze):
-                blkim = self._normim[r:r + self.ridge_freq_blksze][:, c:c + self.ridge_freq_blksze]
-                blkor = self._orientim[r:r + self.ridge_freq_blksze][:, c:c + self.ridge_freq_blksze]
+        for r in range(0, rows - self._ridge_freq_blksze, self._ridge_freq_blksze):
+            for c in range(0, cols - self._ridge_freq_blksze, self._ridge_freq_blksze):
+                blkim = self._normim[r:r + self._ridge_freq_blksze][:, c:c + self._ridge_freq_blksze]
+                blkor = self._orientim[r:r + self._ridge_freq_blksze][:, c:c + self._ridge_freq_blksze]
 
-                freq[r:r + self.ridge_freq_blksze][:, c:c + self.ridge_freq_blksze] = self.__frequest(blkim, blkor)
+                freq[r:r + self._ridge_freq_blksze][:, c:c + self._ridge_freq_blksze] = self.__frequest(blkim, blkor)
 
         self._freq = freq * self._mask
         freq_1d = np.reshape(self._freq, (1, rows * cols))
@@ -345,7 +345,7 @@ class PreprocessingFingerprint(object):
         # the ridges.
 
         proj = np.sum(rotim, axis=0)
-        dilation = ndimage.grey_dilation(proj, self.ridge_freq_windsze, structure=np.ones(self.ridge_freq_windsze))
+        dilation = ndimage.grey_dilation(proj, self._ridge_freq_windsze, structure=np.ones(self._ridge_freq_windsze))
 
         temp = np.abs(dilation - proj)
 
@@ -366,7 +366,7 @@ class PreprocessingFingerprint(object):
         else:
             NoOfPeaks = cols_maxind
             waveLength = (maxind[0][cols_maxind - 1] - maxind[0][0]) / (NoOfPeaks - 1)
-            if waveLength >= self.min_wave_length and waveLength <= self.max_wave_length:
+            if waveLength >= self._min_wave_length and waveLength <= self._max_wave_length:
                 return(1 / np.double(waveLength) * np.ones(blkim.shape))
             else:
                 return(np.zeros(blkim.shape))
@@ -434,8 +434,8 @@ class PreprocessingFingerprint(object):
         # Generate filters corresponding to these distinct frequencies and
         # orientations in 'angleInc' increments.
 
-        sigmax = 1 / unfreq[0] * self.kx
-        sigmay = 1 / unfreq[0] * self.ky
+        sigmax = 1 / unfreq[0] * self._kx
+        sigmay = 1 / unfreq[0] * self._ky
 
         sze = np.int(np.round(3 * np.max([sigmax, sigmay])))
 
@@ -446,7 +446,7 @@ class PreprocessingFingerprint(object):
 
         filt_rows, filt_cols = reffilter.shape
 
-        angleRange = np.int(180 / self.angleInc)
+        angleRange = np.int(180 / self._angleInc)
 
         gabor_filter = np.array(np.zeros((angleRange, filt_rows, filt_cols)))
 
@@ -456,7 +456,7 @@ class PreprocessingFingerprint(object):
             # degrees, and imrotate requires angles +ve anticlockwise, hence
             # the minus sign.
 
-            rot_filt = ndimage.rotate(reffilter, -(o * self.angleInc + 90), reshape=False)
+            rot_filt = ndimage.rotate(reffilter, -(o * self._angleInc + 90), reshape=False)
             gabor_filter[o] = rot_filt
 
         # Find indices of matrix points greater than maxsze from the image
@@ -479,8 +479,8 @@ class PreprocessingFingerprint(object):
         # Convert orientation matrix values from radians to an index value
         # that corresponds to round(degrees/angleInc)
 
-        maxorientindex = np.round(180 / self.angleInc)
-        orientindex = np.round(self._orientim / np.pi * 180 / self.angleInc)
+        maxorientindex = np.round(180 / self._angleInc)
+        orientindex = np.round(self._orientim / np.pi * 180 / self._angleInc)
 
         # do the filtering
         for i in range(0, rows):
@@ -499,7 +499,7 @@ class PreprocessingFingerprint(object):
 
             newim[r][c] = np.sum(img_block * gabor_filter[int(orientindex[r][c]) - 1])
 
-        self._binim = newim < self.ridge_filter_thresh
+        self._binim = newim < self._ridge_filter_thresh
 
     def __skeletonize(self):
         # Skeletonize - reduce binary objects to 1 pixel wide representations
@@ -576,7 +576,7 @@ class PreprocessingFingerprint(object):
         # ML/Software Engineer 
         # https://medium.com/@cuevas1208/fingerprint-algorithm-recognition-fd2ac0c6f5fc
 
-        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE,(self.ridge_segment_blksze*2, self.ridge_segment_blksze*2))
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE,(self._ridge_segment_blksze*2, self._ridge_segment_blksze*2))
         rows, columns = self._mask.shape
         myMask = np.zeros(shape=(rows, columns), dtype=np.uint8)
         myMask[self._mask == True] = 1
@@ -652,10 +652,10 @@ class PreprocessingFingerprint(object):
         normin_image = self.__turn_into_normin_to_image()
         # cv.imshow('Fingerprint', normin_image)
         # cv.waitKey(0)
-        cv.imwrite(self.address_output + 'normalized_' +  self.name_fingerprint +'.bmp', (normin_image))
-        cv.imwrite(self.address_output + 'roi_' +  self.name_fingerprint +'.bmp', (roi_image))
-        cv.imwrite(self.address_output + 'binary_' +  self.name_fingerprint +'.bmp', (bin_image))
-        cv.imwrite(self.address_output + 'skeletoned' +  self.name_fingerprint +'.bmp', (skel_image))
+        cv.imwrite(self._address_output + 'normalized_' +  self._name_fingerprint +'.bmp', (normin_image))
+        cv.imwrite(self._address_output + 'roi_' +  self._name_fingerprint +'.bmp', (roi_image))
+        cv.imwrite(self._address_output + 'binary_' +  self._name_fingerprint +'.bmp', (bin_image))
+        cv.imwrite(self._address_output + 'skeletoned' +  self._name_fingerprint +'.bmp', (skel_image))
 
 
     def enhance(self, img, resize=False, ridge_color = 'white', return_as_image = True, show_fingerprints = False, save_fingerprints = False):
