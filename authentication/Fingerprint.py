@@ -12,9 +12,9 @@ class Fingerprint(object):
     def __init__(self, fingerprint_rows = 288, figerprint_columns = 256, name_fingerprint = 'fingerprint', 
                 show_result = True, save_result = True, size_window_minutiae = 3, size_window_core = 1, 
                 address_image = './authentication/preprocessingFingerprints/', address_data = './authentication/data/', 
-                characteritic_point_thresh = 0.6, ridge_segment_thresh = 0.25, authentication_index_score = 0.62,
-                authentication_image_score = 0.45, register_index_score = 0.55, register_cpthresh = 0.3,
-                register_rsthresh = 0.15):
+                characteritic_point_thresh = 0.6, ridge_segment_thresh = 0.25, authentication_index_score = 0.55,
+                authentication_image_score = 0.45, register_index_score = 0.62, register_cpthresh = 0.3,
+                register_rsthresh = 0.15, number_minutiae_neighbordings = 5):
         self._fingerprint_rows = fingerprint_rows
         self._figerprint_columns = figerprint_columns
         self._name_fingerprint = name_fingerprint
@@ -31,6 +31,7 @@ class Fingerprint(object):
         self._register_index_score = register_index_score
         self._register_cpthresh = register_cpthresh
         self._register_rsthresh = register_rsthresh
+        self._number_minutiae_neighbordings = number_minutiae_neighbordings
 
         self._varian_index = 0.0
         self._quality_index = 0.0
@@ -50,6 +51,11 @@ class Fingerprint(object):
         self._minutiae_cell = []
         self._core_cell = []
         self._ezquel_as_image = [] 
+
+        self._FINGERPRINT_OK = 0
+        self._POOR_QUALITY = 1
+        self._FEW_MINUTIAES = 2
+        self._VOID_FINGERPRINT = 3
 
     def __reconstruction_fingerprint(self, data_fingerprint):
         self._raw_image = np.zeros((self._fingerprint_rows, self._figerprint_columns))
@@ -244,6 +250,7 @@ class Fingerprint(object):
                 self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='w'))
 
     def __ezquel_to_image(self):
+        self._ezquel_fingerprint = self._ezquel_fingerprint.astype('uint8')
         self._ezquel_as_image = np.zeros(shape=(self._rows, self._columns), dtype='uint8')
         im_max = self._ezquel_fingerprint.max()
 
@@ -257,19 +264,30 @@ class Fingerprint(object):
     def describe_fingerprint(self, data_fingerprint, angles_tolerance=1):
         self.__reconstruction_fingerprint(data_fingerprint)
         self.__get_quality_index()
-        if self._quality_index > self._register_index_score:
+        if self._quality_index > self._authentication_index_score:
             self._ridge_segment_thresh = self._register_rsthresh
+        else:
+            return self._POOR_QUALITY
+        
         self.__fingerprint_enhance()
-        self._ezquel_fingerprint = self._ezquel_fingerprint.astype('uint8')
         print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
         self.__ezquel_to_image()
-        if ((self._quality_index > self._register_index_score) and (self._varian_index > self._authentication_image_score)):
+        if (self._varian_index > self._authentication_image_score):
             self._characteritic_point_thresh = self._register_cpthresh
+        else:
+            return self._POOR_QUALITY
+        
         if not self._void_image:
             self.__get_cells()
             self.__get_minutias()
             self.__get_corepoints(angles_tolerance)
-            for core in self._list_core_points:
-                print(core.get_description())
-            for minutia in self._list_minutias:
-                print(minutia.get_description())
+            if (len(self._list_minutias) < (self._number_minutiae_neighbordings + 1)):
+                return self._FEW_MINUTIAES
+            else:
+                pass
+            # for core in self._list_core_points:
+            #     print(core.get_description())
+            # for minutia in self._list_minutias:
+            #     print(minutia.get_description())
+        else:
+            return self._VOID_FINGERPRINT
