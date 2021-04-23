@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-from math import ceil, floor, factorial
+from math import ceil, floor, factorial, atan, degrees
 import uuid
 import numpy as np
 from Minutia import Minutiae
 
 class Local_Area(object):
-    def __init__(self, list_minutiaes, max_distance = 1500, number_neighbordings = 5) -> None:
+    def __init__(self, list_minutiaes, max_distance = 1500, number_neighbordings = 5, angles_tolerance = 0.01) -> None:
         super().__init__()
         self._list_minutiaes = list_minutiaes
         self._max_distance = max_distance
         self._number_neighbordings = number_neighbordings
+        self._angles_tolerance = angles_tolerance
 
         self._begin = 0
         self._end = (self._number_neighbordings - 1)
@@ -20,7 +21,7 @@ class Local_Area(object):
 
     def __nearest_minutiaes(self, length_list, reference = 0):
         #nearest_distances = [self._max_distance for _ in range(self._number_neighbordings)]
-        neighbording_minutiaes = [(self._list_minutiaes[index], self._max_distance) for index in range(self._number_neighbordings)]
+        neighbording_minutiaes = [[self._list_minutiaes[index], self._max_distance] for index in range(self._number_neighbordings)]
 
         minutiae = self._list_minutiaes[reference]
         j = minutiae.get_posy()
@@ -41,7 +42,8 @@ class Local_Area(object):
 
                 if distance_flag:
                     #nearest_distances[position] = distance
-                    neighbording_minutiaes[position] = (neighbording_minutia, distance)
+                    neighbording_minutiaes[position][0] = neighbording_minutia
+                    neighbording_minutiaes[position][1] = distance
             else:
                 continue
         
@@ -81,26 +83,99 @@ class Local_Area(object):
                     
             return (True, self._end)
 
-    def __ratios_minutiaes(self, neighbording_minutiaes):
-        ratios = [0 for _ in range(self._tuple_length)]
+    def __ratios_and_angles(self, neighbording_minutiaes, minutiae_reference):
+        ratios_and_angles = [[0, 0] for _ in range(self._tuple_length)]
         begin = (self._begin + 1)
         end = (self._end + 1)
         reference = 0
         ratio_position = 0
+        angle_position = 1
+        y_position = 0
         while(reference < (self._tuple_length - 1)):
             for second in range(begin, end, 1) :
-                ratios[ratio_position] = ((max(neighbording_minutiaes[reference][1], neighbording_minutiaes[second][1])) / (min(neighbording_minutiaes[reference][1], neighbording_minutiaes[second][1])))
-                ratio_position += 1
+                ratios_and_angles[y_position][ratio_position] = self.__get_ratio(reference, second, neighbording_minutiaes)
+                ratios_and_angles[y_position][angle_position] = self.__angles_minutiaes(minutiae_reference, neighbording_minutiaes, first=reference, second=second)
+                y_position += 1
             reference += 1
             begin += 1 
 
-        return ratios
+        return ratios_and_angles
 
-    def __angles_minutiaes(self):
-        pass
+    def __get_ratio(self, reference, second, neighbording_minutiaes):
+        ratio = round((max(neighbording_minutiaes[reference][1], neighbording_minutiaes[second][1])) / (min(neighbording_minutiaes[reference][1], neighbording_minutiaes[second][1])), 2)
+        return ratio
+
+    def __angles_minutiaes(self, minutiae_reference, neighbording_minutiaes, first, second):
+            m = [0, 0, 0]
+            angles = [(0, False), (0, False), (0, False)]
+            j = minutiae_reference.get_posy()
+            i = minutiae_reference.get_posx()
+
+            first_minutiae = neighbording_minutiaes[first][0]
+            j1 = first_minutiae.get_posy()
+            i1 = first_minutiae.get_posx()
+
+            second_minutiae = neighbording_minutiaes[second][0]
+            j2 = second_minutiae.get_posy()
+            i2 = second_minutiae.get_posx()
+
+            points_triangle = ((j,i), (j1, i1), (j2, j1))
+            number_slopes = len(m)
+            begin = (self._begin + 1)
+            reference = 0
+            y_position = 0
+            while (reference < (number_slopes - 1)):
+                for position in range(begin, number_slopes, 1):
+                    m[y_position] = self.__straight_slope(y1=points_triangle[reference][0], x1=points_triangle[reference][1], y2=points_triangle[position][0], x2=points_triangle[position][1])
+                    y_position += 1
+                reference += 1
+                begin += 1 
+
+            begin = (self._begin + 1)
+            reference = 0
+            y_position = 0
+            while (reference < (number_slopes - 1)):
+                for position in range(begin, number_slopes, 1):
+                    angles[y_position][:] = self.__get_angle(m1=m[reference], m2=m[position])
+                    y_position += 1
+                reference += 1
+                begin += 1 
+
+            checked_angle = self.__check_angles(angles)
+            return checked_angle
+
+
+
+    def __straight_slope(self, y1, x1, y2, x2):
+        if (x1 == x2):
+            return 0
+        else:
+            return ((y2 - y1)/(x2 - x1))
+
+    def __get_angle(self, m1, m2):
+        if ((m1 * m2) == (-1)):
+            return (90, True)
+        else:
+            return (abs(degrees(atan((m2 - m1)/(1 + (m1 * m2))))), False)
+
+    def __check_angles(self, angles):
+        sum_angles = 0
+        possible_error = 0
+        for position in range(len(angles)):
+            sum_angles += angles[position][0]
+            if angles[position][1] == True:
+                possible_error = position
+
+        if ((sum_angles < (180 - self._angles_tolerance)) or (sum_angles > (180 + self._angles_tolerance))):
+            angles[possible_error][0] = (180 - (sum_angles - angles[possible_error][0]))
+
+        checked_angle = round(angles[0][0], 2)
+
+        return checked_angle
+
 
     def __tuple_length(self):
-        factorial(self._number_neighbordings) // (factorial(2) * factorial(self._number_neighbordings - 2))
+        return (factorial(self._number_neighbordings) // (factorial(2) * factorial(self._number_neighbordings - 2)))
 
     def __tuple_list(self):
         return [[0,0,0,0,0] for _ in range(self._tuple_length)]
@@ -111,9 +186,10 @@ class Local_Area(object):
         if length_list > self._number_neighbordings:
             tuple_list = self.__tuple_list()
             for reference in range(length_list):
+                minutiae_reference = self._list_minutiaes[reference]
                 neighbording_minutiaes = self.__nearest_minutiaes(length_list, reference)
-                ratios = self.__ratios_minutiaes(neighbording_minutiaes)
-                angles = self.__angles_minutiaes()
+                ratios_and_angles = self.__ratios_and_angles(self, neighbording_minutiaes, minutiae_reference)
+                
         else:
             return self._FEW_MINUTIAES
         
