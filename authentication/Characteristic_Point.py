@@ -3,6 +3,7 @@ import uuid
 
 class Characteristic_Point(object):
     def __init__(self, posy= 0, posx= 0, angle= 0.0, point_type='n'):
+        super().__init__()
         self.uid_point = uuid.uuid4().hex
         self.posy = posy
         self.posx = posx
@@ -10,6 +11,9 @@ class Characteristic_Point(object):
         self.point_type = point_type
 
         #self.marked_image = []
+
+    def get_minutiae_id(self):
+        return self.uid_point
 
     def get_posy(self):
         return self.posy

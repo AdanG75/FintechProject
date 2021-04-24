@@ -5,6 +5,7 @@ import numpy as np
 
 class Conect_Sensor(object):
     def __init__(self, serial_port = 'COM5', baud_rate = 57600, width = 256, height = 288):
+        super().__init__()
         self._serial_port = serial_port
         self._baud_rate = baud_rate
         self._width = width

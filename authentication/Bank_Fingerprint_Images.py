@@ -8,6 +8,7 @@ from glob import glob
 
 class Bank_fingerprint(object):
     def __init__(self, num_fingerprints= 20, address_output='./sampleImages/', name= 'Fingerprint_Test', extension= '.bmp'):
+        super().__init__()
         self._num_fingerprints = num_fingerprints
         self._address_output = address_output
         self._name = name

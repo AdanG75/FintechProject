@@ -3,11 +3,12 @@ from math import ceil, floor, factorial, atan, degrees
 import uuid
 import numpy as np
 from Minutia import Minutiae
+from Tuple_Fingerprint import Tuple_Fingerprint
+from Error_Message import Error_Message
 
-class Local_Area(object):
-    def __init__(self, list_minutiaes, max_distance = 1500, number_neighbordings = 5, angles_tolerance = 0.01) -> None:
+class Local_Area(Error_Message):
+    def __init__(self, max_distance = 1500, number_neighbordings = 5, angles_tolerance = 0.01) -> None:
         super().__init__()
-        self._list_minutiaes = list_minutiaes
         self._max_distance = max_distance
         self._number_neighbordings = number_neighbordings
         self._angles_tolerance = angles_tolerance
@@ -15,9 +16,9 @@ class Local_Area(object):
         self._begin = 0
         self._end = (self._number_neighbordings - 1)
         self._tuple_length = self.__tuple_length()
-        
-        self._OK_TUPLE = 0
-        self._FEW_MINUTIAES = 2
+
+        self._list_minutiaes = []
+
 
     def __nearest_minutiaes(self, length_list, reference = 0):
         #nearest_distances = [self._max_distance for _ in range(self._number_neighbordings)]
@@ -48,6 +49,7 @@ class Local_Area(object):
                 continue
         
         return neighbording_minutiaes
+
 
     def __euclidian_distance(self, j1, j2, i1, i2):
         return (np.sqrt(np.power((j2 - j1), 2) + np.power((i2 - i1), 2)))
@@ -83,41 +85,46 @@ class Local_Area(object):
                     
             return (True, self._end)
 
+
     def __ratios_and_angles(self, neighbording_minutiaes, minutiae_reference):
-        ratios_and_angles = [[0, 0] for _ in range(self._tuple_length)]
+        ratios_and_angles = [[0, 0, 'x', 'x'] for _ in range(self._tuple_length)]
         begin = (self._begin + 1)
         end = (self._end + 1)
         reference = 0
-        ratio_position = 0
-        angle_position = 1
+        RATIO_POSITION = 0
+        ANGLE_POSITION = 1
         y_position = 0
         while(reference < (self._tuple_length - 1)):
             for second in range(begin, end, 1) :
-                ratios_and_angles[y_position][ratio_position] = self.__get_ratio(reference, second, neighbording_minutiaes)
-                ratios_and_angles[y_position][angle_position] = self.__angles_minutiaes(minutiae_reference, neighbording_minutiaes, first=reference, second=second)
+                ratios_and_angles[y_position][RATIO_POSITION] = self.__get_ratio(reference, second, neighbording_minutiaes)
+                ratios_and_angles[y_position][ANGLE_POSITION:] = self.__angles_minutiaes(minutiae_reference, neighbording_minutiaes, first=reference, second=second)
                 y_position += 1
             reference += 1
             begin += 1 
 
         return ratios_and_angles
 
+
     def __get_ratio(self, reference, second, neighbording_minutiaes):
         ratio = round((max(neighbording_minutiaes[reference][1], neighbording_minutiaes[second][1])) / (min(neighbording_minutiaes[reference][1], neighbording_minutiaes[second][1])), 2)
         return ratio
 
+
     def __angles_minutiaes(self, minutiae_reference, neighbording_minutiaes, first, second):
             m = [0, 0, 0]
-            angles = [(0, False), (0, False), (0, False)]
+            angles = [[0, False], [0, False], [0, False]]
             j = minutiae_reference.get_posy()
             i = minutiae_reference.get_posx()
 
             first_minutiae = neighbording_minutiaes[first][0]
             j1 = first_minutiae.get_posy()
             i1 = first_minutiae.get_posx()
+            minutiae_type1 = first_minutiae.get_point_type()
 
             second_minutiae = neighbording_minutiaes[second][0]
             j2 = second_minutiae.get_posy()
             i2 = second_minutiae.get_posx()
+            minutiae_type2 = second_minutiae.get_point_type()
 
             points_triangle = ((j,i), (j1, i1), (j2, j1))
             number_slopes = len(m)
@@ -142,7 +149,7 @@ class Local_Area(object):
                 begin += 1 
 
             checked_angle = self.__check_angles(angles)
-            return checked_angle
+            return (checked_angle, minutiae_type1, minutiae_type2)
 
 
 
@@ -177,19 +184,30 @@ class Local_Area(object):
     def __tuple_length(self):
         return (factorial(self._number_neighbordings) // (factorial(2) * factorial(self._number_neighbordings - 2)))
 
-    def __tuple_list(self):
-        return [[0,0,0,0,0] for _ in range(self._tuple_length)]
+    def __tuple_list(self, minutiae_reference, ratios_and_angles):
+        # return [[0,0,0,0,0] for _ in range(self._tuple_length)]
+        tuple_fingerprint_list = []
+        minutiae_id = minutiae_reference.get_minutiae_id()
+        for _ in range(self._tuple_length):
+            (parameter_ratio, parameter_angle, parameter_type_first_minutiae, parameter_type_second_minutiae) = ratios_and_angles[_]
+            my_tuple_fingerprint = Tuple_Fingerprint(minutiae_id, parameter_ratio, parameter_angle, parameter_type_first_minutiae, parameter_type_second_minutiae)
+            tuple_fingerprint_list.append(my_tuple_fingerprint)
+
+        return tuple_fingerprint_list
 
             
-    def get_local_structure(self):
+    def get_local_structure(self, list_minutiaes):
+        self._list_minutiaes = list_minutiaes
         length_list = len(self._list_minutiaes)
         if length_list > self._number_neighbordings:
-            tuple_list = self.__tuple_list()
             for reference in range(length_list):
                 minutiae_reference = self._list_minutiaes[reference]
                 neighbording_minutiaes = self.__nearest_minutiaes(length_list, reference)
-                ratios_and_angles = self.__ratios_and_angles(self, neighbording_minutiaes, minutiae_reference)
-                
+                ratios_and_angles = self.__ratios_and_angles(neighbording_minutiaes, minutiae_reference)
+                tuple_fingerprint_list = self.__tuple_list(minutiae_reference, ratios_and_angles)
+                minutiae_reference.set_tuple_fingerprint_list(tuple_fingerprint_list)
+
+            return self._FINGERPRINT_OK
         else:
             return self._FEW_MINUTIAES
         

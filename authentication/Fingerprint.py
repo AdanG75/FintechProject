@@ -2,19 +2,22 @@
 
 import numpy as np
 import cv2 as cv
-import math
+from math import degrees
 from Quality_Image import Quality_Fingerprint
 from Preprocessing_Fingerprint import PreprocessingFingerprint
 from Minutia import Minutiae
 from Core_Point import Core_Point
+from Local_Area import Local_Area
+from Error_Message import Error_Message
 
-class Fingerprint(object):
+class Fingerprint(Error_Message):
     def __init__(self, fingerprint_rows = 288, figerprint_columns = 256, name_fingerprint = 'fingerprint', 
                 show_result = True, save_result = True, size_window_minutiae = 3, size_window_core = 1, 
                 address_image = './authentication/preprocessingFingerprints/', address_data = './authentication/data/', 
-                characteritic_point_thresh = 0.6, ridge_segment_thresh = 0.25, authentication_index_score = 0.55,
-                authentication_image_score = 0.45, register_index_score = 0.62, register_cpthresh = 0.3,
+                characteritic_point_thresh = 0.6, ridge_segment_thresh = 0.25, authentication_index_score = 0.52,
+                authentication_image_score = 0.40, register_index_score = 0.62, register_cpthresh = 0.3,
                 register_rsthresh = 0.15, number_minutiae_neighbordings = 5):
+        super().__init__()
         self._fingerprint_rows = fingerprint_rows
         self._figerprint_columns = figerprint_columns
         self._name_fingerprint = name_fingerprint
@@ -52,10 +55,6 @@ class Fingerprint(object):
         self._core_cell = []
         self._ezquel_as_image = [] 
 
-        self._FINGERPRINT_OK = 0
-        self._POOR_QUALITY = 1
-        self._FEW_MINUTIAES = 2
-        self._VOID_FINGERPRINT = 3
 
     def __reconstruction_fingerprint(self, data_fingerprint):
         self._raw_image = np.zeros((self._fingerprint_rows, self._figerprint_columns))
@@ -196,11 +195,14 @@ class Fingerprint(object):
 
                 if crossings == 1:
                     if non_border >= 4:
-                        self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='e'))
+                        angle = round(degrees(self._angles[j][i]), 2)
+                        self._list_minutias.append(Minutiae(posy= j, posx= i, angle= angle, point_type='e'))
 
                 if crossings == 3:
-                    self._list_minutias.append(Minutiae(posy= j, posx= i, angle= self._angles[j][i], point_type='b'))
+                    angle = round(degrees(self._angles[j][i]), 2)
+                    self._list_minutias.append(Minutiae(posy= j, posx= i, angle= angle, point_type='b'))
 
+    
     def __get_cells(self):
         if self._size_window_minutiae == 3:
             self._minutiae_cell = [(-1, -1), (-1, 0), (-1, 1),          # p1 p2 p3
@@ -215,6 +217,7 @@ class Fingerprint(object):
                 (0, 1),  (1, 1),  (1, 0),                       # p8    p4
                 (1, -1), (0, -1), (-1, -1)]                     # p7 p6 p5
 
+    
     def __poincare_index_at(self, j, i, tolerance):
         """
         compute the summation difference between the adjacent orientations such that the orientations is less then 90 degrees
@@ -226,7 +229,7 @@ class Fingerprint(object):
         :return:
         """
         if self._varian_mask[j][i] > self._characteritic_point_thresh:
-            angles_around_index = [math.degrees(self._angles[j - k][i - l]) for k, l in self._core_map]
+            angles_around_index = [degrees(self._angles[j - k][i - l]) for k, l in self._core_map]
             index = 0
             for k in range(0, 8):
 
@@ -241,13 +244,17 @@ class Fingerprint(object):
 
             if 180 - tolerance <= index <= 180 + tolerance:
                 #delta
-                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='d'))
+                angle = round(degrees(self._angles[j][i]), 2)
+                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= angle, point_type='d'))
             if -180 - tolerance <= index <= -180 + tolerance:
                 #loop
-                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='l'))
+                angle = round(degrees(self._angles[j][i]), 2)
+                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= angle, point_type='l'))
             if 360 - tolerance <= index <= 360 + tolerance:
                 #whorl
-                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= self._angles[j][i], point_type='w'))
+                angle = round(degrees(self._angles[j][i]), 2)
+                self._list_core_points.append(Core_Point(posy= j, posx= i, angle= angle, point_type='w'))
+
 
     def __ezquel_to_image(self):
         self._ezquel_fingerprint = self._ezquel_fingerprint.astype('uint8')
@@ -258,8 +265,7 @@ class Fingerprint(object):
             self._ezquel_as_image[0:self._rows][:, 0:self._columns] = (((-255) * (self._ezquel_fingerprint/im_max)) + 255).astype('uint8')
         else:
             self._void_image = True
-
-        
+   
 
     def describe_fingerprint(self, data_fingerprint, angles_tolerance=1):
         self.__reconstruction_fingerprint(data_fingerprint)
@@ -284,10 +290,12 @@ class Fingerprint(object):
             if (len(self._list_minutias) < (self._number_minutiae_neighbordings + 1)):
                 return self._FEW_MINUTIAES
             else:
-                pass
-            # for core in self._list_core_points:
-            #     print(core.get_description())
-            # for minutia in self._list_minutias:
-            #     print(minutia.get_description())
+                local_description = Local_Area()
+                process_message = local_description.get_local_structure(self._list_minutias)
+                # for core in self._list_core_points:
+                #     print(core.get_description())
+                # for minutia in self._list_minutias:
+                #     print(minutia.get_description())
+                return process_message
         else:
             return self._VOID_FINGERPRINT

@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 class Quality_Fingerprint(object):
     def __init__(self, numberFilters = 16, columnsImage = 256, rowsImage = 288, dataFilters = 'data.txt', address_output='./data/', showGraphs = False, name_fingerprint='fingerprint'):
+        super().__init__()
         self._numberFilters = numberFilters
         self._columnsImage = columnsImage
         self._rowsImage = rowsImage

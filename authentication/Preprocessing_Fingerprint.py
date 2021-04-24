@@ -11,6 +11,7 @@ from skimage.morphology import skeletonize as skelt
 class PreprocessingFingerprint(object):
     def __init__(self, name_fingerprint = 'figerprint', address_output='./preprocessingFingerprints/', ridge_segment_blksze=16, ridge_segment_thresh=0.1, gradient_sigma=1, block_sigma=7, orient_smooth_sigma=7,
                  ridge_freq_blksze=38, ridge_freq_windsze=5, min_wave_length=5, max_wave_length=15, kx=0.65, ky=0.65, angleInc=3.0, ridge_filter_thresh=-3):
+        super().__init__()
         self._name_fingerprint = name_fingerprint
         self._address_output = address_output
         self._ridge_segment_blksze = ridge_segment_blksze

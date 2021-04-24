@@ -42,8 +42,10 @@ def local_test():
         if len(data_image) < 2:
             print('Error to get the fingerprint image')
             return True
-        fingerprint.describe_fingerprint(data_image, angles_tolerance=1)
-        
+        process_message = fingerprint.describe_fingerprint(data_image, angles_tolerance=1)
+        fingerprint.show_message(process_message)
+        #print('Number of process message {}'.format(process_message))
+
     elif (option == '9'):
         return True
     elif ((option == '\n') or (option == '')):
