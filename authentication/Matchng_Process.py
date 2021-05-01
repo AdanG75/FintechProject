@@ -2,7 +2,10 @@
 
 import numpy as np
 import cv2 as cv
-from math import degrees
+from math import degrees, cos, sin
+from numpy.core.defchararray import index
+
+from numpy.core.fromnumeric import shape
 
 class Matching_Process(object):
     def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, matching_distance_tolerance = 1, matching_angle_tolerance = 1.5) -> None:
@@ -24,6 +27,8 @@ class Matching_Process(object):
         self._base_cores = base_core_list.copy()
         self._index_minutiaes = index_minutiaes_list.copy()
         self._index_cores = index_core_list.copy()
+
+        self.__common_points()
 
 
     def __common_points(self):
@@ -62,6 +67,8 @@ class Matching_Process(object):
                         if ((origin_minutiae_base == origin_minutiae_index) and (destination_minutiae_base == destination_minutiae_index )):
                             count += 1
                             break
+                        else:
+                            continue
                     else:
                         continue
                 else:
@@ -74,4 +81,89 @@ class Matching_Process(object):
             return False
         else:
             return True
+
+    
+    def __match_fingerprint(self):
+        if len(self._possible_common_minutias) <= 0:
+            return False
+        else:
+            for common_minutiae in self._possible_common_minutias:
+                minutiae_found = self.__find_minutiae_to_align(common_minutiae=common_minutiae)
+                validation = self.__validate_minutiae_to_align(minutiae_found=minutiae_found)
+                if validation:
+                    alignment_matrix = self.__create_alignment_matrix(common_minutiae=common_minutiae)
+
+                else:
+                    continue
+
+    
+    def __find_minutiae_to_align(self, common_minutiae):
+        for base_minutiae in self._base_minutiaes:
+            if (common_minutiae[1] == base_minutiae.get_minutiae_id()):
+                return base_minutiae
+        
+        return False
+
+    
+    def __validate_minutiae_to_align(self, minutiae_found):
+        if minutiae_found == False:
+            return False
+        else:
+            return True
+
+
+    def __create_alignment_matrix(self, common_minutiae):
+        theta = common_minutiae.get_angle()
+        alignment_matrix = np.matrix([[degrees(cos(theta)), degrees((-1)*sin(theta))],
+                            [degrees(sin(theta)), degrees(cos(theta))]])
+        
+        return alignment_matrix
+
+    
+    def __align_fingerprints(self, alignment_matrix, common_minutiae, minutiae_found):
+        (base_id, pos_y, pos_x, base_angle, base_type) = minutiae_found.get_short_descrption()
+        original_position =np.matrix([[pos_x],
+                                    [pos_y]])
+
+        rotate_position = np.matmul(alignment_matrix, original_position)
+        (translation_x, translation_y) = self.__compute_translation(rotate_position=rotate_position, common_minutiae=common_minutiae)
+
+    
+    def __compute_translation(self, rotate_position, common_minutiae):
+        dimention = len(rotate_position.shape)
+        integer_rotate_position = self.__integer_position(dimention, rotate_position)
+        # (index_id, index_pos_y, index_pos_x, index_angle, index_type) = common_minutiae[0].get_short_descrption()
+        index_pos_y = common_minutiae[0].get_posy()
+        index_pos_x = common_minutiae[0].get_posx()
+        
+        if (len(integer_rotate_position.shape) < 2):
+            translation_x = index_pos_x - integer_rotate_position[0]
+            translation_y = index_pos_y - integer_rotate_position[1]
+        else:
+            translation_x = index_pos_x - integer_rotate_position[0][0]
+            translation_y = index_pos_y - integer_rotate_position[1][0]
+
+        return (translation_x, translation_y)
+
+        
+
+
+    def __integer_position(self, dimention, rotate_position):
+        integer_rotate_position = np.zeros(shape=(rotate_position.shape), dtype='int16')
+        pos_column = 0
+        if (dimention >= 2):
+            pos_row = 0
+            for row in rotate_position:
+                for value in row:
+                    integer_rotate_position[pos_row][pos_column] = round(value)
+                    pos_column +=1
+                
+                pos_row += 1
+                pos_column = 0
+        else:
+            for value in rotate_position:
+                integer_rotate_position[pos_column] = round(value)
+                pos_column +=1
+
+        return integer_rotate_position
 

@@ -20,3 +20,6 @@ class Minutiae(Characteristic_Point):
             description_tuple_list.append(description)
 
         return (self.uid_point, self.posy, self.posx, self.angle, self.point_type, description_tuple_list)
+
+    def get_short_descrption(self):
+        return (self.uid_point, self.posy, self.posx, self.angle, self.point_type)
