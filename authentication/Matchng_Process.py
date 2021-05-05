@@ -19,7 +19,11 @@ class Matching_Process(object):
         self._base_cores = []
         self._index_minutiaes = []
         self._index_cores = []
-        self._possible_common_minutias =[]
+        self._possible_common_minutias = []
+        self._aligned_base_minutiaes = []
+
+        self._MINIMUM_ANGLE = 0
+        self._MAXIMUM_ANGLE = 360
 
     
     def matching(self, base_minutiaes_list, base_core_list, index_minutiaes_list, index_core_list):
@@ -29,6 +33,7 @@ class Matching_Process(object):
         self._index_cores = index_core_list.copy()
 
         self.__common_points()
+        self.__match_fingerprint()
 
 
     def __common_points(self):
@@ -92,6 +97,7 @@ class Matching_Process(object):
                 validation = self.__validate_minutiae_to_align(minutiae_found=minutiae_found)
                 if validation:
                     alignment_matrix = self.__create_alignment_matrix(common_minutiae=common_minutiae)
+                    self.__align_fingerprints(alignment_matrix, common_minutiae, minutiae_found)
 
                 else:
                     continue
@@ -122,13 +128,49 @@ class Matching_Process(object):
     
     def __align_fingerprints(self, alignment_matrix, common_minutiae, minutiae_found):
         (base_id, pos_y, pos_x, base_angle, base_type) = minutiae_found.get_short_descrption()
-        original_position =np.matrix([[pos_x],
-                                    [pos_y]])
 
-        rotate_position = np.matmul(alignment_matrix, original_position)
+        rotate_position = self.__compute_rotate_position(alignment_matrix=alignment_matrix, pos_y=pos_y, pos_x=pos_x)
+        
         (translation_x, translation_y) = self.__compute_translation(rotate_position=rotate_position, common_minutiae=common_minutiae)
+        angle_translation = self.__compute_angle_translation(base_angle=base_angle, common_minutiae=common_minutiae)
+        aligned_base_minutiaes = self.__align_base_minutiaes(aligment_matrix=alignment_matrix, translation_x=translation_x,
+                                                                translation_y=translation_y, angle_translation=angle_translation)
+
+    def __align_base_minutiaes(self, aligment_matrix, translation_x, translation_y, angle_translation):
+        aligned_base_minutiaes = []
+        translation_matrix = self.__ubication_as_matrix(pos_x=translation_x, pos_y=translation_y)
+        for base_minutiae in self._base_minutiaes:
+            (base_id, pos_y, pos_x, base_angle, base_type) = base_minutiae.get_short_descrption()
+            rotate_position = self.__compute_rotate_position(alignment_matrix=aligment_matrix, pos_y=pos_y, pos_x=pos_x)
+            displaced_position = self.__compute_displaced_minutiae(rotate_position=rotate_position, translation_matrix=translation_matrix)
+            displaced_angle = self.__compute_displaced_angle_minutiae(base_angle=base_angle, angle_translation=angle_translation)
+            aligned_base_minutiaes.append([base_id, displaced_position[1][0], displaced_position[0][0], displaced_angle, base_type])
+
+        return aligned_base_minutiaes
+
+
+    def __compute_displaced_minutiae(self, rotate_position, translation_matrix): 
+        return (rotate_position + translation_matrix)
 
     
+    def __compute_displaced_angle_minutiae(self, base_angle, angle_translation):
+        displaced_angle = (base_angle + angle_translation)
+        checked_displaced_angle = self.__check_angle(angle_translation=displaced_angle)
+
+        return checked_displaced_angle
+
+
+    def __compute_rotate_position(self, alignment_matrix, pos_y, pos_x):
+        original_position = self.__ubication_as_matrix(pos_y=pos_y, pos_x=pos_x)
+        rotate_position = np.matmul(alignment_matrix, original_position)
+
+        return rotate_position
+
+
+    def __ubication_as_matrix(self, pos_y, pos_x):
+        return np.matrix([[pos_x], [pos_y]])
+
+
     def __compute_translation(self, rotate_position, common_minutiae):
         dimention = len(rotate_position.shape)
         integer_rotate_position = self.__integer_position(dimention, rotate_position)
@@ -146,7 +188,24 @@ class Matching_Process(object):
         return (translation_x, translation_y)
 
         
+    def __compute_angle_translation(self, base_angle, common_minutiae):
+        index_angle = common_minutiae[0].get_angle()
+        angle_translation = index_angle - base_angle
 
+        checked_angle_translation = self.__check_angle(angle_translation=angle_translation)
+        
+        return checked_angle_translation
+
+    def __check_angle(self, angle_translation):
+        if angle_translation < self._MINIMUM_ANGLE:
+            angle_translation = self._MAXIMUM_ANGLE + angle_translation
+        elif angle_translation > self._MAXIMUM_ANGLE:
+            while (angle_translation > self._MAXIMUM_ANGLE):
+                angle_translation = angle_translation - self._MAXIMUM_ANGLE
+        else:
+            return angle_translation
+
+        return angle_translation
 
     def __integer_position(self, dimention, rotate_position):
         integer_rotate_position = np.zeros(shape=(rotate_position.shape), dtype='int16')
