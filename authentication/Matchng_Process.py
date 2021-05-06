@@ -2,18 +2,19 @@
 
 import numpy as np
 import cv2 as cv
-from math import degrees, cos, sin
+from math import degrees, cos, sin, sqrt
 from numpy.core.defchararray import index
 
 from numpy.core.fromnumeric import shape
 
 class Matching_Process(object):
-    def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, matching_distance_tolerance = 1, matching_angle_tolerance = 1.5) -> None:
+    def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, matching_distance_tolerance = 1, matching_angle_tolerance = 1.5, area_tolerance = 60) -> None:
         super().__init__()
         self._local_ratio_tolerance = local_ratio_tolerance
         self._local_angle_tolerance = local_angle_tolerance
         self._matching_distance_tolerance = matching_distance_tolerance
         self._matching_angle_tolerance = matching_angle_tolerance
+        self._area_tolerance = area_tolerance
 
         self._base_minutiaes = []
         self._base_cores = []
@@ -97,10 +98,32 @@ class Matching_Process(object):
                 validation = self.__validate_minutiae_to_align(minutiae_found=minutiae_found)
                 if validation:
                     alignment_matrix = self.__create_alignment_matrix(common_minutiae=common_minutiae)
-                    self.__align_fingerprints(alignment_matrix, common_minutiae, minutiae_found)
-
+                    aligned_base_minutiaes = self.__align_fingerprints(alignment_matrix, common_minutiae, minutiae_found)
+                    base_id = minutiae_found.get_minutiae_id()
+                    reference_minutiae = self.__set_reference_point(base_id=base_id, aligned_base_minutiaes=aligned_base_minutiaes)
                 else:
                     continue
+
+
+    def __match_score(self, reference_minutiae, aligned_base_minutiaes):
+        ref_pos_y = reference_minutiae[1]
+        ref_pos_x = reference_minutiae[2]
+        for aligned_base_minutiae in aligned_base_minutiaes:
+            pos_y = aligned_base_minutiae[1]
+            pos_x = aligned_base_minutiae[2]
+            euclidian_distance = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
+            (distance_tolerance, angle_tolerance) = self.__set_value_tolerance_for_region(euclidian_distance=euclidian_distance)
+
+
+    def __euclidian_distance(self, pos_y, ref_pos_y, pos_x, ref_pos_x):
+        euclidian_distance = sqrt( pow((pos_y - ref_pos_y), 2) + pow((pos_x - ref_pos_x), 2))
+        return euclidian_distance
+
+
+    def __set_value_tolerance_for_region(self, euclidian_distance):
+        distance_tolerance = ((1 + (euclidian_distance // self._area_tolerance)) * self._matching_distance_tolerance)
+        angle_tolerance = ((1 + (euclidian_distance // self._area_tolerance)) * self._matching_angle_tolerance)
+        return (distance_tolerance, angle_tolerance)
 
     
     def __find_minutiae_to_align(self, common_minutiae):
@@ -135,6 +158,14 @@ class Matching_Process(object):
         angle_translation = self.__compute_angle_translation(base_angle=base_angle, common_minutiae=common_minutiae)
         aligned_base_minutiaes = self.__align_base_minutiaes(aligment_matrix=alignment_matrix, translation_x=translation_x,
                                                                 translation_y=translation_y, angle_translation=angle_translation)
+        return aligned_base_minutiaes
+
+
+    def __set_reference_point(self, base_id, aligned_base_minutiaes):
+        for aligned_base_minutiae in aligned_base_minutiaes:
+            if aligned_base_minutiae[0] == base_id:
+                return aligned_base_minutiae
+
 
     def __align_base_minutiaes(self, aligment_matrix, translation_x, translation_y, angle_translation):
         aligned_base_minutiaes = []
