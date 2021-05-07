@@ -113,16 +113,72 @@ class Matching_Process(object):
             pos_x = aligned_base_minutiae[2]
             euclidian_distance = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
             (distance_tolerance, angle_tolerance) = self.__set_value_tolerance_for_region(euclidian_distance=euclidian_distance)
+            correspondence_score = self.__find_correspondence_minutiae(aligned_base_minutiae=aligned_base_minutiae, distance_tolerance=distance_tolerance,
+                                                                            angle_tolerance=angle_tolerance)
+
+
+    def __find_correspondence_minutiae(self, aligned_base_minutiae, distance_tolerance, angle_tolerance):
+        score = 0
+
+        for index_minutiae in self._index_minutiaes:
+            pos_y = index_minutiae.get_posy()
+            pos_x = index_minutiae.get_posx()
+            ref_pos_y = aligned_base_minutiae[1]
+            ref_pos_x = aligned_base_minutiae[2]
+            its_inside_area = self.__check_distance_between_minutiaes(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x, distance_tolerance=distance_tolerance)
+            if its_inside_area:
+                euclidian_distance_between_minutiaes = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
+                if (euclidian_distance_between_minutiaes <= distance_tolerance):
+                    same_minutiae = self.__is_it_the_same_minutiae(index_minutia=index_minutiae, aligned_base_minutiae=aligned_base_minutiae, angle_tolerance=angle_tolerance)
+                    if same_minutiae:
+                        score += 1
+                    else:
+                        continue
+                else:
+                    continue    
+            else:
+                continue
+
+        return score
+
+
+    def __is_it_the_same_minutiae(self, index_minutia, aligned_base_minutiae, angle_tolerance):
+        index_angle = index_minutia.get_angle()
+        base_angle = aligned_base_minutiae[3]
+        correspondence_angle = self.__check_correspondence_angle(index_angle=index_angle, base_angle=base_angle, angle_tolerance=angle_tolerance)
+        if correspondence_angle:
+            index_type = index_minutia.get_point_type()
+            base_type = aligned_base_minutiae[4]
+            if (index_type == base_type):
+                return True
+        else:
+            return False
+
+
+    def __check_correspondence_angle(self, index_angle, base_angle, angle_tolerance):
+        subtraction_between_angles = abs(index_angle - base_angle)
+        less_than_angle_tolerance = (min( subtraction_between_angles, ( 360 - subtraction_between_angles ) ) <= angle_tolerance)
+
+        return less_than_angle_tolerance
+
+
+    def __check_distance_between_minutiaes(self, pos_y, ref_pos_y, pos_x, ref_pos_x, distance_tolerance):
+        less_than_distance_tolerance_in_y = (abs( pos_y - ref_pos_y) <= distance_tolerance)
+        less_than_distance_tolerance_in_x = (abs( pos_x - ref_pos_x) <= distance_tolerance)
+        
+        return (less_than_distance_tolerance_in_y and less_than_distance_tolerance_in_x)
 
 
     def __euclidian_distance(self, pos_y, ref_pos_y, pos_x, ref_pos_x):
-        euclidian_distance = sqrt( pow((pos_y - ref_pos_y), 2) + pow((pos_x - ref_pos_x), 2))
+        euclidian_distance = sqrt( pow((pos_y - ref_pos_y), 2) + pow((pos_x - ref_pos_x), 2) )
+        
         return euclidian_distance
 
 
     def __set_value_tolerance_for_region(self, euclidian_distance):
         distance_tolerance = ((1 + (euclidian_distance // self._area_tolerance)) * self._matching_distance_tolerance)
         angle_tolerance = ((1 + (euclidian_distance // self._area_tolerance)) * self._matching_angle_tolerance)
+        
         return (distance_tolerance, angle_tolerance)
 
     
@@ -227,6 +283,7 @@ class Matching_Process(object):
         
         return checked_angle_translation
 
+
     def __check_angle(self, angle_translation):
         if angle_translation < self._MINIMUM_ANGLE:
             angle_translation = self._MAXIMUM_ANGLE + angle_translation
@@ -237,6 +294,7 @@ class Matching_Process(object):
             return angle_translation
 
         return angle_translation
+
 
     def __integer_position(self, dimention, rotate_position):
         integer_rotate_position = np.zeros(shape=(rotate_position.shape), dtype='int16')
