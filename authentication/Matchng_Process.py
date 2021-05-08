@@ -25,6 +25,8 @@ class Matching_Process(object):
 
         self._MINIMUM_ANGLE = 0
         self._MAXIMUM_ANGLE = 360
+        self._MINIMUM_CORE_SCORE = 2
+        self._FINGERPRINT_SCORE = 2
 
     
     def matching(self, base_minutiaes_list, base_core_list, index_minutiaes_list, index_core_list):
@@ -34,7 +36,8 @@ class Matching_Process(object):
         self._index_cores = index_core_list.copy()
 
         self.__common_points()
-        self.__match_fingerprint()
+        result_matching = self.__match_fingerprint()
+        return result_matching
 
 
     def __common_points(self):
@@ -93,43 +96,104 @@ class Matching_Process(object):
         if len(self._possible_common_minutias) <= 0:
             return False
         else:
+            fingerprint_score = 0
             for common_minutiae in self._possible_common_minutias:
                 minutiae_found = self.__find_minutiae_to_align(common_minutiae=common_minutiae)
                 validation = self.__validate_minutiae_to_align(minutiae_found=minutiae_found)
                 if validation:
                     alignment_matrix = self.__create_alignment_matrix(common_minutiae=common_minutiae)
-                    aligned_base_minutiaes = self.__align_fingerprints(alignment_matrix, common_minutiae, minutiae_found)
+                    (aligned_base_minutiaes, translation_x, translation_y, angle_translation) = self.__align_fingerprints(alignment_matrix, common_minutiae, minutiae_found)
                     base_id = minutiae_found.get_minutiae_id()
                     reference_minutiae = self.__set_reference_point(base_id=base_id, aligned_base_minutiaes=aligned_base_minutiaes)
+                    fingerprint_score = self.__match_score(reference_minutiae=reference_minutiae, aligned_base_minutiaes=aligned_base_minutiaes, alignment_matrix=alignment_matrix,
+                                                            translation_x=translation_x, translation_y=translation_y, angle_translation=angle_translation)
                 else:
                     continue
 
+                if fingerprint_score >= self._FINGERPRINT_SCORE:
+                        return True
 
-    def __match_score(self, reference_minutiae, aligned_base_minutiaes):
+        return False
+
+
+    def __match_score(self, reference_minutiae, aligned_base_minutiaes, alignment_matrix, translation_x, translation_y, angle_translation):
         ref_pos_y = reference_minutiae[1]
         ref_pos_x = reference_minutiae[2]
+        match_fingerprint_score = 0
+
         for aligned_base_minutiae in aligned_base_minutiaes:
-            pos_y = aligned_base_minutiae[1]
-            pos_x = aligned_base_minutiae[2]
-            euclidian_distance = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
-            (distance_tolerance, angle_tolerance) = self.__set_value_tolerance_for_region(euclidian_distance=euclidian_distance)
-            correspondence_score = self.__find_correspondence_minutiae(aligned_base_minutiae=aligned_base_minutiae, distance_tolerance=distance_tolerance,
-                                                                            angle_tolerance=angle_tolerance)
+            correspondence_score = self.__correspondence_point(aligned_base_point=aligned_base_minutiae, ref_pos_y=ref_pos_y, ref_pos_x=ref_pos_x,
+                                                                point_type='minutiae', origin='index')
+            match_result = self.__check_score(score=correspondence_score)
+            if match_result:
+                match_fingerprint_score += 1
+                void_core_lists = self.__is_it_void_core_list()
+                if (not void_core_lists):
+                    aligned_base_cores = self.__align_base_points(aligment_matrix=alignment_matrix, translation_x=translation_x,
+                                                                translation_y=translation_y, angle_translation=angle_translation, point_type='core', origin='base')
+                    correspondence_core = self.__correspondence_point(aligned_base_point=aligned_base_cores, ref_pos_y=ref_pos_y, ref_pos_x=ref_pos_x,
+                                                                point_type='core', origin='index')
+                    match_core_result = self.__check_core_score(correspondence_core=correspondence_core)
+                    if match_core_result:
+                        match_fingerprint_score += 1
+            
+            if match_fingerprint_score >= self._FINGERPRINT_SCORE:
+                return match_fingerprint_score
+
+        return match_fingerprint_score
+                
+                    
+
+    def __check_core_score(self, correspondence_core):
+        if correspondence_core >= self._MINIMUM_CORE_SCORE:
+            return True
+        else:
+            return False
 
 
-    def __find_correspondence_minutiae(self, aligned_base_minutiae, distance_tolerance, angle_tolerance):
+    def __correspondence_point(self, aligned_base_point, ref_pos_y, ref_pos_x, point_type, origin):
+        pos_y = aligned_base_point[1]
+        pos_x = aligned_base_point[2]
+        euclidian_distance = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
+        (distance_tolerance, angle_tolerance) = self.__set_value_tolerance_for_region(euclidian_distance=euclidian_distance)
+        correspondence_score = self.__find_correspondence_point(aligned_base_point=aligned_base_point, distance_tolerance=distance_tolerance,
+                                                                        angle_tolerance=angle_tolerance, point_type=point_type, origin=origin)
+
+        return correspondence_score
+    
+    
+    def __is_it_void_core_list(self):
+        void_index_core_list = ( len(self._index_cores) <= 0 )
+        void_base_core_list = ( len(self._base_cores) <= 0 )
+
+        if (void_base_core_list or void_index_core_list):
+            return True
+        else:
+            return False
+
+
+    def __check_score(self, score):
+        minimum_score = (min( len(self._base_minutiaes), len(self._index_minutiaes) ) / 2)
+        if score >= minimum_score:
+            return True
+        else:
+            return False
+
+
+    def __find_correspondence_point(self, aligned_base_point, distance_tolerance, angle_tolerance, point_type, origin):
         score = 0
+        point_list = self.__select_point_type(point_type=point_type, origin=origin)
 
-        for index_minutiae in self._index_minutiaes:
-            pos_y = index_minutiae.get_posy()
-            pos_x = index_minutiae.get_posx()
-            ref_pos_y = aligned_base_minutiae[1]
-            ref_pos_x = aligned_base_minutiae[2]
+        for index_point in point_list:
+            pos_y = index_point.get_posy()
+            pos_x = index_point.get_posx()
+            ref_pos_y = aligned_base_point[1]
+            ref_pos_x = aligned_base_point[2]
             its_inside_area = self.__check_distance_between_minutiaes(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x, distance_tolerance=distance_tolerance)
             if its_inside_area:
                 euclidian_distance_between_minutiaes = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
                 if (euclidian_distance_between_minutiaes <= distance_tolerance):
-                    same_minutiae = self.__is_it_the_same_minutiae(index_minutia=index_minutiae, aligned_base_minutiae=aligned_base_minutiae, angle_tolerance=angle_tolerance)
+                    same_minutiae = self.__is_it_the_same_minutiae(index_minutia=index_point, aligned_base_minutiae=aligned_base_point, angle_tolerance=angle_tolerance)
                     if same_minutiae:
                         score += 1
                     else:
@@ -212,9 +276,10 @@ class Matching_Process(object):
         
         (translation_x, translation_y) = self.__compute_translation(rotate_position=rotate_position, common_minutiae=common_minutiae)
         angle_translation = self.__compute_angle_translation(base_angle=base_angle, common_minutiae=common_minutiae)
-        aligned_base_minutiaes = self.__align_base_minutiaes(aligment_matrix=alignment_matrix, translation_x=translation_x,
-                                                                translation_y=translation_y, angle_translation=angle_translation)
-        return aligned_base_minutiaes
+        aligned_base_minutiaes = self.__align_base_points(aligment_matrix=alignment_matrix, translation_x=translation_x,
+                                                                translation_y=translation_y, angle_translation=angle_translation, 
+                                                                point_type='minutiae', origin='base')
+        return (aligned_base_minutiaes, translation_x, translation_y, angle_translation)
 
 
     def __set_reference_point(self, base_id, aligned_base_minutiaes):
@@ -223,17 +288,40 @@ class Matching_Process(object):
                 return aligned_base_minutiae
 
 
-    def __align_base_minutiaes(self, aligment_matrix, translation_x, translation_y, angle_translation):
-        aligned_base_minutiaes = []
+    def __align_base_points(self, aligment_matrix, translation_x, translation_y, angle_translation, point_type, origin):
+        aligned_base_points = []
         translation_matrix = self.__ubication_as_matrix(pos_x=translation_x, pos_y=translation_y)
-        for base_minutiae in self._base_minutiaes:
-            (base_id, pos_y, pos_x, base_angle, base_type) = base_minutiae.get_short_descrption()
+        point_list = self.__select_point_type(point_type=point_type, origin=origin)
+        
+        for base_point in point_list:
+            (base_id, pos_y, pos_x, base_angle, base_type) = base_point.get_short_descrption()
             rotate_position = self.__compute_rotate_position(alignment_matrix=aligment_matrix, pos_y=pos_y, pos_x=pos_x)
             displaced_position = self.__compute_displaced_minutiae(rotate_position=rotate_position, translation_matrix=translation_matrix)
             displaced_angle = self.__compute_displaced_angle_minutiae(base_angle=base_angle, angle_translation=angle_translation)
-            aligned_base_minutiaes.append([base_id, displaced_position[1][0], displaced_position[0][0], displaced_angle, base_type])
+            aligned_base_points.append([base_id, displaced_position[1][0], displaced_position[0][0], displaced_angle, base_type])
 
-        return aligned_base_minutiaes
+        return aligned_base_points
+
+
+    def __select_point_type(self, point_type, origin):
+        if origin == 'base':
+            if point_type == 'minutiae':
+                point_list = self._base_minutiaes.copy()
+            elif point_type == 'core':
+                point_list = self._base_cores.copy()
+            else:
+                point_list = self._base_minutiaes.copy()
+        elif origin == 'index':
+            if point_type == 'minutiae':
+                point_list = self._index_minutiaes.copy()
+            elif point_type == 'core':
+                point_list = self._index_cores.copy()
+            else:
+                point_list = self._index_minutiaes.copy()
+        else:
+            point_list = self._index_cores.copy()
+
+        return point_list
 
 
     def __compute_displaced_minutiae(self, rotate_position, translation_matrix): 
@@ -286,7 +374,8 @@ class Matching_Process(object):
 
     def __check_angle(self, angle_translation):
         if angle_translation < self._MINIMUM_ANGLE:
-            angle_translation = self._MAXIMUM_ANGLE + angle_translation
+            while (angle_translation < self._MINIMUM_ANGLE):
+                angle_translation = self._MAXIMUM_ANGLE + angle_translation
         elif angle_translation > self._MAXIMUM_ANGLE:
             while (angle_translation > self._MAXIMUM_ANGLE):
                 angle_translation = angle_translation - self._MAXIMUM_ANGLE
