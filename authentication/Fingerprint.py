@@ -10,6 +10,7 @@ from Core_Point import Core_Point
 from Local_Area import Local_Area
 from Error_Message import Error_Message
 
+
 class Fingerprint(Error_Message):
     def __init__(self, fingerprint_rows = 288, figerprint_columns = 256, name_fingerprint = 'fingerprint', 
                 show_result = True, save_result = True, size_window_minutiae = 3, size_window_core = 1, 
@@ -265,6 +266,14 @@ class Fingerprint(Error_Message):
             self._ezquel_as_image[0:self._rows][:, 0:self._columns] = (((-255) * (self._ezquel_fingerprint/im_max)) + 255).astype('uint8')
         else:
             self._void_image = True
+
+
+    def get_core_point_list(self):
+        return self._list_core_points
+
+
+    def get_minutiae_list(self):
+        return self._list_minutias
    
 
     def describe_fingerprint(self, data_fingerprint, angles_tolerance=1):
@@ -292,10 +301,7 @@ class Fingerprint(Error_Message):
             else:
                 local_description = Local_Area()
                 process_message = local_description.get_local_structure(self._list_minutias)
-                # for core in self._list_core_points:
-                #     print(core.get_description())
-                # for minutia in self._list_minutias:
-                #     print(minutia.get_description())
+                
                 return process_message
         else:
             return self._VOID_FINGERPRINT

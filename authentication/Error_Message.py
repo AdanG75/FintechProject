@@ -7,6 +7,9 @@ class Error_Message(object):
         self._POOR_QUALITY = 1
         self._FEW_MINUTIAES = 2
         self._VOID_FINGERPRINT = 3
+        self._DONT_MATCH_FINGERPRINT = 4
+        self._MATCH_FINGERPRINT = 5
+
 
     def show_message(self, error_code):
         if error_code == self._FINGERPRINT_OK:
@@ -16,6 +19,10 @@ class Error_Message(object):
         elif error_code == self._FEW_MINUTIAES:
             print('\n\tFew minutiaes have been finding')
         elif error_code == self._VOID_FINGERPRINT:
-            print('\n\tFingerprint imaga is void')
+            print('\n\tFingerprint image is void')
+        elif error_code == self._DONT_MATCH_FINGERPRINT:
+            print('\n\tFingerprints do not match')
+        elif error_code == self._MATCH_FINGERPRINT:
+            print('\n\tFingerprints successfully matching')
         else:
             print('\n\tUnknown Error')

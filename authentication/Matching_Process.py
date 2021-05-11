@@ -3,12 +3,11 @@
 import numpy as np
 import cv2 as cv
 from math import degrees, cos, sin, sqrt
-from numpy.core.defchararray import index
+from Error_Message import Error_Message
 
-from numpy.core.fromnumeric import shape
-
-class Matching_Process(object):
-    def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, matching_distance_tolerance = 1, matching_angle_tolerance = 1.5, area_tolerance = 60) -> None:
+class Matching_Process(Error_Message):
+    def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, matching_distance_tolerance = 1, matching_angle_tolerance = 1.5, area_tolerance = 60,
+                    minimun_fingerprint_score = 2, minimum_core_score = 2) -> None:
         super().__init__()
         self._local_ratio_tolerance = local_ratio_tolerance
         self._local_angle_tolerance = local_angle_tolerance
@@ -25,8 +24,8 @@ class Matching_Process(object):
 
         self._MINIMUM_ANGLE = 0
         self._MAXIMUM_ANGLE = 360
-        self._MINIMUM_CORE_SCORE = 2
-        self._FINGERPRINT_SCORE = 2
+        self._MINIMUM_CORE_SCORE = minimum_core_score
+        self._FINGERPRINT_SCORE = minimun_fingerprint_score
 
     
     def matching(self, base_minutiaes_list, base_core_list, index_minutiaes_list, index_core_list):
@@ -36,8 +35,14 @@ class Matching_Process(object):
         self._index_cores = index_core_list.copy()
 
         self.__common_points()
+        self.__are_void_possible_common_minutias_list()
         result_matching = self.__match_fingerprint()
         return result_matching
+
+
+    def __are_void_possible_common_minutias_list(self):
+        if len(self._possible_common_minutias) <= 0:
+            return self._DONT_MATCH_FINGERPRINT
 
 
     def __common_points(self):
@@ -111,9 +116,9 @@ class Matching_Process(object):
                     continue
 
                 if fingerprint_score >= self._FINGERPRINT_SCORE:
-                        return True
+                        return self._MATCH_FINGERPRINT
 
-        return False
+        return self._DONT_MATCH_FINGERPRINT
 
 
     def __match_score(self, reference_minutiae, aligned_base_minutiaes, alignment_matrix, translation_x, translation_y, angle_translation):
@@ -262,7 +267,7 @@ class Matching_Process(object):
 
 
     def __create_alignment_matrix(self, common_minutiae):
-        theta = common_minutiae.get_angle()
+        theta = common_minutiae[0].get_angle()
         alignment_matrix = np.matrix([[degrees(cos(theta)), degrees((-1)*sin(theta))],
                             [degrees(sin(theta)), degrees(cos(theta))]])
         
@@ -392,14 +397,14 @@ class Matching_Process(object):
             pos_row = 0
             for row in rotate_position:
                 for value in row:
-                    integer_rotate_position[pos_row][pos_column] = round(value)
+                    integer_rotate_position[pos_row][pos_column] = value.round()
                     pos_column +=1
                 
                 pos_row += 1
                 pos_column = 0
         else:
             for value in rotate_position:
-                integer_rotate_position[pos_column] = round(value)
+                integer_rotate_position[pos_column] = value.round()
                 pos_column +=1
 
         return integer_rotate_position
