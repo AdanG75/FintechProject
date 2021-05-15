@@ -13,7 +13,7 @@ class Minutiae(Characteristic_Point):
     def get_tuple_fingerprint_list(self):
         return self._tuple_fingerprint_list
 
-    def get_description(self):
+    def get_full_description(self):
         description_tuple_list = []
         for tuple_fingerprint in self._tuple_fingerprint_list:
             description = tuple_fingerprint.get_description()
@@ -21,5 +21,5 @@ class Minutiae(Characteristic_Point):
 
         return (self.uid_point, self.posy, self.posx, self.angle, self.point_type, description_tuple_list)
 
-    def get_short_descrption(self):
-        return (self.uid_point, self.posy, self.posx, self.angle, self.point_type)
+    # def get_short_descrption(self):
+    #     return (self.uid_point, self.posy, self.posx, self.angle, self.point_type)

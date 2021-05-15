@@ -36,8 +36,16 @@ class Matching_Process(Error_Message):
 
         self.__common_points()
         self.__are_void_possible_common_minutias_list()
+        self.__see_common_points()
         result_matching = self.__match_fingerprint()
         return result_matching
+
+
+    def __see_common_points(self):
+        for common_point in self._possible_common_minutias:
+            print(common_point[0].get_description(), common_point[1])
+
+        print(len(self._possible_common_minutias))
 
 
     def __are_void_possible_common_minutias_list(self):
@@ -58,10 +66,13 @@ class Matching_Process(Error_Message):
                     is_parent = self.__find_possible_minutia_parent(local_info_base_minutiae=local_base_minutiaes, local_info_index_minutia=local_index_minutiaes)
                     
                     if (is_parent):
-                        index_minutia[1] = True
-                        id_base_minutia = base_minutiae.get_minutiae_id()
-                        self._possible_common_minutias.append([index_minutia[0], id_base_minutia])
-                        break
+                        if (base_minutiae.get_point_type() == index_minutia[0].get_point_type()):
+                            index_minutia[1] = True
+                            id_base_minutia = base_minutiae.get_minutiae_id()
+                            self._possible_common_minutias.append([index_minutia[0], id_base_minutia])
+                            break
+                        else:
+                            continue
 
 
     def __find_possible_minutia_parent(self, local_info_base_minutiae, local_info_index_minutia):
@@ -110,6 +121,10 @@ class Matching_Process(Error_Message):
                     (aligned_base_minutiaes, translation_x, translation_y, angle_translation) = self.__align_fingerprints(alignment_matrix, common_minutiae, minutiae_found)
                     base_id = minutiae_found.get_minutiae_id()
                     reference_minutiae = self.__set_reference_point(base_id=base_id, aligned_base_minutiaes=aligned_base_minutiaes)
+
+                    print(reference_minutiae)
+                    print(common_minutiae[0].get_description())
+
                     fingerprint_score = self.__match_score(reference_minutiae=reference_minutiae, aligned_base_minutiaes=aligned_base_minutiaes, alignment_matrix=alignment_matrix,
                                                             translation_x=translation_x, translation_y=translation_y, angle_translation=angle_translation)
                 else:
@@ -129,6 +144,8 @@ class Matching_Process(Error_Message):
         for aligned_base_minutiae in aligned_base_minutiaes:
             correspondence_score = self.__correspondence_point(aligned_base_point=aligned_base_minutiae, ref_pos_y=ref_pos_y, ref_pos_x=ref_pos_x,
                                                                 point_type='minutiae', origin='index')
+
+            
             match_result = self.__check_score(score=correspondence_score)
             if match_result:
                 match_fingerprint_score += 1
@@ -144,6 +161,8 @@ class Matching_Process(Error_Message):
             
             if match_fingerprint_score >= self._FINGERPRINT_SCORE:
                 return match_fingerprint_score
+
+        print(match_fingerprint_score)
 
         return match_fingerprint_score
                 
@@ -198,6 +217,7 @@ class Matching_Process(Error_Message):
             if its_inside_area:
                 euclidian_distance_between_minutiaes = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
                 if (euclidian_distance_between_minutiaes <= distance_tolerance):
+                    print('X-Y correspondance')
                     same_minutiae = self.__is_it_the_same_minutiae(index_minutia=index_point, aligned_base_minutiae=aligned_base_point, angle_tolerance=angle_tolerance)
                     if same_minutiae:
                         score += 1
@@ -275,7 +295,7 @@ class Matching_Process(Error_Message):
 
     
     def __align_fingerprints(self, alignment_matrix, common_minutiae, minutiae_found):
-        (base_id, pos_y, pos_x, base_angle, base_type) = minutiae_found.get_short_descrption()
+        (base_id, pos_y, pos_x, base_angle, base_type) = minutiae_found.get_description()
 
         rotate_position = self.__compute_rotate_position(alignment_matrix=alignment_matrix, pos_y=pos_y, pos_x=pos_x)
         
@@ -299,7 +319,7 @@ class Matching_Process(Error_Message):
         point_list = self.__select_point_type(point_type=point_type, origin=origin)
         
         for base_point in point_list:
-            (base_id, pos_y, pos_x, base_angle, base_type) = base_point.get_short_descrption()
+            (base_id, pos_y, pos_x, base_angle, base_type) = base_point.get_description()
             rotate_position = self.__compute_rotate_position(alignment_matrix=aligment_matrix, pos_y=pos_y, pos_x=pos_x)
             displaced_position = self.__compute_displaced_minutiae(rotate_position=rotate_position, translation_matrix=translation_matrix)
             displaced_angle = self.__compute_displaced_angle_minutiae(base_angle=base_angle, angle_translation=angle_translation)
@@ -330,7 +350,7 @@ class Matching_Process(Error_Message):
 
 
     def __compute_displaced_minutiae(self, rotate_position, translation_matrix): 
-        return (rotate_position + translation_matrix)
+        return (rotate_position + translation_matrix).round()
 
     
     def __compute_displaced_angle_minutiae(self, base_angle, angle_translation):
@@ -354,7 +374,7 @@ class Matching_Process(Error_Message):
     def __compute_translation(self, rotate_position, common_minutiae):
         dimention = len(rotate_position.shape)
         integer_rotate_position = self.__integer_position(dimention, rotate_position)
-        # (index_id, index_pos_y, index_pos_x, index_angle, index_type) = common_minutiae[0].get_short_descrption()
+        # (index_id, index_pos_y, index_pos_x, index_angle, index_type) = common_minutiae[0].get_description()
         index_pos_y = common_minutiae[0].get_posy()
         index_pos_x = common_minutiae[0].get_posx()
         
@@ -387,7 +407,7 @@ class Matching_Process(Error_Message):
         else:
             return angle_translation
 
-        return angle_translation
+        return round(angle_translation, 2)
 
 
     def __integer_position(self, dimention, rotate_position):

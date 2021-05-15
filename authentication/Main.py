@@ -25,8 +25,8 @@ def create_fingerprint_samples():
     bank_fp.generate_bank_fingerprint(auto_named = False)
 
 
-def get_description_fingerprint():
-    fingerprint = Fingerprint(characteritic_point_thresh = 0.8)
+def get_description_fingerprint(name_fingerprint = 'fingerprint'):
+    fingerprint = Fingerprint(characteritic_point_thresh = 0.8, name_fingerprint= name_fingerprint)
     data_image = get_data_fingerprint(fingerprint=fingerprint, in_cloud=False)
     if len(data_image) < 2:
         print('Error to get the fingerprint image')
@@ -40,9 +40,16 @@ def get_description_fingerprint():
         return True
 
 
+def show_characteristic_point_from_list(characteristic_points_list):
+    for characteristic_point in characteristic_points_list:
+        print(characteristic_point.get_description())
+
+    print('\n*********************************************************************************************\n')
+
+
 def match_index_and_base_fingerprints():
-    base_fingerprint = get_description_fingerprint()
-    index_fingerprint = get_description_fingerprint()
+    base_fingerprint = get_description_fingerprint(name_fingerprint='base_fingerprint')
+    index_fingerprint = get_description_fingerprint(name_fingerprint='index_fingerprint')
 
     base_fingerprint_is_ok = (base_fingerprint != True)
     index_fingerprint_is_ok =(index_fingerprint != True)
@@ -53,6 +60,11 @@ def match_index_and_base_fingerprints():
         index_fingerprint_core_point_list = index_fingerprint.get_core_point_list()
         index_fingerprint_minutiae_list = index_fingerprint.get_minutiae_list()
 
+        show_characteristic_point_from_list(base_fingerprint_core_point_list)
+        show_characteristic_point_from_list(base_fingerprint_minutiae_list)
+        show_characteristic_point_from_list(index_fingerprint_core_point_list)
+        show_characteristic_point_from_list(index_fingerprint_minutiae_list)
+
         matching = Matching_Process()
         process_message = matching.matching(base_minutiaes_list= base_fingerprint_minutiae_list, base_core_list= base_fingerprint_core_point_list,
                             index_minutiaes_list= index_fingerprint_minutiae_list, index_core_list= index_fingerprint_core_point_list)
@@ -62,9 +74,6 @@ def match_index_and_base_fingerprints():
         return True
 
     
-    
-
-
 def local_test():
     sys.stdout.flush()
     print('\n\tAuthentication\'s Module\n')
@@ -95,6 +104,7 @@ def local_test():
         print('\n:: Option can not be find it ::\n')
 
     return False
+
 
 if __name__ == '__main__':
     while(True):
