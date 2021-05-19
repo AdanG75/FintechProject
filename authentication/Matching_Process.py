@@ -2,7 +2,7 @@
 
 import numpy as np
 import cv2 as cv
-from math import degrees, cos, sin, sqrt
+from math import degrees, cos, sin, sqrt, radians
 from Error_Message import Error_Message
 
 class Matching_Process(Error_Message):
@@ -207,12 +207,12 @@ class Matching_Process(Error_Message):
     def __find_correspondence_point(self, aligned_base_point, distance_tolerance, angle_tolerance, point_type, origin):
         score = 0
         point_list = self.__select_point_type(point_type=point_type, origin=origin)
+        ref_pos_y = aligned_base_point[1]
+        ref_pos_x = aligned_base_point[2]
 
         for index_point in point_list:
             pos_y = index_point.get_posy()
             pos_x = index_point.get_posx()
-            ref_pos_y = aligned_base_point[1]
-            ref_pos_x = aligned_base_point[2]
             its_inside_area = self.__check_distance_between_minutiaes(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x, distance_tolerance=distance_tolerance)
             if its_inside_area:
                 euclidian_distance_between_minutiaes = self.__euclidian_distance(pos_y=pos_y, ref_pos_y=ref_pos_y, pos_x=pos_x, ref_pos_x=ref_pos_x)
@@ -287,9 +287,13 @@ class Matching_Process(Error_Message):
 
 
     def __create_alignment_matrix(self, common_minutiae):
-        theta = common_minutiae[0].get_angle()
-        alignment_matrix = np.matrix([[degrees(cos(theta)), degrees((-1)*sin(theta))],
-                            [degrees(sin(theta)), degrees(cos(theta))]])
+        theta = radians(common_minutiae[0].get_angle())
+
+        ############################ Debug ######################################
+        print(theta)
+
+        alignment_matrix = np.matrix([[cos(theta), (-1)*sin(theta)],
+                            [sin(theta), cos(theta)]])
         
         return alignment_matrix
 
@@ -364,6 +368,10 @@ class Matching_Process(Error_Message):
         original_position = self.__ubication_as_matrix(pos_y=pos_y, pos_x=pos_x)
         rotate_position = np.matmul(alignment_matrix, original_position)
 
+        ############################ Debug ######################################
+        print(original_position)
+        print(rotate_position)
+
         return rotate_position
 
 
@@ -384,6 +392,9 @@ class Matching_Process(Error_Message):
         else:
             translation_x = index_pos_x - integer_rotate_position[0][0]
             translation_y = index_pos_y - integer_rotate_position[1][0]
+
+        ############################ Debug ######################################
+        print('X: {}, Y: {}'.format(translation_x, translation_y))
 
         return (translation_x, translation_y)
 
