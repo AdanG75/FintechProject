@@ -137,24 +137,28 @@ class Fingerprint(Error_Message):
 
                 if to_show == 'core':
                     self._core_map = result.copy()
+                    self.__show_sample_fingerprint(title_image='Core points', data_image=self._core_map)
+                    self.__save_sample_fingerprint(name_image='core_', image=self._core_map)
 
-                    if self._show_result:
-                        cv.imshow('Core points', self._core_map)
-                        cv.waitKey(0)
-                        cv.destroyAllWindows()
+                    # if self._show_result:
+                    #     cv.imshow('Core points', self._core_map)
+                    #     cv.waitKey(0)
+                    #     cv.destroyAllWindows()
 
-                    if self._save_result:
-                        cv.imwrite(self._address_image + 'core_' +  self._name_fingerprint +'.bmp', (self._core_map))
+                    # if self._save_result:
+                    #     cv.imwrite(self._address_image + 'core_' +  self._name_fingerprint +'.bmp', (self._core_map))
                 else:
                     self._minutiae_map = result.copy()
+                    self.__show_sample_fingerprint(title_image='Minutiaes', data_image=self._minutiae_map)
+                    self.__save_sample_fingerprint(name_image='minutiae_', image=self._minutiae_map)
 
-                    if self._show_result:
-                        cv.imshow('Minutiaes', self._minutiae_map)
-                        cv.waitKey(0)
-                        cv.destroyAllWindows()
+                    # if self._show_result:
+                    #     cv.imshow('Minutiaes', self._minutiae_map)
+                    #     cv.waitKey(0)
+                    #     cv.destroyAllWindows()
 
-                    if self._save_result:
-                        cv.imwrite(self._address_image + 'minutiae_' +  self._name_fingerprint +'.bmp', (self._minutiae_map))
+                    # if self._save_result:
+                    #     cv.imwrite(self._address_image + 'minutiae_' +  self._name_fingerprint +'.bmp', (self._minutiae_map))
             
 
     def __minutiae_at(self, j, i):
@@ -268,25 +272,66 @@ class Fingerprint(Error_Message):
             self._void_image = True
 
 
+    def __show_sample_fingerprint(self, title_image, data_image):
+        if self._show_result:
+            cv.imshow(title_image, data_image)
+            cv.waitKey(0)
+            cv.destroyAllWindows()
+
+
+    def __save_sample_fingerprint(self, name_image, image):
+        if self._save_result:
+            cv.imwrite(self._address_image + name_image +  self._name_fingerprint +'.bmp', (image))
+
+
+    def __save_raw_fingerprint(self):
+        self.__show_sample_fingerprint(title_image='Fingerprint', data_image=self._raw_image)
+        self.__save_sample_fingerprint(name_image='raw_', image=self._raw_image)
+
+
+    def show_characteristic_point_from_list(self, type_characteristic_point):
+        if type_characteristic_point == 'core':
+            characteristic_points_list = self._list_core_points
+        else:
+            characteristic_points_list = self._list_minutias
+        
+        for characteristic_point in characteristic_points_list:
+            print(characteristic_point.get_description())
+
+        print('\n*********************************************************************************************\n')
+
+
     def get_core_point_list(self):
         return self._list_core_points
 
 
     def get_minutiae_list(self):
         return self._list_minutias
+
+
+    def get_fingerprint_image(self):
+        return self._ezquel_as_image
    
 
-    def describe_fingerprint(self, data_fingerprint, angles_tolerance=1):
-        self.__reconstruction_fingerprint(data_fingerprint)
+    def describe_fingerprint(self, data_fingerprint=[], angles_tolerance=1, from_image=False, fingerprint_image=None):
+        if from_image:
+            self._raw_image = np.asarray(fingerprint_image)
+        else:
+            self.__reconstruction_fingerprint(data_fingerprint)
+            
         self.__get_quality_index()
         if self._quality_index > self._authentication_index_score:
             self._ridge_segment_thresh = self._register_rsthresh
         else:
             return self._POOR_QUALITY
-        
+            
+        self.__save_raw_fingerprint()
         self.__fingerprint_enhance()
         print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
+        
         self.__ezquel_to_image()
+        
+        
         if (self._varian_index > self._authentication_image_score):
             self._characteritic_point_thresh = self._register_cpthresh
         else:

@@ -126,7 +126,7 @@ class Local_Area(Error_Message):
             i2 = second_minutiae.get_posx()
             minutiae_type2 = second_minutiae.get_point_type()
 
-            points_triangle = ((j,i), (j1, i1), (j2, j1))
+            points_triangle = ((j,i), (j1, i1), (j2, i2))
             number_slopes = len(m)
             begin = (self._begin + 1)
             reference = 0
