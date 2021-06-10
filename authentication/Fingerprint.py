@@ -289,14 +289,20 @@ class Fingerprint(Error_Message):
         self.__save_sample_fingerprint(name_image='raw_', image=self._raw_image)
 
 
-    def show_characteristic_point_from_list(self, type_characteristic_point):
+    def show_characteristic_point_from_list(self, type_characteristic_point, mode='basic'):
         if type_characteristic_point == 'core':
             characteristic_points_list = self._list_core_points
+
         else:
             characteristic_points_list = self._list_minutias
-        
+            
         for characteristic_point in characteristic_points_list:
-            print(characteristic_point.get_description())
+            if mode == 'basic':
+                print(characteristic_point.get_description())
+            else:
+                print(characteristic_point.get_full_description())
+
+        print("Total {} points: {}".format(type_characteristic_point, len(characteristic_points_list)))
 
         print('\n*********************************************************************************************\n')
 

@@ -132,7 +132,7 @@ def local_test():
         if (result == True):
             return result
         else:
-            result.show_characteristic_point_from_list(type_characteristic_point='minutia')
+            result.show_characteristic_point_from_list(type_characteristic_point='minutiae')
             result.show_characteristic_point_from_list(type_characteristic_point='core')
 
     elif (option == '3'):
@@ -140,7 +140,7 @@ def local_test():
         if (result == True):
             return result
         else:
-            result.show_characteristic_point_from_list(type_characteristic_point='minutia')
+            result.show_characteristic_point_from_list(type_characteristic_point='minutiae', mode='basic')
             result.show_characteristic_point_from_list(type_characteristic_point='core')
 
     elif (option == '4'):

@@ -155,26 +155,35 @@ class Local_Area(Error_Message):
 
     def __straight_slope(self, y1, x1, y2, x2):
         if (x1 == x2):
-            return 0
+            return (0, True)
         else:
-            return ((y2 - y1)/(x2 - x1))
+            return ((y2 - y1)/(x2 - x1), False)
 
     def __get_angle(self, m1, m2):
-        if ((m1 * m2) == (-1)):
+        
+        value_first_slope = m1[0]
+        logic_first_slope = m1[1]
+        value_second_slope = m2[0]
+        logic_second_slope = m2[1]
+
+        if (logic_first_slope != logic_second_slope) and (value_first_slope == value_second_slope == 0):
+            return (90, True)
+        
+        if ((value_first_slope * value_second_slope) == (-1)):
             return (90, True)
         else:
-            return (abs(degrees(atan((m2 - m1)/(1 + (m1 * m2))))), False)
+            return (abs(degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope))))), False)
 
     def __check_angles(self, angles):
-        sum_angles = 0
-        possible_error = 0
-        for position in range(len(angles)):
-            sum_angles += angles[position][0]
-            if angles[position][1] == True:
-                possible_error = position
+        # sum_angles = 0
+        # possible_error = 0
+        # for position in range(len(angles)):
+        #     sum_angles += angles[position][0]
+        #     if angles[position][1] == True:
+        #         possible_error = position
 
-        if ((sum_angles < (180 - self._angles_tolerance)) or (sum_angles > (180 + self._angles_tolerance))):
-            angles[possible_error][0] = (180 - (sum_angles - angles[possible_error][0]))
+        # if ((sum_angles < (180 - self._angles_tolerance)) or (sum_angles > (180 + self._angles_tolerance))):
+        #     angles[possible_error][0] = (180 - (sum_angles - angles[possible_error][0]))
 
         checked_angle = round(angles[0][0], 2)
 
