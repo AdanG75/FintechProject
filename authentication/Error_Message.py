@@ -9,6 +9,7 @@ class Error_Message(object):
         self._VOID_FINGERPRINT = 3
         self._DONT_MATCH_FINGERPRINT = 4
         self._MATCH_FINGERPRINT = 5
+        self._WRONG_ANGLES = 6
 
 
     def show_message(self, error_code):
@@ -24,5 +25,7 @@ class Error_Message(object):
             print('\n\tFingerprints do not match')
         elif error_code == self._MATCH_FINGERPRINT:
             print('\n\tFingerprints successfully matching')
+        elif error_code == self._WRONG_ANGLES:
+            print('\n\tAngles do not 180°')
         else:
             print('\n\tUnknown Error')

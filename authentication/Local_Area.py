@@ -143,12 +143,13 @@ class Local_Area(Error_Message):
             y_position = 0
             while (reference < (number_slopes - 1)):
                 for position in range(begin, number_slopes, 1):
-                    angles[y_position][:] = self.__get_angle(m1=m[reference], m2=m[position])
+                    angles[y_position] = self.__get_angle(m1=m[reference], m2=m[position])
                     y_position += 1
                 reference += 1
                 begin += 1 
 
-            checked_angle = self.__check_angles(angles)
+            checked_angles = self.__check_angles(angles)
+            checked_angle = round(checked_angles[0][0], 2)
             return (checked_angle, minutiae_type1, minutiae_type2)
 
 
@@ -167,27 +168,70 @@ class Local_Area(Error_Message):
         logic_second_slope = m2[1]
 
         if (logic_first_slope != logic_second_slope) and (value_first_slope == value_second_slope == 0):
-            return (90, True)
+            return -90
         
         if ((value_first_slope * value_second_slope) == (-1)):
-            return (90, True)
+            return -90
         else:
-            return (abs(degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope))))), False)
+            return degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope))))
 
+    
+    def __sum_of_angles_is_180_or_0(self, angles):
+        sum_angles = sum(angles)
+        is_180 = 180 - abs(sum_angles)
+        
+        if sum_angles == 0 or is_180 <= self.__angle_tolerance:
+            return True
+        
+        return False
+    
+    
     def __check_angles(self, angles):
-        # sum_angles = 0
-        # possible_error = 0
-        # for position in range(len(angles)):
-        #     sum_angles += angles[position][0]
-        #     if angles[position][1] == True:
-        #         possible_error = position
+        length_angles = len(angles)
+        negative = 0
+        positive = 0
+        is_ninety = False
+        for angle in angles:
+            if angle < 0:
+                negative += 1
+            else:
+                positive += 1
 
-        # if ((sum_angles < (180 - self._angles_tolerance)) or (sum_angles > (180 + self._angles_tolerance))):
-        #     angles[possible_error][0] = (180 - (sum_angles - angles[possible_error][0]))
+            if angle == -90:
+                is_ninety = True
 
-        checked_angle = round(angles[0][0], 2)
+        if positive == length_angles:
+            if self.__sum_of_angles_is_180_or_0(angles):
+                return angles
 
-        return checked_angle
+        if negative == length_angles:
+            if self.__sum_of_angles_is_180_or_0(angles):
+                return [abs(angle) for angle in angles]
+        
+        cheked_angles = []
+        complement_angle = 180
+        if is_ninety:
+            complement_angle = 90
+
+        if negative >= positive:
+            for angle in angles:
+                if angle > 0:
+                    angle = complement_angle - angle
+                else:
+                    angle = abs(angle)
+
+                cheked_angles.append(angle)
+        else:
+            for angle in angles:
+                if angle < 0:
+                    angle = complement_angle + angle
+
+                cheked_angles.append(angle)
+       
+        if self.__sum_of_angles_is_180_or_0(cheked_angles):
+                return cheked_angles       
+        else:
+            return self._WRONG_ANGLES
 
 
     def __tuple_length(self):

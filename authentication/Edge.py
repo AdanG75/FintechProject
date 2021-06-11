@@ -3,10 +3,12 @@ import numpy as np
 from math import atan, degrees
 
 from Minutia import Minutiae
+from Error_Message import Error_Message
 
-class Edge(object):
+class Edge(Error_Message):
     
-    def __init__(self, origin_minutiae, destination_minutiae) -> None:
+    def __init__(self, origin_minutiae, destination_minutiae, angle_tolerance=0.01) -> None:
+        super().__init__()
         self.__origin_minutiae = origin_minutiae
         self.__destination_minutiae = destination_minutiae
 
@@ -21,6 +23,8 @@ class Edge(object):
         self.__quadrant = self.__obtain_quadrant()
         self.__ratio = 1
         self.__angle = 0.0
+
+        self.__angle_tolerance = angle_tolerance
 
 
     class Quadrant(enum.Enum):
@@ -87,30 +91,169 @@ class Edge(object):
                                 min(self.get_length(), before_edge.get_length()), 2)
 
 
+    # def __compute_slope(self, first_point, second_point):
+    #     x1, y1 = first_point
+    #     x2, y2 = second_point
+
+    #     if (x1 == x2):
+    #         return (0, True)
+    #     else:
+    #         return ((y2 - y1)/(x2 - x1), False)
+    
+    
+    # def __obtain_slopes(self, points_list):
+    #     number_slopes = len(points_list)
+    #     slopes = []
+    #     for position in range(number_slopes):
+    #         if (position + 1) == number_slopes:
+    #             slopes.append(self.__compute_slope(points_list[position], points_list[0]))
+    #         else:
+    #             slopes.append(self.__compute_slope(points_list[position], points_list[position + 1]))
+
+    #     print("slopes: ", slopes)
+    #     return slopes
+
+    
+    # def __compute_internal_angle(self, first_slope, second_slope):
+    #     value_first_slope = first_slope[0]
+    #     logic_first_slope = first_slope[1]
+    #     value_second_slope = second_slope[0]
+    #     logic_second_slope = second_slope[1]
+
+    #     if (logic_first_slope != logic_second_slope) and (value_first_slope == value_second_slope == 0):
+    #         return -90
+        
+    #     if ((value_first_slope * value_second_slope) == (-1)):
+    #         return -90
+    #     else:
+    #         angle = degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope))))
+
+    #     # if angle < 0:
+    #     #     return 90 + angle
+
+    #     return angle
+
+
+    # def __sum_of_angles_is_180_or_0(self, angles):
+    #     sum_angles = sum(angles)
+    #     is_180 = 180 - abs(sum_angles)
+        
+    #     if sum_angles == 0 or is_180 <= self.__angle_tolerance:
+    #         return True
+        
+    #     return False
+
+
+    # def __check_angles(self, angles):
+        
+    #     length_angles = len(angles)
+    #     negative = 0
+    #     positive = 0
+    #     is_ninety = False
+    #     for angle in angles:
+    #         if angle < 0:
+    #             negative += 1
+    #         else:
+    #             positive += 1
+
+    #         if angle == -90:
+    #             is_ninety = True
+
+    #     if positive == length_angles:
+    #         if self.__sum_of_angles_is_180_or_0(angles):
+    #             return angles
+
+    #     if negative == length_angles:
+    #         if self.__sum_of_angles_is_180_or_0(angles):
+    #             return [abs(angle) for angle in angles]
+        
+    #     cheked_angles = []
+    #     complement_angle = 180
+    #     if is_ninety:
+    #         complement_angle = 90
+
+    #     if negative >= positive:
+    #         for angle in angles:
+    #             if angle > 0:
+    #                 angle = complement_angle - angle
+    #             else:
+    #                 angle = abs(angle)
+
+    #             cheked_angles.append(angle)
+    #     else:
+    #         for angle in angles:
+    #             if angle < 0:
+    #                 angle = complement_angle + angle
+
+    #             cheked_angles.append(angle)
+       
+    #     if self.__sum_of_angles_is_180_or_0(cheked_angles):
+    #             return cheked_angles       
+    #     else:
+    #         return self._WRONG_ANGLES
+            
+    
+    # def __obtain_internal_angles(self, slopes_list):
+    #     number_angles = len(slopes_list)
+    #     angles = []
+    #     for position in range(number_angles):
+    #         if (position + 1) == number_angles:
+    #             angles.append(self.__compute_internal_angle(slopes_list[position], slopes_list[0]))
+    #         else:
+    #             angles.append(self.__compute_internal_angle(slopes_list[position], slopes_list[position + 1]))
+
+    #     print("angles: ", angles)
+    #     check_angles =self.__check_angles(angles)
+    #     print("checked angles: ", check_angles)
+    #     return check_angles
+
+
+    # def __obtain_minimum_angle(self, angles_list, mode = 'all_angles'):
+    #     minimum_angles = []
+
+    #     for position in range(len(angles_list)):
+    #         minimum_angles.append(min(angles_list[position], 180 - angles_list[position]))
+
+    #     if mode == 'firts_angle':
+    #         return minimum_angles[0]
+
+    #     return minimum_angles
+
+
+    # def obtain_angle(self, before_edge):
+
+    #     if before_edge is None:
+    #         point_2_x, point_2_y = self.get_origin_position()
+    #         point_3_x, point_3_y = self.get_destination_position()
+    #         point_1_x, point_1_y = point_3_x, point_2_y
+    #     else:
+    #         point_1_x, point_1_y = before_edge.get_origin_position()
+    #         point_2_x, point_2_y = before_edge.get_destination_position()
+    #         point_3_x, point_3_y = self.get_destination_position() 
+            
+        
+    #     points_triangle = ((point_1_x, point_1_y), (point_2_x, point_2_y), (point_3_x, point_3_y))
+    #     slopes = self.__obtain_slopes(points_triangle)
+
+    #     angles = self.__obtain_internal_angles(slopes)
+
+    #     if angles == self._WRONG_ANGLES:
+    #         return self._WRONG_ANGLES
+
+    #     self.__angle = round(self.__obtain_minimum_angle(angles, mode='firts_angle'), 2)
+
+
     def __compute_slope(self, first_point, second_point):
-        x1, y1 = first_point
-        x2, y2 = second_point
+            x1, y1 = first_point
+            x2, y2 = second_point
 
-        if (x1 == x2):
-            return (0, True)
-        else:
-            return ((y2 - y1)/(x2 - x1), False)
-    
-    
-    def __obtain_slopes(self, points_list):
-        number_slopes = len(points_list)
-        slopes = []
-        for position in range(number_slopes):
-            if (position + 1) == number_slopes:
-                slopes.append(self.__compute_slope(points_list[position], points_list[0]))
+            if (x1 == x2):
+                return (0, True)
             else:
-                slopes.append(self.__compute_slope(points_list[position], points_list[position + 1]))
+                return ((y2 - y1)/(x2 - x1), False)
 
-        print("slopes: ", slopes)
-        return slopes
 
-    
-    def __compute_internal_angle(self, first_slope, second_slope):
+    def __compute_minimum_angle(self, first_slope, second_slope):
         value_first_slope = first_slope[0]
         logic_first_slope = first_slope[1]
         value_second_slope = second_slope[0]
@@ -122,52 +265,25 @@ class Edge(object):
         if ((value_first_slope * value_second_slope) == (-1)):
             return 90
         else:
-            return abs(degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope)))))
+            angle = abs(degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope)))))
+
+        return min(angle, 180 - angle)
     
     
-    def __obtain_internal_angles(self, slopes_list):
-        number_angles = len(slopes_list)
-        angles = []
-        for position in range(number_angles):
-            if (position + 1) == number_angles:
-                angles.append(self.__compute_internal_angle(slopes_list[position], slopes_list[0]))
-            else:
-                angles.append(self.__compute_internal_angle(slopes_list[position], slopes_list[position + 1]))
-
-        print("angles: ", angles)
-        return angles
-
-
-    def __obtain_minimum_angle(self, angles_list, mode = 'all_angles'):
-        minimum_angles = []
-
-        for position in range(len(angles_list)):
-            minimum_angles.append(min(angles_list[position], 180 - angles_list[position]))
-
-        if mode == 'firts_angle':
-            return minimum_angles[0]
-
-        return minimum_angles
-
-
     def obtain_angle(self, before_edge):
-
         if before_edge is None:
             point_2_x, point_2_y = self.get_origin_position()
             point_3_x, point_3_y = self.get_destination_position()
-            point_1_x, point_1_y = point_3_x, point_2_y
+            point_1_x, point_1_y = point_3_x + 1, point_2_y
         else:
             point_1_x, point_1_y = before_edge.get_origin_position()
             point_2_x, point_2_y = before_edge.get_destination_position()
-            point_3_x, point_3_y = self.get_destination_position() 
-            
-        
-        points_triangle = ((point_1_x, point_1_y), (point_2_x, point_2_y), (point_3_x, point_3_y))
-        slopes = self.__obtain_slopes(points_triangle)
+            point_3_x, point_3_y = self.get_destination_position()  
 
-        angles = self.__obtain_internal_angles(slopes)
+        slope_one = self.__compute_slope((point_1_x, point_1_y), (point_2_x, point_2_y))
+        slope_two = self.__compute_slope((point_2_x, point_2_y), (point_3_x, point_3_y))
 
-        self.__angle = round(self.__obtain_minimum_angle(angles, mode='firts_angle'), 2)
+        self.__angle = round(self.__compute_minimum_angle(slope_one, slope_two), 2)
 
 
     def get_ratio(self):
