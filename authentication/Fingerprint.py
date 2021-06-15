@@ -300,7 +300,10 @@ class Fingerprint(Error_Message):
             if mode == 'basic':
                 print(characteristic_point.get_description())
             else:
-                print(characteristic_point.get_full_description())
+                uid_point, posy, posx, angle, point_type, description_tuple_list = characteristic_point.get_full_description()
+                print(uid_point, posy, posx, angle, point_type)
+                for fingerprint_tuple in description_tuple_list:
+                    print("\t", fingerprint_tuple)
 
         print("Total {} points: {}".format(type_characteristic_point, len(characteristic_points_list)))
 

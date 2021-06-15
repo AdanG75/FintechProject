@@ -148,8 +148,10 @@ class Local_Area(Error_Message):
                 reference += 1
                 begin += 1 
 
+            #print("angles: ", angles)
             checked_angles = self.__check_angles(angles)
-            checked_angle = round(checked_angles[0][0], 2)
+            #print("checked angles: ", checked_angles)
+            checked_angle = round(checked_angles[0], 2)
             return (checked_angle, minutiae_type1, minutiae_type2)
 
 
@@ -171,67 +173,82 @@ class Local_Area(Error_Message):
             return -90
         
         if ((value_first_slope * value_second_slope) == (-1)):
-            return -90
+            return 90
         else:
             return degrees(atan((value_second_slope - value_first_slope)/(1 + (value_first_slope * value_second_slope))))
 
     
     def __sum_of_angles_is_180_or_0(self, angles):
         sum_angles = sum(angles)
-        is_180 = 180 - abs(sum_angles)
+        is_180 = abs(180 - abs(sum_angles))
         
-        if sum_angles == 0 or is_180 <= self.__angle_tolerance:
+        if sum_angles == 0 or is_180 <= self._angles_tolerance:
             return True
         
         return False
-    
+
+
+    def __default_condition_angles(self, angles_list, flag):
+        
+        checked_angles = angles_list.copy()
+        if flag == 0 or flag == 7:
+            checked_angles[1] = 180 - abs(angles_list[1])
+        elif (flag == 6 or flag == 4 or flag == 3 or flag == 1):
+            checked_angles[0] = 180 - abs(angles_list[0])
+        else:
+            pass
+
+        checked_angles = [abs(angle) for angle in checked_angles]
+
+        if self.__sum_of_angles_is_180_or_0(checked_angles):
+                return checked_angles       
+        else:
+            #print('\nExeption 1\n')
+            checked_angles = angles_list.copy()
+            checked_angles[2] = 180 - abs(angles_list[2])
+            checked_angles = [abs(angle) for angle in checked_angles]
+            if self.__sum_of_angles_is_180_or_0(checked_angles):
+                return checked_angles
+            else:
+                raise Exception('Wrong angles')
+
+
+    def __is_ninety_case(self, angles_list):
+        checked_angles = angles_list.copy()
+        
+        for pos in range(len(angles_list)):
+            if angles_list[pos] == -90:
+                continue
+            else:
+                checked_angles[pos] = 90 - abs(angles_list[pos])
+                result_angles = [abs(angle) for angle in checked_angles]
+                if self.__sum_of_angles_is_180_or_0(result_angles):
+                    return result_angles
+                else:
+                    checked_angles[pos] = angles_list[pos]
+
+        raise Exception('Wrong angles')
+
     
     def __check_angles(self, angles):
-        length_angles = len(angles)
-        negative = 0
-        positive = 0
-        is_ninety = False
-        for angle in angles:
-            if angle < 0:
-                negative += 1
-            else:
-                positive += 1
-
-            if angle == -90:
-                is_ninety = True
-
-        if positive == length_angles:
-            if self.__sum_of_angles_is_180_or_0(angles):
-                return angles
-
-        if negative == length_angles:
-            if self.__sum_of_angles_is_180_or_0(angles):
-                return [abs(angle) for angle in angles]
         
-        cheked_angles = []
-        complement_angle = 180
-        if is_ninety:
-            complement_angle = 90
+        if self.__sum_of_angles_is_180_or_0(angles):
+            return [abs(angle) for angle in angles] 
+        
+        flag = 0
+        is_ninety = False
+        for pos in range(len(angles)):
+            if angles[pos] == -90:
+                is_ninety = True
+                break
+            
+            if angles[pos] >= 0:
+                flag += (2 ** pos)
 
-        if negative >= positive:
-            for angle in angles:
-                if angle > 0:
-                    angle = complement_angle - angle
-                else:
-                    angle = abs(angle)
-
-                cheked_angles.append(angle)
+        if not is_ninety:
+            return self.__default_condition_angles(angles, flag)
         else:
-            for angle in angles:
-                if angle < 0:
-                    angle = complement_angle + angle
-
-                cheked_angles.append(angle)
-       
-        if self.__sum_of_angles_is_180_or_0(cheked_angles):
-                return cheked_angles       
-        else:
-            return self._WRONG_ANGLES
+            return self.__is_ninety_case(angles)
 
 
     def __tuple_length(self):
@@ -250,7 +267,7 @@ class Local_Area(Error_Message):
 
             
     def get_local_structure(self, list_minutiaes):
-        self._list_minutiaes = list_minutiaes
+        self._list_minutiaes = list_minutiaes.copy()
         length_list = len(self._list_minutiaes)
         if length_list > self._number_neighbordings:
             for reference in range(length_list):
