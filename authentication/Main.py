@@ -6,6 +6,7 @@ from Conect_Sensor import Conect_Sensor
 from Fingerprint import Fingerprint
 from Bank_Fingerprint_Images import Bank_fingerprint
 from Matching_Process import Matching_Process
+from Matching_Tree import Matching_Tree
 
 import cv2 as cv
 
@@ -57,13 +58,17 @@ def get_description_by_image(name_fingerprint):
     return get_description_fingerprint(ubication_image=ubication_image, from_sensor=False, name_fingerprint=name_fingerprint)
 
 
-def match(base_fingerprint, input_fingerprint):
+def match(base_fingerprint, input_fingerprint, mode='original'):
     base_fingerprint_is_ok = (base_fingerprint != True)
     index_fingerprint_is_ok =(input_fingerprint != True)
 
     if (base_fingerprint_is_ok and index_fingerprint_is_ok):
-        matching = Matching_Process()
-        process_message = matching.matching(base_fingerprint=base_fingerprint, index_fingerprint=input_fingerprint)
+        if mode == 'tree':
+            matching = Matching_Tree()
+            process_message = matching.matching(base_fingerprint=base_fingerprint, input_fingerprint=input_fingerprint)
+        else:
+            matching = Matching_Process()
+            process_message = matching.matching(base_fingerprint=base_fingerprint, index_fingerprint=input_fingerprint)
 
         matching.show_message(process_message)
     else:
@@ -82,6 +87,20 @@ def match_by_image():
     input_fingerprint = get_description_by_image('input_fingerprint_I')
 
     return match(base_fingerprint, input_fingerprint)
+
+
+def matching_tree_by_sensor():
+    base_fingerprint = get_description_fingerprint(name_fingerprint='base_fingerprint_S_tree_')
+    index_fingerprint = get_description_fingerprint(name_fingerprint='index_fingerprint_S_tree_')
+
+    return match(base_fingerprint, index_fingerprint, mode='tree')
+
+
+def matching_tree_by_image():
+    base_fingerprint = get_description_by_image('base_fingerprint_I')
+    input_fingerprint = get_description_by_image('input_fingerprint_I')
+
+    return match(base_fingerprint, input_fingerprint, mode='tree')
 
 
 def change_directory_of_images():
@@ -119,6 +138,8 @@ def local_test():
     print('\t3.- Fingerprints processing flow (from Image)')
     print('\t4.- Fingerprints Matching process (from Sensor)')
     print('\t5.- Fingerprints Matching process (from Image)')
+    print('\t6.- Fingerprints Matching tree process (from Sensor)')
+    print('\t7.- Fingerprints Matching tree process (from Image)')
     print('\t9.- Exit the programme')
 
     print('\n')
@@ -150,6 +171,16 @@ def local_test():
 
     elif (option == '5'):
         fail_match = match_by_image()
+        if (fail_match == True):
+            return fail_match
+
+    elif (option == '6'):
+        fail_match = matching_tree_by_sensor()
+        if (fail_match == True):
+            return fail_match
+
+    elif (option == '7'):
+        fail_match = matching_tree_by_image()
         if (fail_match == True):
             return fail_match
 
