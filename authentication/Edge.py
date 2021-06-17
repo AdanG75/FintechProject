@@ -22,7 +22,8 @@ class Edge(Error_Message):
         self.__lenght = self.__obtain_length()
         self.__quadrant = self.__obtain_quadrant()
         self.__ratio = 1
-        self.__angle = 0.0
+        self.__angle = 0
+        self.obtain_angle(None)
 
         self.__angle_tolerance = angle_tolerance
 
@@ -318,21 +319,21 @@ if __name__ == '__main__':
     edge_6 = Edge(sixth_minutiae, seventh_minutiae)
     edge_7 = Edge(seventh_minutiae, eigth_minutiae)
 
-    edge_1.obtain_ratio(None)
-    edge_2.obtain_ratio(edge_1)
-    edge_3.obtain_ratio(edge_2)
-    edge_4.obtain_ratio(edge_3)
-    edge_5.obtain_ratio(edge_4)
-    edge_6.obtain_ratio(edge_5)
-    edge_7.obtain_ratio(edge_6)
+    # edge_1.obtain_ratio(None)
+    # edge_2.obtain_ratio(edge_1)
+    # edge_3.obtain_ratio(edge_2)
+    # edge_4.obtain_ratio(edge_3)
+    # edge_5.obtain_ratio(edge_4)
+    # edge_6.obtain_ratio(edge_5)
+    # edge_7.obtain_ratio(edge_6)
 
-    edge_1.obtain_angle(None)
-    edge_2.obtain_angle(edge_1)
-    edge_3.obtain_angle(edge_2)
-    edge_4.obtain_angle(edge_3)
-    edge_5.obtain_angle(edge_4)
-    edge_6.obtain_angle(edge_5)
-    edge_7.obtain_angle(edge_6)
+    # edge_1.obtain_angle(None)
+    # edge_2.obtain_angle(edge_1)
+    # edge_3.obtain_angle(edge_2)
+    # edge_4.obtain_angle(edge_3)
+    # edge_5.obtain_angle(edge_4)
+    # edge_6.obtain_angle(edge_5)
+    # edge_7.obtain_angle(edge_6)
 
     print(edge_1.get_edge_description())
     print(edge_2.get_edge_description())

@@ -5,10 +5,11 @@ import cv2 as cv
 from math import degrees, cos, sin, sqrt, radians
 from operator import attrgetter
 from Error_Message import Error_Message
+from Edge import Edge
 
 class Matching_Tree(Error_Message):
     def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, 
-                    matching_distance_tolerance = 1, matching_angle_tolerance = 1.5) -> None:
+                    matching_distance_tolerance = 5, matching_angle_tolerance = 1.5) -> None:
         super().__init__()
         self._local_ratio_tolerance = local_ratio_tolerance
         self._local_angle_tolerance = local_angle_tolerance
@@ -71,6 +72,11 @@ class Matching_Tree(Error_Message):
                 else:
                     local_base_minutiaes = base_minutiae.get_tuple_fingerprint_list()
                     local_input_minutiaes = input_minutia['minutiae'].get_tuple_fingerprint_list()
+                    ###############Debug#################################
+                    # is_bifurcation = (base_minutiae.get_point_type() == 'b')
+                    # if is_bifurcation:
+                    #     print('b')
+
                     is_parent = self.__find_possible_minutia_parent(local_info_base_minutiae=local_base_minutiaes, local_info_input_minutia=local_input_minutiaes)
                     
                     if (is_parent):
@@ -154,10 +160,60 @@ class Matching_Tree(Error_Message):
         sorted_possibble_common_base_minutiaes = sorted(self._possible_base_common_minutiaes, key=attrgetter('posy', 'posx'), reverse=True)
         sorted_possibble_common_input_minutiaes = sorted(self._possible_input_common_minutiaes, key=attrgetter('posy', 'posx'), reverse=True)
         
-        self.__show_description_of_minutiae_from_list(sorted_possibble_common_base_minutiaes)
-        self.__show_description_of_minutiae_from_list(sorted_possibble_common_input_minutiaes)
+        ###############Debug#################################
+        # self.__show_description_of_minutiae_from_list(sorted_possibble_common_base_minutiaes)
+        # self.__show_description_of_minutiae_from_list(sorted_possibble_common_input_minutiaes)
 
         return (sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes)
+
+
+    
+    def __compare_edges(self, base_edge, input_edge):
+        quadrant_ok = base_edge.get_quadrant() == input_edge.get_quadrant()
+        angle_ok = abs(base_edge.get_angle() - input_edge.get_angle()) <= self._matching_angle_tolerance
+        length_ok = abs(base_edge.get_length() - input_edge.get_length()) <= self._matching_distance_tolerance
+
+        if quadrant_ok and angle_ok and length_ok:
+            return True
+
+        return False
+
+    
+    def __search_start_of_tree(self, base_minutiaes, input_minutiaes):
+        possible_base_minutiaes_tree = []
+        possible_input_minutiaes_tree = []
+        
+        base_length = len(base_minutiaes)
+        input_length = len (input_minutiaes)
+
+        is_found = False
+
+        for base_pos in range(base_length - 1):
+            base_edge = Edge(base_minutiaes[base_pos], base_minutiaes[base_pos + 1])
+
+            for input_pos in range(input_length - 1):
+                input_edge = Edge(input_minutiaes[input_pos], input_minutiaes[input_pos + 1])
+
+                if input_edge.get_length() > (base_edge.get_length() + self._matching_distance_tolerance):
+                    continue
+                
+                if self.__compare_edges(base_edge, input_edge):
+                    possible_base_minutiaes_tree = base_minutiaes[base_pos:]
+                    possible_input_minutiaes_tree = input_minutiaes[input_pos:]
+                    is_found = True
+                    break
+
+            if is_found:
+                break
+
+        return (possible_base_minutiaes_tree, possible_input_minutiaes_tree)
+        
+
+
+
+
+
+
         
     
     def matching(self, base_fingerprint, input_fingerprint):
@@ -174,6 +230,10 @@ class Matching_Tree(Error_Message):
         sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes = self.__sort_possible_common_points()
         self.__mark_characteristic_point(base_fingerprint, sorted_possibble_common_base_minutiaes, 'base')
         self.__mark_characteristic_point(input_fingerprint, sorted_possibble_common_input_minutiaes, 'input')
+
+        base_minutiaes_tree, input_minutiaes_tre = self.__search_start_of_tree(sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes)
+        self.__mark_characteristic_point(base_fingerprint, sorted_possibble_common_base_minutiaes, 'base_tree')
+        self.__mark_characteristic_point(input_fingerprint, sorted_possibble_common_input_minutiaes, 'input_tree')
 
         # result_matching = self.__match_fingerprint()
         return self._MATCH_FINGERPRINT
