@@ -247,6 +247,35 @@ class Matching_Tree(Error_Message):
         return all_posible_trees
         
 
+    def __set_full_edge(self, first_tree, pos, edge, type_edge):
+        try:
+            before_edge = first_tree[pos][type_edge][-1]
+        except IndexError:
+            before_edge = None
+
+        edge.obtain_ratio(before_edge)
+        edge.obtain_angle(before_edge)
+
+        return edge
+    
+    
+    def __create_edge(self, tree, first_tree, pos, ori_base, ori_input, dest_base, dest_input):
+        try:
+            base_edge = Edge(tree['base'][ori_base], tree['base'][dest_base])
+        except:
+            raise IndexError
+        
+        try:
+            input_edge = Edge(tree['input'][ori_input], tree['input'][dest_input])
+        except:
+            raise IndexError
+
+        base_edge = self.__set_full_edge(first_tree, pos, base_edge, 'edge_base')
+        input_edge = self.__set_full_edge(first_tree, pos, input_edge, 'edge_input')
+
+        return (base_edge, input_edge)
+    
+    
     def __is_edges_equals(self, base_edge, input_edge):
         quadrant_ok = base_edge.get_quadrant() == input_edge.get_quadrant()
         angle_ok = abs(base_edge.get_angle() - input_edge.get_angle()) <= self._matching_angle_tolerance
@@ -258,43 +287,47 @@ class Matching_Tree(Error_Message):
         return False
     
     
-    def __compare_edges_tree(self, tree, step, first_tree, pos):
-        base_add = 1
-        input_add = 1
+    def __set_edge_into_tree(self, tree, first_tree, pos, ori_base, ori_input, dest_base, dest_input, base_edge, input_edge, mode='middle'):
+
+        if mode == 'initial':
+            first_tree[pos]['base'].append(tree['base'][ori_base])
+            first_tree[pos]['input'].append(tree['input'][ori_input])
+        
+        first_tree[pos]['base'].append(tree['base'][dest_base])
+        first_tree[pos]['input'].append(tree['input'][dest_input])
+        first_tree[pos]['edge_base'].append(base_edge)
+        first_tree[pos]['edge_input'].append(input_edge)
+    
+    
+    def __compare_edges_tree(self, tree, step_ori_base, step_ori_input, step_dest_base, step_dest_input, first_tree, pos):
+        base_add = 0
+        input_add = 0
         for num in range(3):
             if num == 1:
-                base_add = 2
-                input_add = 1
+                base_add = 1
+                input_add = 0
             
             if num == 2:
-                base_add = 1
-                input_add = 2
+                base_add = 0
+                input_add = 1
 
-            base_edge = Edge(tree['base'][step], tree['base'][step + base_add])
-            input_edge = Edge(tree['input'][step], tree['input'][step + input_add])
-
-            base_edge.obtain_ratio(first_tree[pos]['edge_base'][-1])
-            base_edge.obtain_angle(first_tree[pos]['edge_base'][-1])
-
-            input_edge.obtain_ratio(first_tree[pos]['edge_base'][-1])
-            input_edge.obtain_angle(first_tree[pos]['edge_base'][-1])
+            try:
+                base_edge, input_edge = self.__create_edge(tree, first_tree, pos, step_ori_base, step_ori_input, 
+                                                            (step_dest_base + base_add), (step_dest_input + input_add))
+            except IndexError:
+                continue
 
             if self.__is_edges_equals(base_edge, input_edge):
-                return True
+                
+                self.__set_edge_into_tree(tree, first_tree, pos, step_ori_base, step_ori_input, 
+                                            (step_dest_base + base_add), (step_dest_input + input_add), base_edge, input_edge)
+                
+                new_ori_base = step_dest_base + base_add
+                new_ori_input = step_dest_input + input_add
 
-        return False
+                return (new_ori_base, new_ori_input, new_ori_base + 1, new_ori_input + 1)
 
-    
-    def __initial_condition(self, tree, first_tree, pos):
-        base_edge_start = Edge(tree['base'][0], tree['base'][1])
-        input_edge_start = Edge(tree['input'][0], tree['input'][1])
-
-        first_tree[pos]['base'].append(tree['base'][0])
-        first_tree[pos]['base'].append(tree['base'][1])
-        first_tree[pos]['input'].append(tree['input'][0])
-        first_tree[pos]['input'].append(tree['input'][1])
-        first_tree[pos]['edge_base'].append(base_edge_start)
-        first_tree[pos]['edge_input'].append(input_edge_start)
+        return (step_ori_base, step_ori_input, step_dest_base + 1, step_dest_input + 1)
     
     
     def __obtain_first_trees(self, all_possible_trees):
@@ -305,16 +338,23 @@ class Matching_Tree(Error_Message):
             base_length = len(tree['base'])
             input_length = len(tree['input'])
 
-            self.__initial_condition(tree, first_tree, pos)
+            base_edge, input_edge = self.__create_edge(tree, first_tree, pos, 0, 0, 1, 1)
+            self.__set_edge_into_tree(tree, first_tree, pos, 0, 0, 1, 1, base_edge, input_edge, mode='initial')
 
-            for step in range(1, base_length - 1, 1):
-                if step > input_length - 1:
+            step_ori_base = 1
+            step_ori_input = 1
+            step_dest_base = 2
+            step_dest_input = 2
+            while (step_dest_base <= base_length - 1):
+                if step_dest_input > input_length - 1:
                     break
                 
-                self.__compare_edges_tree(self, tree, step, first_tree, pos)
-
+                step_ori_base, step_ori_input, step_dest_base, step_dest_input = self.__compare_edges_tree(
+                    tree, step_ori_base, step_ori_input, step_dest_base, step_dest_input, first_tree, pos)
 
             pos += 1
+
+        return first_tree
 
     
     def matching(self, base_fingerprint, input_fingerprint):
@@ -339,5 +379,7 @@ class Matching_Tree(Error_Message):
             return self._DONT_MATCH_FINGERPRINT
         ############################ Debug ######################################
         # self.__show_all_possible_trees(all_possible_trees, base_fingerprint, input_fingerprint)
+
+        first_trees = self.__obtain_first_trees(all_possible_trees)
         
         return self._MATCH_FINGERPRINT
