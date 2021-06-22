@@ -213,12 +213,11 @@ class Matching_Tree(Error_Message):
                 is_found = False
                 break
 
-
         if is_found:
             possible_input_minutiaes_tree.append(input_minutiaes[input_pos])
             possible_input_minutiaes_tree += input_minutiaes[(input_pos + next_destination_pos):]
 
-        return (is_found, possible_input_minutiaes_tree)
+        return (is_found, possible_input_minutiaes_tree, input_pos + next_destination_pos)
 
 
     
@@ -234,15 +233,32 @@ class Matching_Tree(Error_Message):
 
         for base_pos in range(base_length - 1):
             base_edge = Edge(base_minutiaes[base_pos], base_minutiaes[base_pos + 1])
-
+    
             for input_pos in range(input_length - 1):
-                is_found, possible_input_minutiaes_tree = self.__create_input_edge(input_minutiaes, input_pos, base_edge)
+                is_found, possible_input_minutiaes_tree, pos_dest = self.__create_input_edge(input_minutiaes, input_pos, base_edge)
                 if is_found:
                     break
 
             if is_found:
                 possible_base_minutiaes_tree = base_minutiaes[base_pos:]
-                all_posible_trees.append({'base': possible_base_minutiaes_tree, 'input': possible_input_minutiaes_tree})
+                possible_input_spurious = input_minutiaes[:input_pos]
+
+                ref = input_pos + 1
+                while(ref < pos_dest):
+                    possible_input_spurious.append(input_minutiaes[ref])
+
+                    ref += 1
+
+                ########################### Debug ###############################################################
+                # print('\n\tPosible base Minutiaes: ', len(base_minutiaes))
+                # print('\tPosible common base Minutiaes: ', len(possible_base_minutiaes_tree))
+                # print('\tPosible spurious base Minutiaes: ', len(base_minutiaes[:base_pos]))
+                # print('\n\tPosible input Minutiaes: ', len(input_minutiaes))
+                # print('\tPosible common input Minutiaes: ', len(possible_input_minutiaes_tree))
+                # print('\tPosible spurious input Minutiaes: ', len(possible_input_spurious))
+
+                all_posible_trees.append({'base': possible_base_minutiaes_tree, 'input': possible_input_minutiaes_tree, 
+                                            'spu_b': base_minutiaes[:base_pos], 'spu_i': possible_input_spurious})            
 
         return all_posible_trees
         
@@ -325,13 +341,22 @@ class Matching_Tree(Error_Message):
                 new_ori_base = step_dest_base + base_add
                 new_ori_input = step_dest_input + input_add
 
+                if num == 1:
+                    first_tree[pos]['spu_b'].append(tree['base'][step_dest_base])
+
+                if num == 2:
+                    first_tree[pos]['spu_i'].append(tree['input'][step_dest_input])
+
                 return (new_ori_base, new_ori_input, new_ori_base + 1, new_ori_input + 1)
+
+        first_tree[pos]['spu_b'].append(tree['base'][step_dest_base])
+        first_tree[pos]['spu_i'].append(tree['input'][step_dest_input])
 
         return (step_ori_base, step_ori_input, step_dest_base + 1, step_dest_input + 1)
     
     
     def __obtain_first_trees(self, all_possible_trees):
-        first_tree = [{'base':[], 'input':[], 'edge_base':[], 'edge_input':[]} for _ in range(len(all_possible_trees))]
+        first_tree = [{'base':[], 'input':[], 'spu_b':[], 'spu_i':[], 'edge_base':[], 'edge_input':[]} for _ in range(len(all_possible_trees))]
         
         pos = 0
         for tree in all_possible_trees:
@@ -340,6 +365,16 @@ class Matching_Tree(Error_Message):
 
             base_edge, input_edge = self.__create_edge(tree, first_tree, pos, 0, 0, 1, 1)
             self.__set_edge_into_tree(tree, first_tree, pos, 0, 0, 1, 1, base_edge, input_edge, mode='initial')
+
+            first_tree[pos]['spu_b'] = tree['spu_b']
+            first_tree[pos]['spu_i'] = tree['spu_i']
+
+            ########################### Debug ###############################################################
+            # print('\n********************************************************************')
+            # print('\tPosible common base Minutiaes: ', len(tree['base']))
+            # print('\tPosible spurious base Minutiaes: ', len(first_tree[pos]['spu_b']))
+            # print('\tPosible common input Minutiaes: ', len(tree['input']))
+            # print('\tPosible spurious input Minutiaes: ', len(first_tree[pos]['spu_i']))
 
             step_ori_base = 1
             step_ori_input = 1
@@ -352,10 +387,52 @@ class Matching_Tree(Error_Message):
                 step_ori_base, step_ori_input, step_dest_base, step_dest_input = self.__compare_edges_tree(
                     tree, step_ori_base, step_ori_input, step_dest_base, step_dest_input, first_tree, pos)
 
-            pos += 1
+            ########################### Debug ###############################################################
+            # print('\n\tPosible common base Minutiaes: ', len(first_tree[pos]['base']))
+            # print('\tPosible spurious base Minutiaes: ', len(first_tree[pos]['spu_b']))
+            # print('\tPosible common input Minutiaes: ', len(first_tree[pos]['input']))
+            # print('\tPosible spurious input Minutiaes: ', len(first_tree[pos]['spu_i']))
+            
+            try:
+                first_tree[pos]['spu_b'] += tree['base'][step_dest_base:]
+            except:
+                pass
+
+            try:
+                first_tree[pos]['spu_i'] += tree['input'][step_dest_input:]
+            except:
+                pass
+
+            ########################### Debug ###############################################################
+            # print('\n\tPosible common base Minutiaes: ', len(first_tree[pos]['base']))
+            # print('\tPosible spurious base Minutiaes: ', len(first_tree[pos]['spu_b']))
+            # print('\tPosible common input Minutiaes: ', len(first_tree[pos]['input']))
+            # print('\tPosible spurious input Minutiaes: ', len(first_tree[pos]['spu_i']))
+            
+            pos += 1     
 
         return first_tree
 
+    
+    def __obtain_bigest_tree(self, first_trees):
+        max_len = len(self._possible_base_common_minutiaes) - 1
+        bigest_tree = {}
+
+        for tree in first_trees:
+            len_tree = len(tree['edge_base'])
+
+            if len_tree == max_len:
+                bigest_tree = tree
+                break
+            
+            try:
+                if len_tree > len(bigest_tree['edge_base']):
+                    bigest_tree = tree.copy()
+            except KeyError:
+                bigest_tree = tree.copy()
+
+        return bigest_tree
+    
     
     def matching(self, base_fingerprint, input_fingerprint):
         
@@ -381,5 +458,20 @@ class Matching_Tree(Error_Message):
         # self.__show_all_possible_trees(all_possible_trees, base_fingerprint, input_fingerprint)
 
         first_trees = self.__obtain_first_trees(all_possible_trees)
-        
+        bigest_tree = self.__obtain_bigest_tree(first_trees)
+        first_trees.clear()
+        bigest_tree['spu_b'] += self._possible_base_spurious_minutiaes
+        bigest_tree['spu_i'] += self._possible_input_spurious_minutiaes
+
+        ############################ Debug ######################################
+        print('\n\tBiggest tree')
+        print('Common base minutiaes: ', len(bigest_tree['base']))
+        print('Edge base minutiaes: ', len(bigest_tree['edge_base']))
+        print('Spurious base minutiaes: ', len(bigest_tree['spu_b']))
+        print('Common input minutiaes: ', len(bigest_tree['input']))
+        print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
+        print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
+
+
+
         return self._MATCH_FINGERPRINT
