@@ -6,6 +6,7 @@ from math import degrees, cos, sin, sqrt, radians
 from operator import attrgetter
 from Error_Message import Error_Message
 from Edge import Edge
+from Local_Area import Local_Area
 
 class Matching_Tree(Error_Message):
     def __init__(self, local_ratio_tolerance = .5, local_angle_tolerance = 1.5, 
@@ -432,6 +433,25 @@ class Matching_Tree(Error_Message):
                 bigest_tree = tree.copy()
 
         return bigest_tree
+
+
+    def __set_new_local_description(self, common_minutiae, spurious_minutiae):
+        local_area = Local_Area()
+        process_message = local_area.get_new_neighborhood(common_minutiae, spurious_minutiae)
+        
+        if process_message == self._FINGERPRINT_OK:
+            return spurious_minutiae
+    
+        raise Exception('Few common minutias')
+
+    
+    def __clear_all_lists(self):
+        self._base_minutiaes.clear()
+        self._input_minutiaes.clear()
+        self._possible_base_common_minutiaes.clear()
+        self._possible_base_spurious_minutiaes.clear()
+        self._possible_input_common_minutiaes.clear()
+        self._possible_input_spurious_minutiaes.clear()
     
     
     def matching(self, base_fingerprint, input_fingerprint):
@@ -471,6 +491,37 @@ class Matching_Tree(Error_Message):
         print('Common input minutiaes: ', len(bigest_tree['input']))
         print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
         print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
+
+        is_tree_compleate = False
+        try:
+            new_base_minutiaes = self.__set_new_local_description(common_minutiae=bigest_tree['base'], spurious_minutiae=bigest_tree['spu_b'])
+            new_input_minutiaes = self.__set_new_local_description(common_minutiae=bigest_tree['input'], spurious_minutiae=bigest_tree['spu_i'])
+        except:
+            is_tree_compleate = True
+
+        if not is_tree_compleate:
+            self.__clear_all_lists()
+
+            self._base_minutiaes = new_base_minutiaes.copy()
+            self._input_minutiaes = new_input_minutiaes.copy()
+            new_base_minutiaes.clear()
+            new_input_minutiaes.clear()
+
+            self.__common_points()
+
+            if self.__are_void_possible_common_minutias_list() == self._DONT_MATCH_FINGERPRINT:
+                is_tree_compleate = True
+
+            ####
+            self._possible_base_common_minutiaes += bigest_tree['base']
+            self._possible_input_common_minutiaes += bigest_tree['input']
+            bigest_tree.clear()
+
+            sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes = self.__sort_possible_common_points()
+
+            all_possible_trees = self.__search_start_of_tree(sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes)
+            if len(all_possible_trees) <= 0:
+                return self._DONT_MATCH_FINGERPRINT
 
 
 

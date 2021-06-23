@@ -20,6 +20,38 @@ class Local_Area(Error_Message):
         self._list_minutiaes = []
 
 
+    def __update_neighbording_minutiaes(self, neighbording_minutiaes, position, minutiea, distance):
+        last_pos = len(neighbording_minutiaes)
+        
+        begin_list = neighbording_minutiaes[:position]
+        begin_list.append([minutiea, distance])
+        end_list = neighbording_minutiaes[position:(last_pos) - 1]
+
+        return (begin_list + end_list)
+    
+    
+    def __nearest_minutiaes_from_match(self, s_minutiae):
+        neighbording_minutiaes = [[self._list_minutiaes[index], self._max_distance] for index in range(self._number_neighbordings)]
+        j = s_minutiae.get_posy()
+        i = s_minutiae.get_posx()
+
+        for minutiea in self._list_minutiaes:
+            j2 = minutiea.get_posy()
+            i2 = minutiea.get_posx()
+
+            distance = round(self.__euclidian_distance(j, j2, i, i2), 2)
+
+            if self._number_neighbordings > 15:
+                (distance_flag, position) = self.__get_nearby_points(neighbording_minutiaes, distance, self._begin, self._end, 'equal')
+            else:
+                (distance_flag, position) = self.__simple_nearby_points(neighbording_minutiaes, distance)
+
+            if distance_flag:
+                neighbording_minutiaes = self.__update_neighbording_minutiaes(neighbording_minutiaes, position, minutiea, distance)
+
+        return neighbording_minutiaes
+    
+    
     def __nearest_minutiaes(self, length_list, reference = 0):
         #nearest_distances = [self._max_distance for _ in range(self._number_neighbordings)]
         neighbording_minutiaes = [[self._list_minutiaes[index], self._max_distance] for index in range(self._number_neighbordings)]
@@ -42,9 +74,10 @@ class Local_Area(Error_Message):
                     (distance_flag, position) = self.__simple_nearby_points(neighbording_minutiaes, distance)
 
                 if distance_flag:
-                    #nearest_distances[position] = distance
-                    neighbording_minutiaes[position][0] = neighbording_minutia
-                    neighbording_minutiaes[position][1] = distance
+                    neighbording_minutiaes = self.__update_neighbording_minutiaes(neighbording_minutiaes, position, neighbording_minutia, distance)
+                    # #nearest_distances[position] = distance
+                    # neighbording_minutiaes[position][0] = neighbording_minutia
+                    # neighbording_minutiaes[position][1] = distance
             else:
                 continue
         
@@ -53,6 +86,7 @@ class Local_Area(Error_Message):
 
     def __euclidian_distance(self, j1, j2, i1, i2):
         return (np.sqrt(np.power((j2 - j1), 2) + np.power((i2 - i1), 2)))
+
 
     def __get_nearby_points(self, neighbording_list, distance, begin, end, movement='equal'):
         if movement == 'up':
@@ -74,6 +108,7 @@ class Local_Area(Error_Message):
             return self.__get_nearby_points(neighbording_list, distance, middle, end, movement='up')
         else:
             return self.__get_nearby_points(neighbording_list, distance, begin, middle, movement='down')
+
 
     def __simple_nearby_points(self, neighbording_list, distance):
         if neighbording_list[self._end][1] < distance:
@@ -155,12 +190,12 @@ class Local_Area(Error_Message):
             return (checked_angle, minutiae_type1, minutiae_type2)
 
 
-
     def __straight_slope(self, y1, x1, y2, x2):
         if (x1 == x2):
             return (0, True)
         else:
             return ((y2 - y1)/(x2 - x1), False)
+
 
     def __get_angle(self, m1, m2):
         
@@ -254,6 +289,7 @@ class Local_Area(Error_Message):
     def __tuple_length(self):
         return (factorial(self._number_neighbordings) // (factorial(2) * factorial(self._number_neighbordings - 2)))
 
+
     def __tuple_list(self, minutiae_reference, ratios_and_angles):
         # return [[0,0,0,0,0] for _ in range(self._tuple_length)]
         tuple_fingerprint_list = []
@@ -276,6 +312,22 @@ class Local_Area(Error_Message):
                 ratios_and_angles = self.__ratios_and_angles(neighbording_minutiaes, minutiae_reference)
                 tuple_fingerprint_list = self.__tuple_list(minutiae_reference, ratios_and_angles)
                 minutiae_reference.set_tuple_fingerprint_list(tuple_fingerprint_list)
+
+            return self._FINGERPRINT_OK
+        else:
+            return self._FEW_MINUTIAES
+
+
+    def get_new_neighborhood(self, common_minutiaes, spurious_minutias):
+        self._list_minutiaes = common_minutiaes.copy()
+        length_common_list = len(common_minutiaes)
+        if length_common_list >= self._number_neighbordings:
+
+            for minutia in spurious_minutias:
+                neighbording_minutiaes = self.__nearest_minutiaes_from_match(minutia)
+                ratios_and_angles = self.__ratios_and_angles(neighbording_minutiaes, minutia)
+                tuple_fingerprint_list = self.__tuple_list(minutia, ratios_and_angles)
+                minutia.set_tuple_fingerprint_list(tuple_fingerprint_list)
 
             return self._FINGERPRINT_OK
         else:
