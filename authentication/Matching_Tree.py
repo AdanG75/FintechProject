@@ -536,10 +536,13 @@ class Matching_Tree(Error_Message):
             new_base_minutiaes.clear()
             new_input_minutiaes.clear()
 
+            bigest_tree_copy = bigest_tree.copy()
             try:
                 bigest_tree = self.__process_match(base_fingerprint, input_fingerprint, bigest_tree=bigest_tree, fase='check')
             except:
-                return self._DONT_MATCH_FINGERPRINT
+                bigest_tree = bigest_tree_copy.copy()
+            finally:
+                bigest_tree_copy.clear()
 
         ############################ Debug ######################################
         print('\n\tBiggest tree')
