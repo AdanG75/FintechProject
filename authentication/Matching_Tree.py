@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import cv2 as cv
-from math import degrees, cos, sin, sqrt, radians
 from operator import attrgetter
 from Error_Message import Error_Message
 from Edge import Edge
@@ -452,36 +450,67 @@ class Matching_Tree(Error_Message):
         self._possible_base_spurious_minutiaes.clear()
         self._possible_input_common_minutiaes.clear()
         self._possible_input_spurious_minutiaes.clear()
-    
-    
-    def matching(self, base_fingerprint, input_fingerprint):
-        
-        self.__get_lists_of_characteristic_points(base_fingerprint=base_fingerprint, input_fingerprint=input_fingerprint)
+
+
+    def __process_match(self, base_fingerprint, input_fingerprint, bigest_tree=[], fase='initial'):
         self.__common_points()
+
         if self.__are_void_possible_common_minutias_list() == self._DONT_MATCH_FINGERPRINT:
-            return self._DONT_MATCH_FINGERPRINT
-        
+            raise Exception('There are not common minutias')
+
         ############################ Debug ######################################
         # base_fingerprint.show_characteristic_point_from_list(type_characteristic_point='minutia')
         # input_fingerprint.show_characteristic_point_from_list(type_characteristic_point='minutia')
         self.__see_common_and_spurious_points()
-        
+
+        if fase == 'check':
+            self._possible_base_common_minutiaes += bigest_tree['base']
+            self._possible_input_common_minutiaes += bigest_tree['input']
+            bigest_tree.clear()
+
         sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes = self.__sort_possible_common_points()
         ############################ Debug ######################################
-        # self.__mark_characteristic_point(base_fingerprint, sorted_possibble_common_base_minutiaes, 'base')
-        # self.__mark_characteristic_point(input_fingerprint, sorted_possibble_common_input_minutiaes, 'input')
+        self.__mark_characteristic_point(base_fingerprint, sorted_possibble_common_base_minutiaes, 'base')
+        self.__mark_characteristic_point(input_fingerprint, sorted_possibble_common_input_minutiaes, 'input')
 
         all_possible_trees = self.__search_start_of_tree(sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes)
+        
         if len(all_possible_trees) <= 0:
-            return self._DONT_MATCH_FINGERPRINT
+            raise Exception('There are not possible trees')
+
         ############################ Debug ######################################
-        # self.__show_all_possible_trees(all_possible_trees, base_fingerprint, input_fingerprint)
+        self.__show_all_possible_trees(all_possible_trees, base_fingerprint, input_fingerprint)
 
         first_trees = self.__obtain_first_trees(all_possible_trees)
         bigest_tree = self.__obtain_bigest_tree(first_trees)
         first_trees.clear()
         bigest_tree['spu_b'] += self._possible_base_spurious_minutiaes
         bigest_tree['spu_i'] += self._possible_input_spurious_minutiaes
+
+        return bigest_tree
+
+
+    def __is_figerprint_match(self, bigest_tree):
+        num_base_minutiaes = len(self._base_minutiaes)
+        num_input_minutiaes = len(self._input_minutiaes)
+
+        minimum_score = ((num_base_minutiaes + num_input_minutiaes) // 2) - 1
+
+        if len(bigest_tree['base']) == len(bigest_tree['input']):
+            if len(bigest_tree['base']) >= minimum_score:
+                return self._MATCH_FINGERPRINT
+
+        return self._DONT_MATCH_FINGERPRINT
+    
+    
+    def matching(self, base_fingerprint, input_fingerprint):
+        
+        self.__get_lists_of_characteristic_points(base_fingerprint=base_fingerprint, input_fingerprint=input_fingerprint)
+        
+        try:
+            bigest_tree = self.__process_match(base_fingerprint, input_fingerprint, fase='initial')
+        except:
+            return self._DONT_MATCH_FINGERPRINT
 
         ############################ Debug ######################################
         print('\n\tBiggest tree')
@@ -507,22 +536,20 @@ class Matching_Tree(Error_Message):
             new_base_minutiaes.clear()
             new_input_minutiaes.clear()
 
-            self.__common_points()
-
-            if self.__are_void_possible_common_minutias_list() == self._DONT_MATCH_FINGERPRINT:
-                is_tree_compleate = True
-
-            ####
-            self._possible_base_common_minutiaes += bigest_tree['base']
-            self._possible_input_common_minutiaes += bigest_tree['input']
-            bigest_tree.clear()
-
-            sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes = self.__sort_possible_common_points()
-
-            all_possible_trees = self.__search_start_of_tree(sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes)
-            if len(all_possible_trees) <= 0:
+            try:
+                bigest_tree = self.__process_match(base_fingerprint, input_fingerprint, bigest_tree=bigest_tree, fase='check')
+            except:
                 return self._DONT_MATCH_FINGERPRINT
 
+        ############################ Debug ######################################
+        print('\n\tBiggest tree')
+        print('Common base minutiaes: ', len(bigest_tree['base']))
+        print('Edge base minutiaes: ', len(bigest_tree['edge_base']))
+        print('Spurious base minutiaes: ', len(bigest_tree['spu_b']))
+        print('Common input minutiaes: ', len(bigest_tree['input']))
+        print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
+        print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
 
+        process_message = self.__is_figerprint_match(bigest_tree)
 
-        return self._MATCH_FINGERPRINT
+        return process_message
