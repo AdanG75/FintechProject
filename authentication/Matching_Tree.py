@@ -23,10 +23,6 @@ class Matching_Tree(Error_Message):
         self._possible_base_spurious_minutiaes = []
         self._possible_input_common_minutiaes = []
         self._possible_input_spurious_minutiaes = []
-        self._fingerprint_score = 100
-
-        self._MINIMUM_ANGLE = 0
-        self._MAXIMUM_ANGLE = 360
         
 
     def __find_possible_minutia_parent(self, local_info_base_minutiae, local_info_input_minutia):
