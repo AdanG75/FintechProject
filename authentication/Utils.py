@@ -15,7 +15,7 @@ def create_fingerprint_samples():
 
 def get_data_fingerprint(fingerprint, in_cloud = True, data_fingerprint = []):
     if in_cloud == False:
-        conect_sensor = Conect_Sensor(serial_port = 'COM5', baud_rate = 57600, width = 256, height = 288)
+        conect_sensor = Conect_Sensor(serial_port = 'COM3', baud_rate = 57600, width = 256, height = 288)
         data_fingerprint = conect_sensor.catch_data_fingerprint()
 
     if data_fingerprint[0] == False:
@@ -65,6 +65,7 @@ def get_description_fingerprint(name_fingerprint = 'fingerprint', from_sensor=Tr
         ubication_image = change_directory_of_images()
         try:
             img = cv.imread(ubication_image, 0)
+            #img = cv.imread('./authentication/sampleImages/Huella70.bmp', 0)
             process_message = fingerprint.describe_fingerprint(angles_tolerance=1, from_image=True, fingerprint_image=img)
         except:
             print('Error to get the fingerprint image')

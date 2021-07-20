@@ -16,7 +16,7 @@ class Fingerprint(Error_Message):
                 show_result = True, save_result = True, size_window_minutiae = 3, size_window_core = 1, 
                 address_image = './authentication/preprocessingFingerprints/', address_data = './authentication/data/', 
                 characteritic_point_thresh = 0.6, ridge_segment_thresh = 0.25, authentication_index_score = 0.52,
-                authentication_image_score = 0.40, register_index_score = 0.62, register_cpthresh = 0.3,
+                authentication_image_score = 0.35, register_index_score = 0.62, register_cpthresh = 0.3,
                 register_rsthresh = 0.15, number_minutiae_neighbordings = 5):
         super().__init__()
         self._fingerprint_rows = fingerprint_rows
