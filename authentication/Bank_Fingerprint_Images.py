@@ -19,7 +19,7 @@ class Bank_fingerprint(object):
             self._name = input('\nWrite the name to fingerprint image (without extension) to be saved:  ')
             self._extension = input('\nWrite the image\'s extension (include \".\" at beginning):  ')
 
-        conect_sensor = Conect_Sensor(serial_port = 'COM5', baud_rate = 57600, width = 256, height = 288)
+        conect_sensor = Conect_Sensor(serial_port = 'COM3', baud_rate = 57600, width = 256, height = 288)
         fingerprint = Fingerprint()
     
         for _ in range(self._num_fingerprints):

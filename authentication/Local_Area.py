@@ -2,6 +2,7 @@
 from math import ceil, floor, factorial, atan, degrees
 import uuid
 import numpy as np
+from numpy.lib.function_base import angle
 from Minutia import Minutiae
 from Tuple_Fingerprint import Tuple_Fingerprint
 from Error_Message import Error_Message
@@ -265,6 +266,21 @@ class Local_Area(Error_Message):
         raise Exception('Wrong angles')
 
     
+    def __forcing_correct_angle(self, angles):
+        abs_angles = [abs(angle) for angle in angles]
+
+        if (abs_angles[0] + abs_angles[1]) < 180:
+            abs_angles[2] = (180 - (abs_angles[0] + abs_angles[1]))
+        elif (abs_angles[0] + abs_angles[2]) < 180:
+            abs_angles[1] = (180 - (abs_angles[0] + abs_angles[2]))
+        elif (abs_angles[1] + abs_angles[2]) < 180:
+            abs_angles[0] = (180 - (abs_angles[1] + abs_angles[2]))
+        else:
+            abs_angles = [60, 60, 60]
+
+        return abs_angles
+
+
     def __check_angles(self, angles):
         
         if self.__sum_of_angles_is_180_or_0(angles):
@@ -280,10 +296,15 @@ class Local_Area(Error_Message):
             if angles[pos] >= 0:
                 flag += (2 ** pos)
 
-        if not is_ninety:
-            return self.__default_condition_angles(angles, flag)
-        else:
-            return self.__is_ninety_case(angles)
+        try:
+            if not is_ninety:
+                result = self.__default_condition_angles(angles, flag)
+            else:
+                result = self.__is_ninety_case(angles)
+        except:
+            result = self.__forcing_correct_angle(angles)
+        finally:
+            return result
 
 
     def __tuple_length(self):

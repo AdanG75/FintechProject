@@ -1,10 +1,11 @@
 from Matching_Process import Matching_Process
 from Matching_Tree import Matching_Tree
 from Matching_Core import Matching_Core
+from Fingerprint import Fingerprint
 
 def match(base_fingerprint, input_fingerprint, mode='original'):
-    base_fingerprint_is_ok = (base_fingerprint != True)
-    index_fingerprint_is_ok = (input_fingerprint != True)
+    base_fingerprint_is_ok = (base_fingerprint != True) and isinstance(base_fingerprint, Fingerprint)
+    index_fingerprint_is_ok = (input_fingerprint != True) and isinstance(input_fingerprint, Fingerprint)
 
     if (base_fingerprint_is_ok and index_fingerprint_is_ok):
         if mode.lower() == 'tree':

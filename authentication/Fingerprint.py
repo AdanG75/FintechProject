@@ -320,6 +320,11 @@ class Fingerprint(Error_Message):
 
     def get_fingerprint_image(self):
         return self._ezquel_as_image
+
+    
+    def reconstruction_fingerprint(self, data_fingerprint):
+        self.__reconstruction_fingerprint(data_fingerprint)
+        return self._raw_image
    
 
     def describe_fingerprint(self, data_fingerprint=[], angles_tolerance=1, from_image=False, fingerprint_image=None):

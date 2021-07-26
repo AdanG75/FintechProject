@@ -50,8 +50,8 @@ def change_directory_of_images():
     return ubication_image
 
 
-def get_description_fingerprint(name_fingerprint = 'fingerprint', from_sensor=True, ubication_image=''):
-    fingerprint = Fingerprint(characteritic_point_thresh = 0.8, name_fingerprint= name_fingerprint)
+def get_description_fingerprint(name_fingerprint = 'fingerprint', from_sensor=True, ubication_image='', show_result=True, save_result=True):
+    fingerprint = Fingerprint(characteritic_point_thresh = 0.8, name_fingerprint= name_fingerprint, show_result = show_result, save_result = save_result)
     process_message = None
     
     if from_sensor:
@@ -62,20 +62,24 @@ def get_description_fingerprint(name_fingerprint = 'fingerprint', from_sensor=Tr
         
         process_message = fingerprint.describe_fingerprint(data_image, angles_tolerance=1)
     else:
-        ubication_image = change_directory_of_images()
-        try:
-            img = cv.imread(ubication_image, 0)
-            #img = cv.imread('./authentication/sampleImages/Huella70.bmp', 0)
-            process_message = fingerprint.describe_fingerprint(angles_tolerance=1, from_image=True, fingerprint_image=img)
-        except:
+        if not ubication_image or ubication_image.isspace():
+            ubication_image = change_directory_of_images()
+            
+        
+        img = cv.imread(ubication_image, 0)
+        #img = cv.imread('./authentication/sampleImages/Huella70.bmp', 0)
+        
+        if img is None:
             print('Error to get the fingerprint image')
             return True
-    
+            
+        process_message = fingerprint.describe_fingerprint(angles_tolerance=1, from_image=True, fingerprint_image=img)
+        
     if process_message == fingerprint._FINGERPRINT_OK:
         return fingerprint
     else:
         fingerprint.show_message(process_message)
-        return True
+        return process_message
 
 
 def match_index_and_base_fingerprints(base_name, input_name, mode, source):
