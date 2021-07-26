@@ -9,7 +9,7 @@ def match(base_fingerprint, input_fingerprint, mode='original'):
 
     if (base_fingerprint_is_ok and index_fingerprint_is_ok):
         if mode.lower() == 'tree':
-            matching = Matching_Tree()
+            matching = Matching_Tree(local_ratio_tolerance = .1, local_angle_tolerance = 1)
             process_message = matching.matching(base_fingerprint=base_fingerprint, input_fingerprint=input_fingerprint)
         elif mode.lower() == 'original': 
             matching = Matching_Process()
@@ -22,7 +22,7 @@ def match(base_fingerprint, input_fingerprint, mode='original'):
             process_message = matching.matching(base_fingerprint=base_fingerprint, input_fingerprint=input_fingerprint)
 
             if process_message == matching._DONT_MATCH_FINGERPRINT:
-                matching = Matching_Tree()
+                matching = Matching_Tree(local_ratio_tolerance = .1, local_angle_tolerance = 1)
                 process_message = matching.matching(base_fingerprint=base_fingerprint, input_fingerprint=input_fingerprint)
 
         matching.show_message(process_message)

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*
+from Fingerprint import Fingerprint
 from operator import is_not
 import cv2 as cv
 import re
@@ -33,12 +34,13 @@ def setup():
 
 
 def check_result(result):
-    if result == True:
-        return -1
+    
+    if isinstance(result, Fingerprint):
+        return 1
     elif isinstance(result, int):
         return 0
     else:
-        return True
+        return -1
 
 def open_all_fingerprints(path, image_reference, base_image):
     
@@ -84,7 +86,7 @@ def describe_match_results(name_match, fingerprint_match):
 def match_test(path, image_reference, base_image, fingerprint):
     result = match_name_image(path, image_reference, base_image)
 
-    if result == False:
+    if result is False:
         # 'Isn't input image into path'
         return False
 
@@ -101,7 +103,7 @@ def match_test(path, image_reference, base_image, fingerprint):
         return True
     else:
         states['gqa'] += 1
-        match_result = u_fin.match(base_fingerprint=base_image, input_fingerprint=input_img, mode='Full')
+        match_result = u_fin.match(base_fingerprint=fingerprint, input_fingerprint=input_img, mode='Full')
         describe_match_results(name_match=result, fingerprint_match=match_result)
         return True
 
@@ -139,7 +141,7 @@ def match_algorithm_analysis(path, image_reference, base_image):
                              from_sensor=False, ubication_image=(path + image_reference),
                              show_result=False, save_result=False)
 
-    result_check = check_result(base_image)
+    result_check = check_result(base_img)
     if result_check == -1:
         return False
     elif result_check == 0:
@@ -147,7 +149,7 @@ def match_algorithm_analysis(path, image_reference, base_image):
         return True
     else:
         states['gqr'] += 1
-        secuence(match_test, base_image, fingerprint=base_image)
+        secuence(match_test, base_image, fingerprint=base_img)
         # list.append(result)
         return True
 
@@ -168,7 +170,11 @@ def name_builder():
     
 
 def test():
-    name_builder()
+    count = secuence(match_algorithm_analysis)
+
+    print(count)
+    print(states)
+    # name_builder()
 
 
 if __name__ == '__main__':

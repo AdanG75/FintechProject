@@ -457,7 +457,7 @@ class Matching_Tree(Error_Message):
         ############################ Debug ######################################
         # base_fingerprint.show_characteristic_point_from_list(type_characteristic_point='minutia')
         # input_fingerprint.show_characteristic_point_from_list(type_characteristic_point='minutia')
-        self.__see_common_and_spurious_points()
+        # self.__see_common_and_spurious_points()
 
         if fase == 'check':
             self._possible_base_common_minutiaes += bigest_tree['base']
@@ -466,8 +466,8 @@ class Matching_Tree(Error_Message):
 
         sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes = self.__sort_possible_common_points()
         ############################ Debug ######################################
-        self.__mark_characteristic_point(base_fingerprint, sorted_possibble_common_base_minutiaes, 'base')
-        self.__mark_characteristic_point(input_fingerprint, sorted_possibble_common_input_minutiaes, 'input')
+        # self.__mark_characteristic_point(base_fingerprint, sorted_possibble_common_base_minutiaes, 'base')
+        # self.__mark_characteristic_point(input_fingerprint, sorted_possibble_common_input_minutiaes, 'input')
 
         all_possible_trees = self.__search_start_of_tree(sorted_possibble_common_base_minutiaes, sorted_possibble_common_input_minutiaes)
         
@@ -475,7 +475,7 @@ class Matching_Tree(Error_Message):
             raise Exception('There are not possible trees')
 
         ############################ Debug ######################################
-        self.__show_all_possible_trees(all_possible_trees, base_fingerprint, input_fingerprint)
+        # self.__show_all_possible_trees(all_possible_trees, base_fingerprint, input_fingerprint)
 
         first_trees = self.__obtain_first_trees(all_possible_trees)
         bigest_tree = self.__obtain_bigest_tree(first_trees)
@@ -490,7 +490,7 @@ class Matching_Tree(Error_Message):
         num_base_minutiaes = len(self._base_minutiaes)
         num_input_minutiaes = len(self._input_minutiaes)
 
-        minimum_score = ((num_base_minutiaes + num_input_minutiaes) // 2) - 1
+        minimum_score = ((num_base_minutiaes + num_input_minutiaes) // 4) - 1
 
         if len(bigest_tree['base']) == len(bigest_tree['input']):
             if len(bigest_tree['base']) >= minimum_score:
@@ -509,13 +509,13 @@ class Matching_Tree(Error_Message):
             return self._DONT_MATCH_FINGERPRINT
 
         ############################ Debug ######################################
-        print('\n\tBiggest tree')
-        print('Common base minutiaes: ', len(bigest_tree['base']))
-        print('Edge base minutiaes: ', len(bigest_tree['edge_base']))
-        print('Spurious base minutiaes: ', len(bigest_tree['spu_b']))
-        print('Common input minutiaes: ', len(bigest_tree['input']))
-        print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
-        print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
+        # print('\n\tBiggest tree')
+        # print('Common base minutiaes: ', len(bigest_tree['base']))
+        # print('Edge base minutiaes: ', len(bigest_tree['edge_base']))
+        # print('Spurious base minutiaes: ', len(bigest_tree['spu_b']))
+        # print('Common input minutiaes: ', len(bigest_tree['input']))
+        # print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
+        # print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
 
         is_tree_compleate = False
         try:
@@ -541,13 +541,13 @@ class Matching_Tree(Error_Message):
                 bigest_tree_copy.clear()
 
         ############################ Debug ######################################
-        print('\n\tBiggest tree')
-        print('Common base minutiaes: ', len(bigest_tree['base']))
-        print('Edge base minutiaes: ', len(bigest_tree['edge_base']))
-        print('Spurious base minutiaes: ', len(bigest_tree['spu_b']))
-        print('Common input minutiaes: ', len(bigest_tree['input']))
-        print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
-        print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
+        # print('\n\tBiggest tree')
+        # print('Common base minutiaes: ', len(bigest_tree['base']))
+        # print('Edge base minutiaes: ', len(bigest_tree['edge_base']))
+        # print('Spurious base minutiaes: ', len(bigest_tree['spu_b']))
+        # print('Common input minutiaes: ', len(bigest_tree['input']))
+        # print('Edge input minutiaes: ', len(bigest_tree['edge_input']))
+        # print('Spurious input minutiaes: ', len(bigest_tree['spu_i']))
 
         process_message = self.__is_figerprint_match(bigest_tree)
 
