@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*
 from Fingerprint import Fingerprint
-from operator import is_not
 import cv2 as cv
 import re
 
