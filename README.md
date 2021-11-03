@@ -1,2 +1,2 @@
 # FintechProject
-A TT project
+My TT project
