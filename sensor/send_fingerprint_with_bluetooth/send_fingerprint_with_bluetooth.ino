@@ -51,7 +51,7 @@ void setup() {
         myBluetooth.println("Found fingerprint sensor!");
         myBluetooth.print("Capacity: "); myBluetooth.println(params.capacity);
         myBluetooth.print("Packet length: "); myBluetooth.println(FPM::packet_lengths[params.packet_len]);
-        myBluetooth.print("Send: "); myBluetooth.print(SEND_FINGERPRINT); myBluetooth.println(" to catch fingerprint");
+        myBluetooth.print("Send: S to catch fingerprint");
     }
     else {
         myBluetooth.println("Did not find fingerprint sensor :(");
