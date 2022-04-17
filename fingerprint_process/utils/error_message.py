@@ -11,6 +11,7 @@ class ErrorMessage(object):
         self._MATCH_FINGERPRINT = 5
         self._WRONG_ANGLES = 6
         self._NOT_OPTION_FOUND = 7
+        self._RECONSTRUCTION_FAILED = 8
 
     def show_message(self, error_code):
         if error_code == self._FINGERPRINT_OK:
@@ -29,6 +30,8 @@ class ErrorMessage(object):
             print('\n\tAngles do not 180°')
         elif error_code == self._NOT_OPTION_FOUND:
             print('\n\tOption couldn\'t be found')
+        elif error_code == self._RECONSTRUCTION_FAILED:
+            print('\n\tReconstruction fingerprint failed')
         else:
             print('\n\tUnknown Error')
 
@@ -63,3 +66,7 @@ class ErrorMessage(object):
     @property
     def NOT_OPTION_FOUND(self):
         return self._NOT_OPTION_FOUND
+
+    @property
+    def RECONSTRUCTION_FAILED(self):
+        return self._RECONSTRUCTION_FAILED

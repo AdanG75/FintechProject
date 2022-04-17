@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from fingerprint_process.utils import utils as u_fin
-
+from fingerprint_process.utils.error_message import ErrorMessage
 from fingerprint_process.description.fingerprint import Fingerprint
+from web_utils.image_on_web import open_fingerprint_data_from_json, save_fingerprint_in_memory
 
 
 def local_test():
@@ -18,6 +19,8 @@ def local_test():
     print('\t8.- Fingerprints Matching Core (from Sensor)')
     print('\t9.- Fingerprints Matching Core (from Image)')
     print('\tA.- Save fingerprint into JSON')
+    print('\tB.- Show fingerprint from JSON')
+    print('\tC.- Show fingerprint from Base64')
     print('\tX.- Exit the programme')
 
     print('\n')
@@ -87,6 +90,19 @@ def local_test():
 
         if isinstance(result, dict):
             print(result)
+
+    elif option.lower() == 'b':
+        fingerprint_data = open_fingerprint_data_from_json()
+        result = u_fin.show_fingerprint_from_array(fingerprint_data)
+
+        if not result == ErrorMessage.FINGERPRINT_OK:
+            console = ErrorMessage()
+            console.show_message(result)
+
+    elif option.lower() == 'c':
+        fingerprint_data = open_fingerprint_data_from_json()
+        image_base64 = save_fingerprint_in_memory(fingerprint_data)
+        u_fin.show_fingerprint_form_base64(image_base64)
 
     elif (option.lower() == 'x'):
         return True

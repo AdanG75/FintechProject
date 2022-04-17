@@ -125,7 +125,7 @@ class MatchingTree(ErrorMessage):
     def __mark_characteristic_point(self, fingerprint, list_minutiaes, name='fingerprint'):
         colors = {'e': (150, 0, 0), 'b': (0, 150, 0)}
 
-        fingerprint_image = fingerprint.get_fingerprint_image()
+        fingerprint_image = fingerprint.show_fingerprint()
 
         result = cv.cvtColor(fingerprint_image, cv.COLOR_GRAY2RGB)
 

@@ -1,4 +1,10 @@
+import base64
+import io
 from typing import List
+
+import cv2 as cv
+import numpy as np
+from PIL import Image
 
 from fingerprint_process.preprocessing.connect_sensor import ConnectSensor
 from fingerprint_process.preprocessing.fingerprint_raw import FingerprintRaw
@@ -6,8 +12,6 @@ from fingerprint_process.description.fingerprint import Fingerprint
 from fingerprint_process.utils.bank_fingerprint_images import BankFingerprint
 from fingerprint_process.matching.match import match
 from fingerprint_process.utils.error_message import ErrorMessage
-
-import cv2 as cv
 
 
 def create_fingerprint_samples():
@@ -185,3 +189,28 @@ def raw_fingerprint_construction(data_fingerprint: List):
     raw_fingerprint = fingerprint.reconstruction_fingerprint(raw_data_fingerprint)
 
     return raw_fingerprint
+
+
+def show_fingerprint_from_array(fingerprint_data):
+
+    raw_fingerprint = raw_fingerprint_construction(data_fingerprint=fingerprint_data)
+
+    if isinstance(raw_fingerprint, tuple):
+        return ErrorMessage.RECONSTRUCTION_FAILED
+
+    fingerprint_image = Image.fromarray(raw_fingerprint)
+    fingerprint_image = fingerprint_image.convert("L")
+
+    fingerprint_image.show()
+
+    return ErrorMessage.FINGERPRINT_OK
+
+
+def show_fingerprint_form_base64(image_base64: bytes) -> None:
+    image_str = image_base64.decode()
+
+    img = Image.open(io.BytesIO(base64.b64decode(image_str)), formats=["BMP"])
+
+    img.show("Fingerprint from Base64")
+
+

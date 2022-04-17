@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 from typing import List
 
 from fastapi import HTTPException
@@ -20,6 +21,7 @@ def save_fingerprint_in_memory(data_fingerprint: List) -> bytes:
         )
 
     fingerprint_image = Image.fromarray(raw_fingerprint)
+    fingerprint_image = fingerprint_image.convert("L")
     buffer = io.BytesIO()
     fingerprint_image.save(buffer, format="BMP")
     fingerprint_image_bytes = buffer.getvalue()
@@ -30,6 +32,32 @@ def save_fingerprint_in_memory(data_fingerprint: List) -> bytes:
 
     return image_b64
 
+
+def open_fingerprint_data_from_json(
+        path: str = './fingerprint_process/data/',
+        json_name: str = 'fingerprintRawData.json'
+) -> List[int]:
+
+    if not json_name.endswith(".json"):
+        json_name = json_name + ".json"
+
+    global fingerprint_data_str
+
+    with open(
+        file=path + json_name,
+        mode='r',
+        encoding='utf-8'
+    ) as file:
+        fingerprint_json = json.load(file)
+        fingerprint_data_str = fingerprint_json["fingerprint"]
+        file.close()
+
+    data_fingerprint = []
+
+    for data in fingerprint_data_str:
+        data_fingerprint.append(int(data))
+
+    return data_fingerprint
 
 
 
