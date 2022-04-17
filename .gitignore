@@ -1,0 +1,12 @@
+.idea/
+._.DS_Store
+.vscode/
+__pycache__/
+OldCode/
+fingerprint_process/preprocessing_fingerprints/
+fingerprint_process/sampleImages/
+*.bmp
+*.tif
+*.jpeg
+*.png
+venv/
