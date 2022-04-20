@@ -51,7 +51,7 @@ def change_directory_of_images():
     ubication_image = None
 
     while (not finish):
-        ubication_image = './authentication/sampleImages/'
+        ubication_image = './fingerprint_process/sampleImages/'
         print('\n\t Directory to search image: {}'.format(ubication_image))
         print('Would you like to change the directory by default:\n')
         print('\t [Y]es')

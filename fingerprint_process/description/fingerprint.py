@@ -96,7 +96,7 @@ class Fingerprint(ErrorMessage):
     def __get_quality_index(self):
         quality_image = QualityFingerprint(number_filters=16, columns_image=self._figerprint_columns,
                                            rows_image=self._fingerprint_rows, data_filters='dataFilter.txt',
-                                           show_graphs=self._show_result, address_output='./data/',
+                                           show_graphs=self._show_result, address_output='./fingerprint_process/data/',
                                            name_fingerprint=self._name_fingerprint)
         self._quality_index = quality_image.getQualityFingerprint(self._raw_image, save_graphs=self._save_result)
 
