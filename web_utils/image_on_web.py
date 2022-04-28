@@ -1,7 +1,7 @@
 import base64
 import io
 import json
-from typing import List
+from typing import List, Optional
 
 from fastapi import HTTPException
 from starlette import status
@@ -11,7 +11,17 @@ from PIL import Image
 from fingerprint_process.utils.utils import raw_fingerprint_construction
 
 
-def save_fingerprint_in_memory(data_fingerprint: List) -> bytes:
+def save_fingerprint_in_memory(
+        data_fingerprint: List,
+        return_format: str = 'base64'
+) -> bytes:
+    """
+    Save fingerprint into memory as bytes
+    :param data_fingerprint: (List[int]) - Data of a fingerprint sample
+    :param return_format: (str) -   "base64" -> return the image in base64 encode
+                                    "bytes" -> return the image in raw bytes (without encode)
+    :return: Data image in bytes
+    """
     raw_fingerprint = raw_fingerprint_construction(data_fingerprint=data_fingerprint)
 
     if isinstance(raw_fingerprint, tuple):
@@ -25,12 +35,22 @@ def save_fingerprint_in_memory(data_fingerprint: List) -> bytes:
     buffer = io.BytesIO()
     fingerprint_image.save(buffer, format="BMP")
     fingerprint_image_bytes = buffer.getvalue()
-    image_b64: bytes = base64.b64encode(fingerprint_image_bytes)
+
+    if return_format == 'base64':
+        image_b64: bytes = base64.b64encode(fingerprint_image_bytes)
 
     fingerprint_image.close()
     buffer.close()
 
-    return image_b64
+    if return_format == 'base64':
+        return image_b64
+    elif return_format == 'bytes':
+        return fingerprint_image_bytes
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_418_IM_A_TEAPOT,
+            detail="Format type not available"
+        )
 
 
 def open_fingerprint_data_from_json(

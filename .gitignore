@@ -11,3 +11,4 @@ fingerprint_process/sampleImages/
 *.png
 venv/
 fintech75-917eb42b6c2a.json
+.env

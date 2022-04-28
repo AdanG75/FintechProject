@@ -3,12 +3,11 @@
 from fastapi import FastAPI
 
 from core.config import settings
-from routers import test_functions
+from routers import test_functions, admin_router
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
-settings.start()
 app.include_router(router=test_functions.router)
-# print(sys.path)
+app.include_router(router=admin_router.router)
 
 
 @app.get(

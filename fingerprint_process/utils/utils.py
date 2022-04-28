@@ -214,3 +214,4 @@ def show_fingerprint_form_base64(image_base64: bytes) -> None:
     img.show("Fingerprint from Base64")
 
 
+
