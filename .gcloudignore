@@ -40,3 +40,5 @@ fingerprint_process/sampleImages/
 *.png
 # Ignore local credentials
 fintech75-aa48eab9d1dc.json
+# Ignore environment variables file
+.env
