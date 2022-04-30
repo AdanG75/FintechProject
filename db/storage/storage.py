@@ -3,6 +3,7 @@ from typing import Union
 
 from fastapi import HTTPException
 from google.cloud import storage
+from google.cloud.storage import Bucket
 from google.cloud.storage.client import Client
 from starlette import status
 
@@ -47,14 +48,14 @@ def create_bucket(bucket_name: str, storage_client: Client) -> bool:
         )
 
 
-def get_bucket(bucket_name: str, storage_client: Client):
+def get_bucket(bucket_name: str, storage_client: Client) -> Bucket:
     """
     Return the bucket which have the name passed as parameter
 
     :param bucket_name: (str) - bucket's name
     :param storage_client: (google.cloud.storage.client.Client) a client to bundle Cloud Storage's API
 
-    :return: True if all were OK
+    :return: (google.cloud.storage.Bucket) - The Bucket object
     """
     try:
         my_bucket = storage_client.get_bucket(bucket_name.lower())
@@ -65,6 +66,29 @@ def get_bucket(bucket_name: str, storage_client: Client):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
         )
+
+
+def get_bucket_details(bucket_name: str, storage_client: Client) -> dict:
+    """
+        Return the bucket's detail which have the name passed as parameter
+
+        :param bucket_name: (str) - bucket's name
+        :param storage_client: (google.cloud.storage.client.Client) a client to bundle Cloud Storage's API
+
+        :return: (dict) - The Bucket's detail name, id, location, created_at, storage_class (keys' name)
+        """
+    bucket = get_bucket(bucket_name=bucket_name, storage_client=storage_client)
+
+    response = {
+        "name": bucket.name,
+        "id": bucket.id,
+        "location": bucket.location,
+        "created_at": bucket.time_created,
+        "storage_class": bucket.storage_class
+    }
+
+    return response
+
 
 
 def upload_file_to_bucket(

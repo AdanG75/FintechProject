@@ -9,6 +9,7 @@ from db.orm import admins_orm
 from db.storage import storage
 from db.storage.tests import test_storage
 from schemas.fingerprint_model import FingerprintSimpleModel
+from schemas.storage_base import StorageBase
 from web_utils.image_on_web import open_fingerprint_data_from_json, save_fingerprint_in_memory
 
 templates = Jinja2Templates(directory="templates")
@@ -21,7 +22,8 @@ router = APIRouter(
 @router.post(
     path="/fingerprint/image",
     status_code=status.HTTP_200_OK,
-    response_class=HTMLResponse
+    response_class=HTMLResponse,
+    tags=["fingerprint"]
 )
 async def get_fingerprint_image(
         request: Request,
@@ -37,7 +39,8 @@ async def get_fingerprint_image(
 @router.get(
     path="/fingerprint/show",
     status_code=status.HTTP_200_OK,
-    response_class=HTMLResponse
+    response_class=HTMLResponse,
+    tags=["fingerprint"]
 )
 async def show_fingerprint(
         request: Request
@@ -56,7 +59,8 @@ async def show_fingerprint(
 
 @router.post(
     path="/create/bucket_test",
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    tags=["bucket"]
 )
 async def create_bucket(
         gcs: Client = Depends(storage.get_storage_client),
@@ -67,9 +71,25 @@ async def create_bucket(
     return response
 
 
+@router.get(
+    path='/detail/bucket_test',
+    status_code=status.HTTP_200_OK,
+    response_model=StorageBase,
+    tags=["bucket"]
+)
+async def get_bucket_details(
+        gcs: Client = Depends(storage.get_storage_client),
+        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+):
+    response = test_storage.get_bucket_details(gcs=gcs)
+
+    return response
+
+
 @router.post(
     path="/save/fingerprint_image",
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    tags=["fingerprint", "bucket"]
 )
 async def save_fingerprint_into_bucket(
         fingerprint_model: FingerprintSimpleModel = Body(...),
@@ -88,7 +108,8 @@ async def save_fingerprint_into_bucket(
 
 @router.get(
     path="/download/fingerprint_image",
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    tags=["fingerprint", "bucket"]
 )
 async def download_fingerprint_from_bucket(
         gcs: Client = Depends(storage.get_storage_client),

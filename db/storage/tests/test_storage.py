@@ -77,3 +77,9 @@ def download_from_bucket_test(gcs: Client):
         "file_name": name_fingerprint_file_with_extension,
         "directory": os.getcwd()
     }
+
+
+def get_bucket_details(gcs: Client):
+    details = storage.get_bucket_details(bucket_name=user_bucket, storage_client=gcs)
+
+    return details
