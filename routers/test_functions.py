@@ -19,6 +19,7 @@ router = APIRouter(
     tags=["tests"]
 )
 
+
 @router.post(
     path="/fingerprint/image",
     status_code=status.HTTP_200_OK,

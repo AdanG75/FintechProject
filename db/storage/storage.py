@@ -83,7 +83,7 @@ def get_bucket_details(bucket_name: str, storage_client: Client) -> dict:
         "name": bucket.name,
         "id": bucket.id,
         "location": bucket.location,
-        "created_at": bucket.time_created,
+        "created_at": str(bucket.time_created),
         "storage_class": bucket.storage_class
     }
 

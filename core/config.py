@@ -75,7 +75,7 @@ class Settings:
         self.__ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES'))
 
     def get_database_url(self):
-        if self.__ON_CLOUD == "False" or self.__ON_CLOUD is None:
+        if not self.__ON_CLOUD:
             self.__DATABASE_URL = f"postgresql://" \
                                   f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
                                   f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
