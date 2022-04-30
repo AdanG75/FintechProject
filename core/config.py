@@ -31,7 +31,7 @@ class Settings:
         self.__PROJECT_VERSION: str = os.environ.get("PROJECT_VERSION")
 
         if self.__ON_CLOUD == "False" or self.__ON_CLOUD is None:
-            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'fintech75-0ea73c91787c.json'
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'fintech75-aa48eab9d1dc.json'
 
         self.__POSTGRES_USER: str = access_secret_version(
             project_id=self.__PROJECT_NAME,
