@@ -4,7 +4,6 @@ from fastapi.templating import Jinja2Templates
 from starlette import status
 
 router = APIRouter(
-    prefix='/',
     tags=['main']
 )
 
@@ -20,6 +19,6 @@ async def home(
         request: Request
 ):
     return templates.TemplateResponse(
-        "home_page.html",
+        "index.html",
         {"request": request}
     )

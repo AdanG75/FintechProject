@@ -10,7 +10,7 @@ app = FastAPI(
     version=settings.get_project_version()
 )
 
-app.include_router(routers=home.router)
+app.include_router(router=home.router)
 app.include_router(router=admin_router.router)
 app.include_router(router=test_functions.router)
 
