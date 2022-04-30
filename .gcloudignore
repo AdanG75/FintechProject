@@ -38,3 +38,5 @@ fingerprint_process/sampleImages/
 *.tif
 *.jpeg
 *.png
+# Ignore local credentials
+fintech75-aa48eab9d1dc.json

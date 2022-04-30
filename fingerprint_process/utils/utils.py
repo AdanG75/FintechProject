@@ -131,22 +131,6 @@ def get_description_fingerprint(name_fingerprint='fingerprint', source='sensor',
         return process_message
 
 
-def save_fingerprint_as_json_from_sensor(
-        path_json: str = './data/',
-        name_json: str = 'fingerprintRawData',
-        serial_port: str = '/dev/ttyUSB0',
-        baud_rate: int = 57600
-):
-    connect_sensor = ConnectSensor(serial_port=serial_port, baud_rate=baud_rate, width=256, height=288)
-
-    response = connect_sensor.save_fingerprint_into_json(path_json=path_json, name_json=name_json)
-
-    if response == (False,):
-        return response
-
-    return ErrorMessage.FINGERPRINT_OK
-
-
 def match_index_and_base_fingerprints(base_name: str, input_name: str, mode: str, source: str):
     global base_fingerprint, index_fingerprint
 

@@ -4,6 +4,7 @@ from fingerprint_process.utils import utils as u_fin
 from fingerprint_process.utils.error_message import ErrorMessage
 from fingerprint_process.description.fingerprint import Fingerprint
 from web_utils.image_on_web import open_fingerprint_data_from_json, save_fingerprint_in_memory
+from core.config import settings
 
 
 def local_test():

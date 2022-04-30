@@ -2,11 +2,12 @@
 from typing import Optional
 from datetime import datetime, timedelta
 from jose import jwt
-from decouple import config
 
-SECRET_KEY: str = config('SECRET_KEY')
-ALGORITHM: str = config('ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES: int = int(config('ACCESS_TOKEN_EXPIRE_MINUTES'))
+from core.config import settings
+
+SECRET_KEY: str = settings.get_secret_key()
+ALGORITHM: str = settings.get_algorithm()
+ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.get_expire_minutes()
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
