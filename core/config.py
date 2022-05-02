@@ -105,5 +105,26 @@ class Settings:
     def get_project_version(self):
         return self.__PROJECT_VERSION
 
+    def is_on_cloud(self):
+        return self.__ON_CLOUD
+
+    def get_db_user(self):
+        return self.__POSTGRES_USER
+
+    def get_db_password(self):
+        return self.__POSTGRES_PASSWORD
+
+    def get_db_name(self):
+        return self.__POSTGRES_DB
+
+    def get_db_port(self):
+        return self.__POSTGRES_PORT
+
+    def get_db_socket(self):
+        return self.__DB_SOCKET_DIR
+
+    def get_db_instance(self):
+        return self.__INSTANCE_CONNECTION_NAME
+
 
 settings = Settings()
