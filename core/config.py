@@ -75,18 +75,23 @@ class Settings:
         self.__ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES'))
 
     def get_database_url(self):
-        if not self.__ON_CLOUD:
-            self.__DATABASE_URL = f"postgresql://" \
-                                  f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
-                                  f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
-                                  f"{self.__POSTGRES_DB}"
-        else:
-            # postgresql+pg8000://<db_user>:<db_pass>@/<db_name>
-            #                         ?unix_sock=<socket_path>/<cloud_sql_instance_name>/.s.PGSQL.<db_port>
-            self.__DATABASE_URL = f"postgresql+pg8000://" \
-                                  f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@/" \
-                                  f"{self.__POSTGRES_DB}?unix_socket={self.__DB_SOCKET_DIR}/" \
-                                  f"{self.__INSTANCE_CONNECTION_NAME}/.s.PGSQL.{self.__POSTGRES_PORT}"
+        # if not self.__ON_CLOUD:
+        #     self.__DATABASE_URL = f"postgresql://" \
+        #                           f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
+        #                           f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
+        #                           f"{self.__POSTGRES_DB}"
+        # else:
+        #     # postgresql+pg8000://<db_user>:<db_pass>@/<db_name>
+        #     #                         ?unix_sock=<socket_path>/<cloud_sql_instance_name>/.s.PGSQL.<db_port>
+        #     self.__DATABASE_URL = f"postgresql+pg8000://" \
+        #                           f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@/" \
+        #                           f"{self.__POSTGRES_DB}?unix_socket={self.__DB_SOCKET_DIR}/" \
+        #                           f"{self.__INSTANCE_CONNECTION_NAME}/.s.PGSQL.{self.__POSTGRES_PORT}"
+
+        self.__DATABASE_URL = f"postgresql://" \
+                              f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
+                              f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
+                              f"{self.__POSTGRES_DB}"
 
         return self.__DATABASE_URL
 
@@ -108,23 +113,23 @@ class Settings:
     def is_on_cloud(self):
         return self.__ON_CLOUD
 
-    def get_db_user(self):
-        return self.__POSTGRES_USER
-
-    def get_db_password(self):
-        return self.__POSTGRES_PASSWORD
-
-    def get_db_name(self):
-        return self.__POSTGRES_DB
-
-    def get_db_port(self):
-        return self.__POSTGRES_PORT
-
-    def get_db_socket(self):
-        return self.__DB_SOCKET_DIR
-
-    def get_db_instance(self):
-        return self.__INSTANCE_CONNECTION_NAME
+    # def get_db_user(self):
+    #     return self.__POSTGRES_USER
+    #
+    # def get_db_password(self):
+    #     return self.__POSTGRES_PASSWORD
+    #
+    # def get_db_name(self):
+    #     return self.__POSTGRES_DB
+    #
+    # def get_db_port(self):
+    #     return self.__POSTGRES_PORT
+    #
+    # def get_db_socket(self):
+    #     return self.__DB_SOCKET_DIR
+    #
+    # def get_db_instance(self):
+    #     return self.__INSTANCE_CONNECTION_NAME
 
 
 settings = Settings()
