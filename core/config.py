@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
+from typing import Union, Any
 
+import sqlalchemy
+from sqlalchemy.engine.url import URL
 from dotenv import load_dotenv
 
 from core.secret_manager import access_secret_version
@@ -12,10 +15,8 @@ class Settings:
     __PROJECT_VERSION: str
     __POSTGRES_USER: str
     __POSTGRES_PASSWORD: str
-    __POSTGRES_SERVER: str
-    __POSTGRES_PORT: str
     __POSTGRES_DB: str
-    __DATABASE_URL: str
+    __DATABASE_URL: Union[str, URL]
     __DB_SOCKET_DIR: str
     __INSTANCE_CONNECTION_NAME: str
     __SECRET_KEY: str
@@ -24,7 +25,7 @@ class Settings:
 
     def __init__(self):
         # Change value to True if app will being deployed to AppEngine
-        self.__ON_CLOUD = True
+        self.__ON_CLOUD = False
 
         if not self.__ON_CLOUD:
             env_path = Path('.') / '.env'
@@ -42,14 +43,6 @@ class Settings:
         self.__POSTGRES_PASSWORD: str = access_secret_version(
             project_id=self.__PROJECT_NAME,
             secret_id=os.environ.get("POSTGRES_PASSWORD")
-        )
-        self.__POSTGRES_SERVER: str = access_secret_version(
-            project_id=self.__PROJECT_NAME,
-            secret_id=os.environ.get("POSTGRES_SERVER")
-        )
-        self.__POSTGRES_PORT: str = access_secret_version(
-            project_id=self.__PROJECT_NAME,
-            secret_id=os.environ.get("POSTGRES_PORT")
         )
         self.__POSTGRES_DB: str = access_secret_version(
             project_id=self.__PROJECT_NAME,
@@ -80,18 +73,19 @@ class Settings:
         #                           f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
         #                           f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
         #                           f"{self.__POSTGRES_DB}"
-        # else:
-        #     # postgresql+pg8000://<db_user>:<db_pass>@/<db_name>
-        #     #                         ?unix_sock=<socket_path>/<cloud_sql_instance_name>/.s.PGSQL.<db_port>
-        #     self.__DATABASE_URL = f"postgresql+pg8000://" \
-        #                           f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@/" \
-        #                           f"{self.__POSTGRES_DB}?unix_socket={self.__DB_SOCKET_DIR}/" \
-        #                           f"{self.__INSTANCE_CONNECTION_NAME}/.s.PGSQL.{self.__POSTGRES_PORT}"
 
-        self.__DATABASE_URL = f"postgresql://" \
-                              f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
-                              f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
-                              f"{self.__POSTGRES_DB}"
+        if not self.is_on_cloud():
+            self.__DB_SOCKET_DIR = "/home/coffe/cloudsql/"
+
+        self.__DATABASE_URL = sqlalchemy.engine.url.URL.create(
+            drivername="postgresql+pg8000",
+            username=self.__POSTGRES_USER,
+            password=self.__POSTGRES_PASSWORD,
+            database=self.__POSTGRES_DB,
+            query={
+                "unix_sock": "{}/.s.PGSQL.5432".format(self.__DB_SOCKET_DIR + self.__INSTANCE_CONNECTION_NAME)
+            }
+        )
 
         return self.__DATABASE_URL
 
@@ -112,24 +106,6 @@ class Settings:
 
     def is_on_cloud(self):
         return self.__ON_CLOUD
-
-    # def get_db_user(self):
-    #     return self.__POSTGRES_USER
-    #
-    # def get_db_password(self):
-    #     return self.__POSTGRES_PASSWORD
-    #
-    # def get_db_name(self):
-    #     return self.__POSTGRES_DB
-    #
-    # def get_db_port(self):
-    #     return self.__POSTGRES_PORT
-    #
-    # def get_db_socket(self):
-    #     return self.__DB_SOCKET_DIR
-    #
-    # def get_db_instance(self):
-    #     return self.__INSTANCE_CONNECTION_NAME
 
 
 settings = Settings()

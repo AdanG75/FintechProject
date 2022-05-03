@@ -1,9 +1,13 @@
 
 from typing import Optional
 from datetime import datetime, timedelta
+
+from fastapi import HTTPException
 from jose import jwt
+from starlette import status
 
 from core.config import settings
+from core.logs import LogSeverity, write_data_log
 
 SECRET_KEY: str = settings.get_secret_key()
 ALGORITHM: str = settings.get_algorithm()
@@ -17,5 +21,26 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
+
+    # Write a log
+    write_data_log("time registered: " + str(expire), severity=LogSeverity.INFO.value)
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def is_token_expired(exp_time: int) -> bool:
+    curr_dt = datetime.utcnow()
+
+    # Write a log
+    write_data_log("time check: " + str(curr_dt), severity=LogSeverity.INFO.value)
+
+    timestamp = int(round(curr_dt.timestamp()))
+
+    if timestamp < exp_time:
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="Token has expired"
+        )
+
+    return False

@@ -7,6 +7,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from starlette import status
 
+from core.token_functions import is_token_expired
 from db.database import get_db
 from schemas.admin_base import AdminRequest
 from db.models.admins_db import DbAdmin
@@ -123,20 +124,11 @@ def get_current_admin(db: Session = Depends(get_db),  token: str = Depends(admin
             raise credentials_exception
 
         exp_time = payload.get("exp")
-
-        curr_dt = datetime.utcnow()
-        timestamp = int(round(curr_dt.timestamp()))
-
-        if timestamp < exp_time:
-            raise HTTPException(
-                status_code=status.HTTP_408_REQUEST_TIMEOUT,
-                detail="Token has expired"
-            )
-
     except JWTError:
         raise credentials_exception
 
-    admin: Optional[DbAdmin] = get_admin(db=db, username=admin_username)
+    if not is_token_expired(exp_time):
+        admin: Optional[DbAdmin] = get_admin(db=db, username=admin_username)
 
     if admin is None:
         raise admin_not_found_exception
