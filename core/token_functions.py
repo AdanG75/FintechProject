@@ -1,6 +1,6 @@
 
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 
 from fastapi import HTTPException
 from jose import jwt
@@ -20,10 +20,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+
+    to_encode.update({"exp": expire.timestamp()})
 
     # Write a log
-    write_data_log("time registered: " + str(expire), severity=LogSeverity.INFO.value)
+    write_data_log(
+        f"Admin {data['username']} entered at:" + str(datetime.utcnow()),
+        severity=LogSeverity.INFO.value
+    )
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -31,15 +35,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def is_token_expired(exp_time: int) -> bool:
     curr_dt = datetime.utcnow()
+    timestamp = curr_dt.timestamp()
 
-    # Write a log
-    write_data_log("time check: " + str(curr_dt), severity=LogSeverity.INFO.value)
-
-    timestamp = int(round(curr_dt.timestamp()))
-
-    if timestamp < exp_time:
+    if timestamp > exp_time:
         raise HTTPException(
-            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired"
         )
 
