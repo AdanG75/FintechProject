@@ -1,12 +1,14 @@
-from typing import Optional, List, Dict
+from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Body, Path, Query, Depends, HTTPException
+from fastapi import APIRouter, Body, Path, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette import status
 
 from core import token_functions
 from core.hash import Hash
+from core.logs import LogSeverity, write_data_log
 from db.database import get_db
 from db.models.admins_db import DbAdmin
 from db.orm import admins_orm
@@ -111,6 +113,12 @@ async def get_token(
         })
 
     response_token = AdminToken(access_token=access_token, token_type='bearer', admin=admin)
+
+    # Write a log
+    write_data_log(
+        f"Admin {admin.username} entered at:" + str(datetime.utcnow()),
+        severity=LogSeverity.INFO.value
+    )
 
     return response_token
 
