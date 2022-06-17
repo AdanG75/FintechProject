@@ -42,3 +42,8 @@ fingerprint_process/sampleImages/
 fintech75-aa48eab9d1dc.json
 # Ignore environment variables file
 .env
+# Ignore old code directory
+old_code/
+# Ignore JSON data and PEM files
+*.json
+*.pem
