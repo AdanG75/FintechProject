@@ -18,8 +18,9 @@ def create_branch(db: Session, request: BranchRequest, id_market: str, id_addres
     branch_uuid = uuid.uuid4().hex
     id_branch = f"BRH-{branch_uuid}"
 
-    if not is_valid_phone_number(request.phone):
-        raise phone_exception
+    if request.phone is not None:
+        if not is_valid_phone_number(request.phone):
+            raise phone_exception
 
     try:
         branch = get_branch_by_id_market_and_branch_name(db, id_market, request.branch_name)
@@ -77,7 +78,7 @@ def get_branches_by_id_market(db: Session, id_market: str) -> List[DbBranch]:
     return branches
 
 
-def get_branches_by_id_address(db:Session, id_address: int) -> List[DbBranch]:
+def get_branches_by_id_address(db: Session, id_address: int) -> List[DbBranch]:
     try:
         branches = db.query(DbBranch).where(
             DbBranch.id_address == id_address,
@@ -161,4 +162,3 @@ def delete_branch(db: Session, id_branch: str) -> BasicResponse:
         operation="delete",
         successful=True
     )
-

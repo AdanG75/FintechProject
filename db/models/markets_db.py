@@ -10,6 +10,7 @@ class DbMarket(Base):
     id_market = Column('id_market', String, primary_key=True, index=True)
     id_user = Column('id_user', Integer, ForeignKey("users.id_user"))
     type_market = Column('type_market', String)
+    web_page = Column('webpage', String)
     rfc = Column('rfc', String)
 
     branches = relationship("db.models.branches_db.DbBranch", back_populates="market")

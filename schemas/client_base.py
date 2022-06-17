@@ -9,6 +9,7 @@ class ClientBase(BaseModel):
     id_address: int = Field(..., gt=0)
     last_name: str = Field(..., min_length=2, max_length=99)
     birth_date: date = Field(...)
+    phone: Optional[str] = Field(None, min_length=7, max_length=25)
 
 
 class AddressInner(BaseModel):
@@ -20,7 +21,7 @@ class AddressInner(BaseModel):
     inner_number: Optional[str] = Field(None)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
 
 
 class FingerprintInner(BaseModel):
@@ -30,7 +31,7 @@ class FingerprintInner(BaseModel):
     created_time: datetime = Field(...)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
 
 
 class ClientRequest(ClientBase):
@@ -44,7 +45,7 @@ class ClientDisplay(ClientBase):
     fingerprints: Optional[List[FingerprintInner]] = Field(None)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
 
 
 

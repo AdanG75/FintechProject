@@ -12,6 +12,7 @@ class DbClient(Base):
     id_address = Column('id_address', Integer, ForeignKey("addresses.id_address"))
     last_name = Column('last_name', String)
     birth_date = Column('birth_date', Date)
+    phone = Column('phone', String)
     age = Column('age', Integer)
 
     address = relationship("db.models.addresses_db.DbAddress", back_populates="clients")

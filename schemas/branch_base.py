@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, Field, HttpUrl
 
 pattern_service_hours: str = "^\d\d?:\d{2}(\s?[aApP]\.?[mM]\.?\s?)?[\s-]{1,3}\d\d?:\d{2}(\s?[aApP]\.?[mM]\.?\s?)?$"
 
@@ -10,7 +9,7 @@ pattern_service_hours: str = "^\d\d?:\d{2}(\s?[aApP]\.?[mM]\.?\s?)?[\s-]{1,3}\d\
 class BranchBase(BaseModel):
     branch_name: str = Field(..., min_length=1, max_length=79)
     service_hours: str = Field(..., regex=pattern_service_hours, min_length=9, max_length=24)
-    phone: str = Field(...)
+    phone: Optional[str] = Field(None, min_length=7, max_length=25)
     password: str = Field(..., min_length=8, max_length=49)
 
 
@@ -18,10 +17,11 @@ class MarketInner(BaseModel):
     id_market: str = Field(...)
     id_user: int = Field(...)
     type_market: str = Field(...)
+    web_page: Optional[HttpUrl] = Field(None)
     rfc: Optional[str] = Field(None)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
 
 
 class AddressInner(BaseModel):
@@ -34,7 +34,7 @@ class AddressInner(BaseModel):
     inner_number: Optional[str] = Field(None)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
 
 
 class BranchRequest(BranchBase):
@@ -74,5 +74,5 @@ class BranchDisplay(BranchBase):
     address: AddressInner = Field(...)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
 
