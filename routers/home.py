@@ -22,3 +22,4 @@ async def home(
         "index.html",
         {"request": request}
     )
+

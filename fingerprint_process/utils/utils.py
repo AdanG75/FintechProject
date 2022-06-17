@@ -1,6 +1,6 @@
 import base64
 import io
-from typing import List
+from typing import List, Union
 
 import cv2 as cv
 import numpy as np
@@ -20,13 +20,14 @@ def create_fingerprint_samples():
     bank_fp.generate_bank_fingerprint(auto_named=False)
 
 
-def get_data_fingerprint(source='sensor', data_fingerprint=None):
+def get_data_fingerprint(source='sensor', data_fingerprint: Union[str, list] = None):
     """
     A function to get the data of the raw fingerprint.
 
     :param source: A string which could be 'sensor' when the data is get from a serial port
                         and 'api' when is get from api.
-    :param data_fingerprint: An int array which is obtained from api. Only it is used when data from api.
+    :param data_fingerprint: An int array or a string decoded in base64 which is obtained from api. Only it is used
+                    when data from api.
 
     :return: a tuple with this data (False,) when couldn't possible to get the raw fingerprint. On the other hand,
     return the raw fingerprint into a bit array.
@@ -106,7 +107,14 @@ def get_description_fingerprint(name_fingerprint='fingerprint', source='sensor',
 
         process_message = fingerprint.describe_fingerprint(data_image, angles_tolerance=1)
     elif source.lower() == 'api':
-        pass
+        data_image = get_data_fingerprint(source='api')
+
+        if len(data_image) < 2:
+            print('Error to get the fingerprint image')
+            process_message = ErrorMessage.VOID_FINGERPRINT
+            return process_message
+
+        process_message = fingerprint.describe_fingerprint(data_image, angles_tolerance=1)
     elif source.lower() == 'image':
         if not ubication_image or ubication_image.isspace():
             ubication_image = change_directory_of_images()

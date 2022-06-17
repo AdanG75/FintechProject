@@ -7,6 +7,7 @@ certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.12
 click==8.0.4
+cryptography==37.0.2
 cycler==0.11.0
 dnspython==2.2.1
 ecdsa==0.17.0
@@ -42,6 +43,7 @@ opencv-contrib-python==4.5.5.64
 packaging==21.3
 passlib==1.7.4
 pg8000==1.26.1
+phonenumbers==8.12.50
 Pillow==9.0.1
 proto-plus==1.20.3
 protobuf==3.20.0

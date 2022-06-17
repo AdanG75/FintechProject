@@ -12,3 +12,6 @@ fingerprint_process/sampleImages/
 venv/
 fintech75-aa48eab9d1dc.json
 .env
+old_code/
+*.json
+*.pem

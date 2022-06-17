@@ -1,13 +1,13 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Body, Path, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette import status
 
-from core import token_functions
-from core.hash import Hash
+from auth import token_functions
+from secure.hash import Hash
 from core.logs import LogSeverity, write_data_log
 from db.database import get_db
 from db.models.admins_db import DbAdmin
@@ -24,7 +24,8 @@ router = APIRouter(
 # Create
 @router.post(
     path='/',
-    response_model=AdminDisplay
+    response_model=AdminDisplay,
+    status_code=status.HTTP_201_CREATED
 )
 async def create_admin(
         request: AdminRequest = Body(...),
@@ -46,15 +47,30 @@ async def get_admin(
         db: Session = Depends(get_db),
         current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
 ):
-    admin = admins_orm.get_admin(db=db, username=username)
+    admin = admins_orm.get_admin_by_username(db=db, username=username)
 
     return admin
+
+
+@router.get(
+    path="/",
+    status_code=status.HTTP_200_OK,
+    response_model=List[AdminDisplay]
+)
+async def list_admins(
+        db: Session = Depends(get_db),
+        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+):
+    admins = admins_orm.get_all_admins(db=db)
+
+    return admins
 
 
 # Update
 @router.put(
     path='/{username}',
-    response_model=AdminDisplay
+    response_model=AdminDisplay,
+    status_code=status.HTTP_200_OK
 )
 async def update_admin(
         username: str = Path(...),
@@ -70,7 +86,8 @@ async def update_admin(
 # Delete
 @router.delete(
     path='/{username}',
-    response_model=BasicResponse
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK
 )
 async def delete_admin(
         username: str = Path(...),
@@ -91,7 +108,7 @@ async def get_token(
         request: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)
 ):
-    admin: Optional[DbAdmin] = admins_orm.get_admin(db=db, username=request.username)
+    admin: Optional[DbAdmin] = admins_orm.get_admin_by_username(db=db, username=request.username)
 
     if admin is None:
         raise HTTPException(

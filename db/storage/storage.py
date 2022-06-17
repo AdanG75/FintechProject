@@ -1,6 +1,10 @@
 import base64
-from typing import Union
+import io
+import tempfile
+from datetime import datetime, timedelta
+from typing import Union, Tuple
 
+import google
 from fastapi import HTTPException
 from google.cloud import storage
 from google.cloud.storage import Bucket
@@ -211,6 +215,42 @@ def download_file_from_bucket(
 
         print('Saved')
         return True
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Couldn't communicate with cloud storage"
+        )
+
+
+def get_file_path(
+        blob_name: str,
+        bucket_name: str,
+        storage_client: Client
+) -> str:
+    """
+    Generate a temporary url of blob object.
+
+    :param blob_name: (str) - object's name
+    :param bucket_name: (str) - bucket's name
+    :param storage_client: (google.cloud.storage.client.Client) a client to bundle Cloud Storage's API
+
+    :return: A temporary url where image can be downloaded or seen.
+    """
+    try:
+        bucket = storage_client.get_bucket(bucket_name.lower())
+        blob = bucket.blob(blob_name)
+
+        expire = datetime.utcnow() + timedelta(minutes=30)
+        timestamp_expire = int(expire.timestamp())
+
+        return blob.generate_signed_url(expiration=timestamp_expire)
+
+    except google.cloud.exceptions.NotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File {blob_name} not found."
+        )
     except Exception as e:
         print(e)
         raise HTTPException(

@@ -1,5 +1,5 @@
 from sqlalchemy import Column
-from sqlalchemy.sql.sqltypes import Integer, String
+from sqlalchemy.sql.sqltypes import Integer, String, Text
 
 from db.database import Base
 
@@ -10,3 +10,4 @@ class DbAdmin(Base):
     username = Column('username', String)
     email = Column('email', String)
     password = Column('password', String)
+    public_key = Column('public_key', Text)
