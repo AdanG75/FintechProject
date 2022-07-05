@@ -13,5 +13,5 @@ class DbClient(Base):
     birth_date = Column('birth_date', Date)
     age = Column('age', SmallInteger)
 
-    addresses = relationship("db.models.addresses_db.DbAddress", back_populates="clients")
+    addresses = relationship("db.models.addresses_db.DbAddress", back_populates="client")
     fingerprints = relationship("db.models.fingerprints_db.DbFingerprint", back_populates="client")

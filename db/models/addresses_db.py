@@ -23,5 +23,5 @@ class DbAddress(Base):
     updated_time = Column('updated_time', DateTime(timezone=False))
     dropped = Column('dropped', Boolean)
 
-    client = relationship("db.models.clients_db.DbClient", back_populates="address")
+    client = relationship("db.models.clients_db.DbClient", back_populates="addresses")
     branch = relationship("db.models.branches_db.DbBranch", back_populates="address")

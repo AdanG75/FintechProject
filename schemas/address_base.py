@@ -1,13 +1,17 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from schemas.type_user import TypeUser
+
 
 class AddressBase(BaseModel):
+    is_main: bool = Field(...)
     zip_code: int = Field(..., gt=0)
     state: str = Field(..., min_length=2, max_length=79)
-    city: str = Field(..., min_length=2, max_length=79)
+    city: str = Field(None, min_length=2, max_length=79)
+    neighborhood: str = Field(None, min_length=3, max_length=79)
     street: str = Field(..., min_length=2, max_length=79)
     ext_number: str = Field(..., min_length=1, max_length=19)
     inner_number: Optional[str] = Field(None, min_length=1, max_length=14)
@@ -30,12 +34,21 @@ class BranchInner(BaseModel):
 
 
 class AddressRequest(AddressBase):
+    id_branch: str = Field(None, min_length=8, max_length=49)
+    id_client: str = Field(None, min_length=8, max_length=49)
+    type_owner: TypeUser = Field(...)
+
     class Config:
         schema_extra = {
             "example": {
+                "id_branch": "BR-asdf-ewefvrf-dwvref",
+                "id_client": None,
+                "type_owner": "market",
+                "is_main": True,
                 "zip_code": 18966,
                 "state": "Ciudad de México",
                 "city": "CDMX",
+                "neighborhood": "La gran Loma",
                 "street": "Avenida Principal",
                 "ext_number": "5",
                 "inner_number": None
@@ -45,12 +58,21 @@ class AddressRequest(AddressBase):
 
 class AddressDisplay(AddressBase):
     id_address: int = Field(...)
-    clients: Optional[List[ClientInner]] = Field(None)
-    branches: Optional[List[BranchInner]] = Field(None)
     created_time: datetime = Field(...)
 
     class Config:
         orm_mode = True
 
 
+class AddressDisplayClient(AddressDisplay):
+    client: Optional[ClientInner] = Field(None)
 
+    class Config:
+        orm_mode = True
+
+
+class AddressDisplayMarket(AddressDisplay):
+    branch: Optional[BranchInner] = Field(None)
+
+    class Config:
+        orm_mode = True
