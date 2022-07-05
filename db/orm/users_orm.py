@@ -80,7 +80,7 @@ def get_users_by_type(db: Session, user_type: str) -> List[DbUser]:
         raise type_not_found_exception
 
     users = db.query(DbUser).where(
-        DbUser.user_type == user_type,
+        DbUser.type_user == user_type,
         DbUser.dropped == False
     ).all()
 
@@ -112,7 +112,7 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
         else:
             raise not_unique_email_exception
 
-    updated_user.user_type = request.user_type.value
+    updated_user.type_user = request.user_type.value
     updated_user.name = request.name
     updated_user.password = Hash.bcrypt(request.password)
     updated_user.public_key = request.public_key

@@ -9,7 +9,6 @@ class DbBranch(Base):
     __tablename__ = 'branches'
     id_branch = Column('id_branch', String, primary_key=True, index=True)
     id_market = Column('id_market', String, ForeignKey("markets.id_market"))
-    id_address = Column('id_address', Integer, ForeignKey("addresses.id_address"))
     branch_name = Column('branch_name', String)
     service_hours = Column('service_hours', String)
     phone = Column('phone', String)

@@ -5,4 +5,5 @@ class TypeUser(Enum):
     client = 'client'
     market = 'market'
     system = 'system'
+    admin = 'admin'
 

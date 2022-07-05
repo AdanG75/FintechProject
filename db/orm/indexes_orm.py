@@ -2,7 +2,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from db.models.indexes_db import DbIndex
+from db.models.minutiae_db import DbMinutiae
 from db.orm.exceptions_orm import db_exception, element_not_found_exception, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts
 from fingerprint_process.models.minutia import Minutiae
@@ -13,7 +13,7 @@ from schemas.basic_response import BasicResponse
 def create_minutia(db: Session, request: Minutiae, id_fingerprint: str) -> bool:
     id_index = f"MNT-{request.get_minutiae_id()}"
 
-    new_minutia = DbIndex(
+    new_minutia = DbMinutiae(
         id_index=id_index,
         id_fingerprint=id_fingerprint,
         pos_x=request.get_posx(),
@@ -41,7 +41,7 @@ def insert_list_of_minutiae(db: Session, minutiae: List[Minutiae], id_fingerprin
     try:
         for minutia in minutiae:
             id_index = f"MNT-{minutia.get_minutiae_id()}"
-            minutia_to_insert = DbIndex(
+            minutia_to_insert = DbMinutiae(
                 id_index=id_index,
                 id_fingerprint=id_fingerprint,
                 pos_x=minutia.get_posx(),
@@ -59,10 +59,10 @@ def insert_list_of_minutiae(db: Session, minutiae: List[Minutiae], id_fingerprin
     return True
 
 
-def get_minutia_by_id(db: Session, id_index: str) -> DbIndex:
+def get_minutia_by_id(db: Session, id_index: str) -> DbMinutiae:
     try:
-        minutia = db.query(DbIndex).where(
-            DbIndex.id_index == id_index
+        minutia = db.query(DbMinutiae).where(
+            DbMinutiae.id_minutia == id_index
         ).first()
     except Exception as e:
         raise db_exception
@@ -73,10 +73,10 @@ def get_minutia_by_id(db: Session, id_index: str) -> DbIndex:
     return minutia
 
 
-def get_minutiae_by_id_fingerprint(db: Session, id_fingerprint: str) -> List[DbIndex]:
+def get_minutiae_by_id_fingerprint(db: Session, id_fingerprint: str) -> List[DbMinutiae]:
     try:
-        minutiae = db.query(DbIndex).where(
-            DbIndex.id_fingerprint == id_fingerprint
+        minutiae = db.query(DbMinutiae).where(
+            DbMinutiae.id_fingerprint == id_fingerprint
         ).all()
     except Exception as e:
         raise db_exception

@@ -2,7 +2,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from db.models.characteristic_points_db import DbCharacteristicPoint
+from db.models.cores_db import DbCores
 from db.orm.exceptions_orm import db_exception, element_not_found_exception, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts
 from fingerprint_process.models.core_point import CorePoint
@@ -13,7 +13,7 @@ from schemas.basic_response import BasicResponse
 def create_core_point(db: Session, request: CorePoint, id_fingerprint: str) -> bool:
     id_characteristic = f"CHP-{request.get_minutiae_id()}"
 
-    new_core_point = DbCharacteristicPoint(
+    new_core_point = DbCores(
         id_characteristic=id_characteristic,
         id_fingerprint=id_fingerprint,
         pos_x=request.get_posx(),
@@ -41,7 +41,7 @@ def insert_list_of_core_points(db: Session, core_points: List[CorePoint], id_fin
     try:
         for core_point in core_points:
             id_characteristic = f"CHP-{core_point.get_minutiae_id()}"
-            core_point_to_insert = DbCharacteristicPoint(
+            core_point_to_insert = DbCores(
                 id_characteristic=id_characteristic,
                 id_fingerprint=id_fingerprint,
                 pos_x=core_point.get_posx(),
@@ -59,10 +59,10 @@ def insert_list_of_core_points(db: Session, core_points: List[CorePoint], id_fin
     return True
 
 
-def get_core_point_by_id(db: Session, id_characteristic: str) -> DbCharacteristicPoint:
+def get_core_point_by_id(db: Session, id_characteristic: str) -> DbCores:
     try:
-        core_point = db.query(DbCharacteristicPoint).where(
-            DbCharacteristicPoint.id_characteristic == id_characteristic
+        core_point = db.query(DbCores).where(
+            DbCores.id_core == id_characteristic
         ).first()
     except Exception as e:
         raise db_exception
@@ -73,10 +73,10 @@ def get_core_point_by_id(db: Session, id_characteristic: str) -> DbCharacteristi
     return core_point
 
 
-def get_core_points_by_id_fingerprint(db: Session, id_fingerprint: str) -> List[DbCharacteristicPoint]:
+def get_core_points_by_id_fingerprint(db: Session, id_fingerprint: str) -> List[DbCores]:
     try:
-        core_points = db.query(DbCharacteristicPoint).where(
-            DbCharacteristicPoint.id_fingerprint == id_fingerprint
+        core_points = db.query(DbCores).where(
+            DbCores.id_fingerprint == id_fingerprint
         ).all()
     except Exception as e:
         raise db_exception
