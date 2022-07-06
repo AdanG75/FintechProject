@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-time_pattern: str = "^\d{4}-\d\d-\d\d[ T]{1}\d\d:\d\d:\d\d ?$"
+time_pattern: str = r"^\d{4}-\d\d-\d\d[ T]{1}\d\d:\d\d:\d\d ?$"
 
 
 class SessionBase(BaseModel):
@@ -37,9 +37,3 @@ class SessionDisplay(SessionBase):
 
     class Config:
         orm_mode = True
-
-
-
-
-
-

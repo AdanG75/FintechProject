@@ -8,12 +8,12 @@ from schemas.type_money import TypeMoney
 class DepositBase(BaseModel):
     id_movement: int = Field(..., gt=0)
     id_destination_credit: int = Field(..., gt=0)
+    type_deposit: TypeMoney = Field(...)
     depositor_name: str = Field(..., min_length=3, max_length=99)
     depositor_email: EmailStr = Field(...)
 
 
 class DepositRequest(DepositBase):
-    type_deposit: TypeMoney = Field(...)
     paypal_id_order: Optional[str] = Field(None, min_length=8, max_length=20)
 
     class Config:
@@ -32,4 +32,3 @@ class DepositDisplay(DepositBase):
 
     class Config:
         orm_mode = True
-

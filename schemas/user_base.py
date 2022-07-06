@@ -5,11 +5,14 @@ from pydantic import BaseModel, EmailStr, Field
 
 from schemas.type_user import TypeUser
 
+pattern_phone: str = r"^\+?\d{1,4}([ -]?\d){3,14}$"
+
 
 class UserBase(BaseModel):
     email: EmailStr = Field(...)
     name: str = Field(...)
-    user_type: TypeUser = Field(...)
+    phone: Optional[str] = Field(None, regex=pattern_phone, min_length=7, max_length=25)
+    type_user: TypeUser = Field(...)
 
 
 class UserRequest(UserBase):
@@ -21,7 +24,8 @@ class UserRequest(UserBase):
             "example": {
                 "email": "example@mail.com",
                 "name": "Pedro",
-                "user_type": "client",
+                "phone": "+521489634562",
+                "type_user": "client",
                 "password": "AvenDF98-pal",
                 "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv5OpqsWW5664Jz/hDrNd\nP5m/cbS4KVCJ+nJuahZ4Nc4x2Sf2I8yreXmYZZE9ZnsGdYXLff4cWkpZa0cVtMds\nqwHsPcou8lbIXCgm0+Vjimla4incSmYnglcQrnSQnbEL2W2Fb3u7qMPv9toEIh3o\nstD7b5Am9J6SeSewPrv8HUgd/mxgby85MjPo5p9BXk8zSbTxyDFqAynWm9nMYdBV\n/PqvyglBXwtIaCmE6ydAZu+a3URfTsVrW3OVcATFeBgRfmCeuYjFVsrj5j6il5qr\nX5uN1gZtvfme/oVDBirgnM2daHPf4IIlvNQSzTwJvztUyth4BpWivn8v0O9qUtgy\nWwIDAQAB\n-----END PUBLIC KEY-----"
             }
@@ -31,6 +35,7 @@ class UserRequest(UserBase):
 class MarketInner:
     id_market: str = Field(...)
     type_market: str = Field(...)
+    web_page: Optional[str] = Field(None)
     rfc: Optional[str] = Field(None)
 
     class Config:
@@ -39,7 +44,6 @@ class MarketInner:
 
 class ClientInner(BaseModel):
     id_client: str = Field(...)
-    id_address: int = Field(...)
     last_name: str = Field(...)
     birth_date: str = Field(...)
     age: int = Field(...)
@@ -50,9 +54,9 @@ class ClientInner(BaseModel):
 
 class AccountInner(BaseModel):
     id_account: int = Field(...)
+    alias_account: str = Field(...)
     paypal_email: EmailStr = Field(...)
-    type_owner: TypeUser = Field(...)
-    main_account: bool = Field(True)
+    main_account: bool = Field(...)
 
     class Config:
         orm_mode = True
@@ -67,8 +71,9 @@ class UserBasicDisplay(UserBase):
 
 class UserDisplay(UserBase):
     id_user: int = Field(...)
-    accounts: Optional[List[AccountInner]] = Field(None)
     created_time: datetime = Field(...)
+
+    accounts: Optional[List[AccountInner]] = Field(None)
 
     class Config:
         orm_mode = True
