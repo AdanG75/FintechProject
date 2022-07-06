@@ -11,7 +11,7 @@ class BranchBase(BaseModel):
     id_market: str = Field(..., min_length=12, max_length=49)
     branch_name: str = Field(..., min_length=1, max_length=79)
     service_hours: str = Field(..., regex=pattern_service_hours, min_length=9, max_length=24)
-    phone: Optional[str] = Field(None, min_length=7, max_length=25)
+    phone: Optional[str] = Field(None, regex=pattern_phone, min_length=7, max_length=25)
 
 
 class MarketInner(BaseModel):

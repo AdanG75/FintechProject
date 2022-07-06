@@ -25,7 +25,6 @@ class MarketRequest(MarketBase):
 
 class BranchInner(BaseModel):
     id_branch: str = Field(...)
-    id_address: int = Field(...)
     branch_name: str = Field(...)
     service_hours: str = Field(...)
     phone: Optional[str] = Field(None)

@@ -23,7 +23,6 @@ class FingerprintRequest(FingerprintBase):
 
 
 class FingerprintUpdateRequest(BaseModel):
-    id_fingerprint: str = Field(..., min_length=12, max_length=49)
     alias_fingerprint: str = Field(..., min_length=2, max_length=79)
     main_fingerprint: bool = Field(...)
     request: RequestType = Field(...)
@@ -33,6 +32,14 @@ class FingerprintAddRequest(FingerprintBase):
     fingerprint_data: str = Field(..., min_length=64)
     main_fingerprint: bool = Field(...)
     alias_fingerprint: str = Field(..., min_length=2, max_length=79)
+
+
+class ClientInner(BaseModel):
+    id_client: str = Field(...)
+    id_user: int = Field(...)
+
+    class Config:
+        orm_mode = True
 
 
 class CorePointInner(BaseModel):
@@ -60,6 +67,8 @@ class MinutiaInner(BaseModel):
 class FingerprintBasicDisplay(FingerprintBase):
     id_fingerprint: str = Field(...)
     created_time: datetime = Field(...)
+
+    client: Optional[ClientInner] = Field(None)
 
     class Config:
         orm_mode = True
