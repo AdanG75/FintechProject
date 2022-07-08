@@ -83,5 +83,36 @@ def unpack_and_decrypt_data(data: Union[Dict, SecureBase]) -> Dict:
     return receive_data
 
 
+def cipher_data(msg: Union[bytes, str]) -> str:
+    # get server's secure items
+    cipher_server_key = settings.get_server_cipher_key()
+    server_iv = settings.get_server_iv()
+    server_block_size = settings.get_server_block_size()
+
+    # Cipher data using AES key and convert it to base64
+    cipher = aes_secure.generate_cipher(cipher_server_key, server_iv)
+    cipher_data_bytes = aes_secure.AES_encrypt(msg, server_block_size, cipher)
+    cipher_data_b64 = utils.cast_bytes_to_base64(cipher_data_bytes)
+
+    return cipher_data_b64
+
+
+def decipher_data(data: Union[bytes, str]) -> str:
+    # get server's secure items
+    cipher_server_key = settings.get_server_cipher_key()
+    server_iv = settings.get_server_iv()
+    server_block_size = settings.get_server_block_size()
+
+    # Decipher data using AES key and return it as str in utf-8
+    cipher = aes_secure.generate_cipher(cipher_server_key, server_iv)
+    data_bytes = aes_secure.AES_decrypt(data, server_block_size, cipher)
+
+    return data_bytes.decode('utf-8')
+
+
+
+
+
+
 
 

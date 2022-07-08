@@ -24,6 +24,9 @@ class Settings:
     __SECRET_KEY: str
     __ALGORITHM: str
     __ACCESS_TOKEN_EXPIRE_MINUTES: int
+    __CIPHER_KEY: str
+    __IV: str
+    __BLOCK_SIZE: int
     __PUBLIC_KEY: str
     __PRIVATE_KEY: str
     __SERVER_BUCKET: str
@@ -79,6 +82,18 @@ class Settings:
             project_id=self.__PROJECT_NAME,
             secret_id=os.environ.get('ALGORITHM')
         )
+        self.__CIPHER_KEY: str = access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("CIPHER_KEY")
+        )
+        self.__IV: str = access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("IV")
+        )
+        self.__BLOCK_SIZE: int = int(access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("BLOCK_SIZE")
+        ))
         self.__PRIVATE_KEY: str = access_secret_version(
             project_id=self.__PROJECT_NAME,
             secret_id=os.environ.get("PRIVATE_KEY")
@@ -87,7 +102,7 @@ class Settings:
             project_id=self.__PROJECT_NAME,
             secret_id=os.environ.get("PUBLIC_KEY")
         )
-        self.__SERVER_BUCKET= access_secret_version(
+        self.__SERVER_BUCKET = access_secret_version(
             project_id=self.__PROJECT_NAME,
             secret_id=os.environ.get("SERVER_BUCKET")
         )
@@ -136,6 +151,15 @@ class Settings:
 
     def get_project_version(self):
         return self.__PROJECT_VERSION
+
+    def get_server_cipher_key(self):
+        return self.__CIPHER_KEY
+
+    def get_server_iv(self):
+        return self.__IV
+
+    def get_server_block_size(self):
+        return self.__BLOCK_SIZE
 
     def get_server_public_key(self):
         return self.__PUBLIC_KEY

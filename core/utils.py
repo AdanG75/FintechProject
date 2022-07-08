@@ -125,6 +125,17 @@ def get_bytes(value: Union[str, bytes]) -> bytes:
     return return_bytes
 
 
+def set_phone_number_format(phone: str) -> str:
+    phone_without_spaces_and_dashes = phone.replace(" ", "").replace("-", "")
+
+    if not phone_without_spaces_and_dashes.startswith('+'):
+        final_phone = '+' + phone_without_spaces_and_dashes
+    else:
+        final_phone = phone_without_spaces_and_dashes
+
+    return final_phone
+
+
 def is_valid_phone_number(phone: str, region: Optional[str] = None) -> bool:
     number_object = parse(phone, region)
     is_valid = is_valid_number(number_object)

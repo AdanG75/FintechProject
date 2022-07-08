@@ -64,7 +64,24 @@ type_not_found_exception = HTTPException(
     detail="Type not found"
 )
 
+option_not_found_exception = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Option not found"
+)
+
 not_values_sent_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="Values have not been passed"
 )
+
+too_many_attempts_exception = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Actual operation is expired. Please generate other one."
+)
+
+not_valid_operation_exception = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Operation is not longer available"
+)
+
+

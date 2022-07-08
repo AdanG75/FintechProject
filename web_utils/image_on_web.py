@@ -1,7 +1,7 @@
 import base64
 import io
 import json
-from typing import List, Optional
+from typing import List
 
 from fastapi import HTTPException
 from starlette import status
