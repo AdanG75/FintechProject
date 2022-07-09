@@ -63,11 +63,11 @@ def check_code_of_password_recovery(db: Session, id_user: int, code: int) -> boo
         raise not_valid_operation_exception
 
     if password_recovery.expiration_time is None or password_recovery.expiration_time < datetime.utcnow():
-        invalid_password_recovery(db, password_recovery)
+        reset_password_recovery(db, password_recovery)
         raise not_valid_operation_exception
 
     if password_recovery.code == code:
-        invalid_password_recovery(db, password_recovery)
+        reset_password_recovery(db, password_recovery)
         return True
     else:
         add_attempt(db, password_recovery)
@@ -80,7 +80,7 @@ def add_attempt(db: Session, password_recovery: DbPasswordRecovery) -> bool:
     if password_recovery.attempts < 5:
         password_recovery.attempts += 1
     else:
-        invalid_password_recovery(db, password_recovery)
+        reset_password_recovery(db, password_recovery)
         raise too_many_attempts_exception
 
     try:
@@ -94,7 +94,7 @@ def add_attempt(db: Session, password_recovery: DbPasswordRecovery) -> bool:
 
 
 @multiple_attempts
-def invalid_password_recovery(db: Session, password_recovery: DbPasswordRecovery) -> bool:
+def reset_password_recovery(db: Session, password_recovery: DbPasswordRecovery) -> bool:
 
     password_recovery.is_valid = False
     password_recovery.code = None

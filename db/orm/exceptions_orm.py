@@ -84,4 +84,9 @@ not_valid_operation_exception = HTTPException(
     detail="Operation is not longer available"
 )
 
+inactive_password_exception = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Current password was disabled, please generate a new one"
+)
+
 
