@@ -54,6 +54,11 @@ not_unique_alias_exception = HTTPException(
     detail="Alias of element would be unique"
 )
 
+not_unique_value = HTTPException(
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    detail="Relation between entities is not one to one"
+)
+
 not_main_element_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="At least one element should be the main element"

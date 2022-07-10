@@ -18,9 +18,12 @@ def create_user(db: Session, request: UserRequest) -> DbUser:
     if len(request.email) >= 80:
         raise email_exception
 
-    formatted_phone = set_phone_number_format(request.phone)
-    if not is_valid_phone_number(formatted_phone):
-        raise phone_exception
+    if request.phone is not None:
+        formatted_phone = set_phone_number_format(request.phone)
+        if not is_valid_phone_number(formatted_phone):
+            raise phone_exception
+    else:
+        formatted_phone = request.phone
 
     try:
         user = get_user_by_email(db, request.email, mode='all')
@@ -128,15 +131,16 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
         else:
             raise not_unique_email_exception
 
-    formatted_phone = set_phone_number_format(request.phone)
-    if updated_user.phone != formatted_phone:
-        if is_valid_phone_number(formatted_phone):
-            updated_user.phone = formatted_phone
-        else:
+    if request.phone is not None:
+        formatted_phone = set_phone_number_format(request.phone)
+        if not is_valid_phone_number(formatted_phone):
             raise phone_exception
+    else:
+        formatted_phone = request.phone
 
     updated_user.type_user = request.type_user.value
     updated_user.name = request.name
+    updated_user.phone = formatted_phone
     updated_user.password = Hash.bcrypt(request.password)
     updated_user.public_key = request.public_key
     updated_user.dropped = False

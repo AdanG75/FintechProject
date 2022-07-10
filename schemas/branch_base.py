@@ -54,21 +54,6 @@ class BranchRequest(BranchBase):
         }
 
 
-class BranchUpdateRequest(BranchBase):
-    password: str = Field(..., min_length=8, max_length=49)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "id_market": "MKT-dsfd-vmeorgrth-fgt",
-                "branch_name": "Sucursal X",
-                "service_hours": "10:00 - 21:00",
-                "phone": "+525598653214",
-                "password": "87452htdfhf"
-            }
-        }
-
-
 class BranchDisplay(BranchBase):
     id_branch: str = Field(...)
     id_market: str = Field(...)

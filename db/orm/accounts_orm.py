@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from db.models.accounts_db import DbAccount
-from db.orm.exceptions_orm import db_exception, element_not_found_exception, email_exception
+from db.orm.exceptions_orm import db_exception, element_not_found_exception, email_exception, not_main_element_exception
 from db.orm.functions_orm import multiple_attempts
 from schemas.account_base import AccountRequest
 from schemas.basic_response import BasicResponse
@@ -14,6 +14,13 @@ from secure.cipher_secure import cipher_data
 def create_account(db: Session, request: AccountRequest) -> DbAccount:
     if len(request.paypal_email) >= 80 or request.paypal_email is None:
         raise email_exception
+
+    if request.main_account:
+        try:
+            past_main_account = get_main_account_of_user(db, request.id_user)
+            past_main_account.main_account = False
+        except element_not_found_exception:
+            pass
 
     new_account = DbAccount(
         id_user=request.id_user,
@@ -32,17 +39,6 @@ def create_account(db: Session, request: AccountRequest) -> DbAccount:
     except Exception as e:
         db.rollback()
         raise db_exception
-
-    return new_account
-
-
-@multiple_attempts
-def add_account(db: Session, request: AccountRequest) -> DbAccount:
-    new_account = create_account(db, request)
-
-    if new_account.main_account:
-        change_main_account(db, new_account.id_user, new_account.id_account)
-        db.refresh(new_account)
 
     return new_account
 
@@ -116,6 +112,14 @@ def update_account(db: Session, request: AccountRequest, id_account: int) -> DbA
     if len(request.paypal_email) >= 80 or request.paypal_email is None:
         raise email_exception
 
+    past_main_account = get_main_account_of_user(db, request.id_user)
+    if request.main_account:
+        if past_main_account.id_account != id_account:
+            past_main_account.main_account = False
+    else:
+        if past_main_account.id_account == id_account:
+            raise not_main_element_exception
+
     updated_account = get_account_by_id(db, id_account)
 
     updated_account.alias_account = request.alias_account
@@ -123,10 +127,9 @@ def update_account(db: Session, request: AccountRequest, id_account: int) -> DbA
     updated_account.paypal_id_client = cipher_data(request.paypal_id_client)
     updated_account.paypal_secret = cipher_data(request.paypal_secret)
     updated_account.main_account = request.main_account
+    updated_account.dropped = False
 
     try:
-        if updated_account.main_account:
-            change_main_account(db, updated_account.id_user, updated_account.id_account)
         db.commit()
         db.refresh(updated_account)
     except Exception as e:
@@ -179,6 +182,7 @@ def delete_account(db: Session, id_account: int) -> BasicResponse:
     )
 
 
+@multiple_attempts
 def delete_accounts_by_id_user(db: Session, id_user: int) -> BasicResponse:
     accounts = get_accounts_by_user(db, id_user)
 
