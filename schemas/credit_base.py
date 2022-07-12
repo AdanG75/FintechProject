@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -8,10 +9,11 @@ from schemas.type_credit import TypeCredit
 class CreditBase(BaseModel):
     id_client: str = Field(..., min_length=12, max_length=49)
     id_market: str = Field(..., min_length=12, max_length=49)
-    id_account: int = Field(..., gt=0)
+    id_account: Optional[int] = Field(None, gt=0)
     alias_credit: str = Field(..., min_length=3, max_length=79)
     type_credit: TypeCredit = Field(...)
     amount: float = Field(..., ge=0)
+    is_approved: Optional[bool] = Field(None)
 
 
 class CreditRequest(CreditBase):
@@ -30,9 +32,8 @@ class CreditRequest(CreditBase):
 
 
 class CreditDisplay(CreditBase):
-    id_credit: int = Field(...),
-    is_approved: bool = Field(...),
-    in_process: bool = Field(...),
+    id_credit: int = Field(...)
+    in_process: bool = Field(...)
     created_time: datetime = Field(...)
 
     class Config:

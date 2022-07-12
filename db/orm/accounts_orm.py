@@ -43,7 +43,7 @@ def create_account(db: Session, request: AccountRequest) -> DbAccount:
     return new_account
 
 
-def get_account_by_id(db: Session, id_account: int) -> Optional[DbAccount]:
+def get_account_by_id(db: Session, id_account: int) -> DbAccount:
     try:
         account = db.query(DbAccount).where(
             DbAccount.id_account == id_account,
@@ -59,7 +59,7 @@ def get_account_by_id(db: Session, id_account: int) -> Optional[DbAccount]:
     return account
 
 
-def get_accounts_by_paypal_email(db: Session, paypal_account: str) -> Optional[List[DbAccount]]:
+def get_accounts_by_paypal_email(db: Session, paypal_account: str) -> List[DbAccount]:
     try:
         accounts = db.query(DbAccount).where(
             DbAccount.paypal_email == paypal_account,
@@ -85,7 +85,20 @@ def get_accounts_by_user(db: Session, id_user: int) -> Optional[List[DbAccount]]
     except Exception as e:
         raise db_exception
 
-    if accounts is None:
+    return accounts
+
+
+def get_accounts_by_user_and_alias(db: Session, id_user: int, alias: str) -> List[DbAccount]:
+    try:
+        accounts = db.query(DbAccount).where(
+            DbAccount.id_user == id_user,
+            DbAccount.alias_account == alias,
+            DbAccount.dropped == False
+        ).all()
+    except Exception as e:
+        raise db_exception
+
+    if accounts is None or len(accounts) < 1:
         raise element_not_found_exception
 
     return accounts
@@ -186,14 +199,15 @@ def delete_account(db: Session, id_account: int) -> BasicResponse:
 def delete_accounts_by_id_user(db: Session, id_user: int) -> BasicResponse:
     accounts = get_accounts_by_user(db, id_user)
 
-    for account in accounts:
-        account.dropped = True
+    if accounts is not None:
+        for account in accounts:
+            account.dropped = True
 
-    try:
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise db_exception
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise db_exception
 
     return BasicResponse(
         operation="batch delete",

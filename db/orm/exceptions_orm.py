@@ -94,4 +94,8 @@ inactive_password_exception = HTTPException(
     detail="Current password was disabled, please generate a new one"
 )
 
+existing_credit_exception = HTTPException(
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    detail="Client already has a credit within the market"
+)
 
