@@ -8,7 +8,6 @@ from core.config import settings
 URL_POSTGRES_DB = settings.get_database_url()
 engine = create_engine(URL_POSTGRES_DB)
 
-
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # It is used to create Models

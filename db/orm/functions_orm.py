@@ -1,4 +1,6 @@
-from db.orm.exceptions_orm import db_exception
+from fastapi import HTTPException
+
+from db.orm.exceptions_orm import db_exception, DBException
 
 
 def multiple_attempts(func):
@@ -10,9 +12,11 @@ def multiple_attempts(func):
             try:
                 result = func(*args, **kwargs)
                 success = True
-            except db_exception:
+            except DBException:
                 attempts += 1
                 success = False
+            except HTTPException as e:
+                raise e
             finally:
                 if attempts >= 10:
                     raise db_exception

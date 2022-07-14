@@ -2,16 +2,32 @@ from fastapi import HTTPException
 from starlette import status
 
 
-db_exception = HTTPException(
-    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-    detail="Couldn't connect to the Database"
+class DBException(Exception):
+    def __init__(self, msg, code):
+        self.message = msg
+        self.code = code
+        super().__init__(self.message)
+
+
+db_exception = DBException(
+    msg="Couldn't connect to the Database",
+    code=status.HTTP_503_SERVICE_UNAVAILABLE
 )
 
-element_not_found_exception = HTTPException(
-    status_code=status.HTTP_404_NOT_FOUND,
-    detail=f"Element not found"
+
+class NotFoundException(Exception):
+    def __init__(self, msg, code):
+        self.message = msg
+        self.code = code
+        super().__init__(self.message)
+
+
+element_not_found_exception = NotFoundException(
+    code=status.HTTP_404_NOT_FOUND,
+    msg=f"Element not found"
 )
 
+# HTTPExceptions
 credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Couldn't validate credentials",
@@ -76,7 +92,7 @@ option_not_found_exception = HTTPException(
 
 not_values_sent_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
-    detail="Values have not been passed"
+    detail="One or more values have not been passed"
 )
 
 too_many_attempts_exception = HTTPException(

@@ -123,5 +123,3 @@ def AES_decrypt(encrypted_message: Union[bytes, str], block_size: int, cipher: C
     plain_text = unpadder.update(padded_plain_text) + unpadder.finalize()
 
     return plain_text
-
-

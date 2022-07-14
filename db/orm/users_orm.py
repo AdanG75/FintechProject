@@ -1,11 +1,15 @@
+from datetime import datetime
 from typing import List, Optional
 
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 from core.utils import is_valid_phone_number, set_phone_number_format
 from db.models.users_db import DbUser
+from db.models.accounts_db import DbAccount
 from db.orm.exceptions_orm import db_exception, email_exception, element_not_found_exception, \
-    not_unique_email_exception, type_not_found_exception, phone_exception, option_not_found_exception
+    not_unique_email_exception, type_not_found_exception, phone_exception, option_not_found_exception, \
+    NotFoundException, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts
 from schemas.basic_response import BasicResponse
 from schemas.type_user import TypeUser
@@ -27,22 +31,28 @@ def create_user(db: Session, request: UserRequest) -> DbUser:
 
     try:
         user = get_user_by_email(db, request.email, mode='all')
-    except element_not_found_exception:
+    except NotFoundException:
         new_user = DbUser(
             email=request.email,
             name=request.name,
             password=Hash.bcrypt(request.password),
-            user_type=request.type_user.value,
+            type_user=request.type_user.value,
             phone=formatted_phone,
-            public_key=request.public_key
+            public_key=request.public_key,
+            created_time=datetime.utcnow(),
+            dropped=False
         )
 
         try:
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
+        except DBAPIError as e:
+            print(e)
+            raise not_values_sent_exception
         except Exception as e:
             db.rollback()
+            print(e)
             raise db_exception
 
         return new_user
@@ -79,11 +89,12 @@ def get_user_by_email(db: Session, email: str, mode: str = 'active') -> DbUser:
         elif mode == 'all':
             user = db.query(DbUser).where(
                 DbUser.email == email
-            ).firts()
+            ).first()
         else:
             raise option_not_found_exception
 
     except Exception as e:
+        print(e)
         raise db_exception
 
     if user is None:
@@ -98,15 +109,25 @@ def get_users_by_type(db: Session, user_type: str) -> List[DbUser]:
     except ValueError:
         raise type_not_found_exception
 
-    users = db.query(DbUser).where(
-        DbUser.type_user == user_type,
-        DbUser.dropped == False
-    ).all()
+    try:
+        users = db.query(DbUser).where(
+            DbUser.type_user == user_type,
+            DbUser.dropped == False
+        ).all()
+    except Exception as e:
+        print(e)
+        raise db_exception
 
     if users is None or len(users) < 1:
         raise element_not_found_exception
 
     return users
+
+
+def get_all_users(db: Session) -> Optional[List[DbUser]]:
+    all_users = db.query(DbUser).all()
+
+    return all_users
 
 
 def get_public_key_pem(db: Session, id_user) -> Optional[str]:
@@ -123,7 +144,7 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
     if updated_user.email != request.email:
         try:
             get_user_by_email(db, request.email)
-        except element_not_found_exception:
+        except NotFoundException:
             if len(request.email) < 80:
                 updated_user.email = request.email
             else:
@@ -138,7 +159,6 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
     else:
         formatted_phone = request.phone
 
-    updated_user.type_user = request.type_user.value
     updated_user.name = request.name
     updated_user.phone = formatted_phone
     updated_user.password = Hash.bcrypt(request.password)
@@ -150,6 +170,7 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
         db.refresh(updated_user)
     except Exception as e:
         db.rollback()
+        print(e)
         raise db_exception
 
     return updated_user
@@ -165,6 +186,7 @@ def set_public_key(db: Session, id_user: int, public_key: str) -> BasicResponse:
         db.refresh(user)
     except Exception as e:
         db.rollback()
+        print(e)
         raise db_exception
 
     return BasicResponse(
@@ -183,6 +205,7 @@ def delete_user(db: Session, id_user: int) -> BasicResponse:
         db.refresh(user)
     except Exception as e:
         db.rollback()
+        print(e)
         raise db_exception
 
     return BasicResponse(

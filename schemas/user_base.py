@@ -24,7 +24,7 @@ class UserRequest(UserBase):
             "example": {
                 "email": "example@mail.com",
                 "name": "Pedro",
-                "phone": "+521489634562",
+                "phone": "+527449634562",
                 "type_user": "client",
                 "password": "AvenDF98-pal",
                 "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv5OpqsWW5664Jz/hDrNd\nP5m/cbS4KVCJ+nJuahZ4Nc4x2Sf2I8yreXmYZZE9ZnsGdYXLff4cWkpZa0cVtMds\nqwHsPcou8lbIXCgm0+Vjimla4incSmYnglcQrnSQnbEL2W2Fb3u7qMPv9toEIh3o\nstD7b5Am9J6SeSewPrv8HUgd/mxgby85MjPo5p9BXk8zSbTxyDFqAynWm9nMYdBV\n/PqvyglBXwtIaCmE6ydAZu+a3URfTsVrW3OVcATFeBgRfmCeuYjFVsrj5j6il5qr\nX5uN1gZtvfme/oVDBirgnM2daHPf4IIlvNQSzTwJvztUyth4BpWivn8v0O9qUtgy\nWwIDAQAB\n-----END PUBLIC KEY-----"
@@ -32,7 +32,7 @@ class UserRequest(UserBase):
         }
 
 
-class MarketInner:
+class MarketInner(BaseModel):
     id_market: str = Field(...)
     type_market: str = Field(...)
     web_page: Optional[str] = Field(None)
@@ -91,3 +91,24 @@ class UserMarketDisplay(UserDisplay):
 
     class Config:
         orm_mode = True
+
+
+class UserPublicKey(BaseModel):
+    public_key: str = Field(..., min_length=32, max_length=1024)
+
+
+class UserPublicKeyRequest(UserPublicKey):
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv5OpqsWW5664Jz/hDrNd\nP5m/cbS4KVCJ+nJuahZ4Nc4x2Sf2I8yreXmYZZE9ZnsGdYXLff4cWkpZa0cVtMds\nqwHsPcou8lbIXCgm0+Vjimla4incSmYnglcQrnSQnbEL2W2Fb3u7qMPv9toEIh3o\nstD7b5Am9J6SeSewPrv8HUgd/mxgby85MjPo5p9BXk8zSbTxyDFqAynWm9nMYdBV\n/PqvyglBXwtIaCmE6ydAZu+a3URfTsVrW3OVcATFeBgRfmCeuYjFVsrj5j6il5qr\nX5uN1gZtvfme/oVDBirgnM2daHPf4IIlvNQSzTwJvztUyth4BpWivn8v0O9qUtgy\nWwIDAQAB\n-----END PUBLIC KEY-----"
+            }
+        }
+
+
+class PublicKeyDisplay(UserPublicKey):
+
+    class Config:
+        orm_mode = True
+

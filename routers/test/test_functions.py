@@ -66,20 +66,21 @@ async def show_fingerprint(
     )
 
 
+# Secure endpoint
 @router.post(
     path="/create/bucket_test",
     status_code=status.HTTP_200_OK,
     tags=["bucket"]
 )
 async def create_bucket(
-        gcs: Client = Depends(storage.get_storage_client),
-        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+        gcs: Client = Depends(storage.get_storage_client)
 ):
     response = test_storage.create_a_bucket_test(gcs=gcs)
 
     return response
 
 
+# Secure endpoint
 @router.get(
     path='/detail/bucket_test',
     status_code=status.HTTP_200_OK,
@@ -87,14 +88,14 @@ async def create_bucket(
     tags=["bucket"]
 )
 async def get_bucket_details(
-        gcs: Client = Depends(storage.get_storage_client),
-        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+        gcs: Client = Depends(storage.get_storage_client)
 ):
     response = test_storage.get_bucket_details(gcs=gcs)
 
     return response
 
 
+# Secure endpoint
 @router.post(
     path="/save/fingerprint_image",
     status_code=status.HTTP_200_OK,
@@ -102,8 +103,7 @@ async def get_bucket_details(
 )
 async def save_fingerprint_into_bucket(
         fingerprint_model: FingerprintSimpleModel = Body(...),
-        gcs: Client = Depends(storage.get_storage_client),
-        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+        gcs: Client = Depends(storage.get_storage_client)
 ):
     fingerprint = save_fingerprint_in_memory(fingerprint_model.fingerprint, return_format="bytes")
     response = test_storage.save_fingerprint_into_bucket_test(
@@ -115,14 +115,14 @@ async def save_fingerprint_into_bucket(
     return response
 
 
+# Secure endpoint
 @router.get(
     path="/download/fingerprint_image",
     status_code=status.HTTP_200_OK,
     tags=["fingerprint", "bucket"]
 )
 async def download_fingerprint_from_bucket(
-        gcs: Client = Depends(storage.get_storage_client),
-        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+        gcs: Client = Depends(storage.get_storage_client)
 ):
 
     response = test_storage.download_from_bucket_test(gcs=gcs)
@@ -130,34 +130,35 @@ async def download_fingerprint_from_bucket(
     return response
 
 
-@router.post(
-    path="/secure",
-    status_code=status.HTTP_200_OK,
-    response_model=SecureBase,
-    tags=["secure"]
-)
-async def secure_message(
-        message: SecureBase = Body(...),
-        db: Session = Depends(get_db),
-        current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
-):
-    public_key_pem: Optional[str] = current_admin.public_key
-
-    if public_key_pem is None or public_key_pem.isspace() or public_key_pem == '':
-        raise HTTPException(
-            status_code=status.HTTP_418_IM_A_TEAPOT,
-            detail="The operation need a saved public key into admin's data."
-        )
-
-    receive_data: dict = unpack_and_decrypt_data(message.dict())
-
-    send_data = MessageDisplay(
-        message="Receive message.\nWe will take the world.",
-        datetime=get_current_utc_timestamp(),
-        user="Server"
-    )
-
-    response: dict = pack_and_encrypt_data(send_data.dict(), public_key_pem)
-
-    return response
+# Secure endpoint
+# @router.post(
+#     path="/secure",
+#     status_code=status.HTTP_200_OK,
+#     response_model=SecureBase,
+#     tags=["secure"]
+# )
+# async def secure_message(
+#         message: SecureBase = Body(...),
+#         db: Session = Depends(get_db),
+#         current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
+# ):
+#     public_key_pem: Optional[str] = current_admin.public_key
+#
+#     if public_key_pem is None or public_key_pem.isspace() or public_key_pem == '':
+#         raise HTTPException(
+#             status_code=status.HTTP_418_IM_A_TEAPOT,
+#             detail="The operation need a saved public key into admin's data."
+#         )
+#
+#     receive_data: dict = unpack_and_decrypt_data(message.dict())
+#
+#     send_data = MessageDisplay(
+#         message="Receive message.\nWe will take the world.",
+#         datetime=get_current_utc_timestamp(),
+#         user="Server"
+#     )
+#
+#     response: dict = pack_and_encrypt_data(send_data.dict(), public_key_pem)
+#
+#     return response
 

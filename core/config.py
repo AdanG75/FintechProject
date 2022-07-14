@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Union, Any
+from typing import Union
 
 import sqlalchemy
 from sqlalchemy.engine.url import URL
