@@ -90,7 +90,7 @@ async def get_public_key_of_user(
 
 
 @router.get(
-    path="/by_type",
+    path="/by-type",
     response_model=List[Optional[UserDisplay]],
     status_code=status.HTTP_200_OK
 )

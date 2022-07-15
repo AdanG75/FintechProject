@@ -27,6 +27,12 @@ element_not_found_exception = NotFoundException(
     msg=f"Element not found"
 )
 
+multiple_elements_found_exception = NotFoundException(
+    code=status.HTTP_409_CONFLICT,
+    msg=f"Multiples elements ware found. Only one was expected"
+)
+
+
 # HTTPExceptions
 credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -92,7 +98,12 @@ option_not_found_exception = HTTPException(
 
 not_values_sent_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
-    detail="One or more values have not been passed"
+    detail="One or more values have not been passed or are wrong"
+)
+
+wrong_data_sent_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Some data values are incorrect or not was sent"
 )
 
 too_many_attempts_exception = HTTPException(
@@ -114,4 +125,11 @@ existing_credit_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
     detail="Client already has a credit within the market"
 )
+
+compile_exception = HTTPException(
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="A compile error occurred during execution of the process"
+)
+
+
 

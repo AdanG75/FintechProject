@@ -3,13 +3,14 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from db.models.password_recoveries_db import DbPasswordRecovery
-from db.orm.exceptions_orm import db_exception, element_not_found_exception, too_many_attempts_exception, \
+from db.orm.exceptions_orm import element_not_found_exception, too_many_attempts_exception, \
     not_valid_operation_exception
-from db.orm.functions_orm import multiple_attempts
+from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from web_utils.web_functions import generate_code, set_expiration_time
 
 
 @multiple_attempts
+@full_database_exceptions
 def create_code_to_recover_password(db: Session, id_user: int) -> DbPasswordRecovery:
     password_recovery = get_password_recovery_by_id_user(db, id_user)
 
@@ -23,18 +24,21 @@ def create_code_to_recover_password(db: Session, id_user: int) -> DbPasswordReco
         db.refresh(password_recovery)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return password_recovery
 
 
+@full_database_exceptions
 def get_password_recovery_by_id_recover(db: Session, id_recover: int) -> DbPasswordRecovery:
     try:
         password_recovery = db.query(DbPasswordRecovery).where(
             DbPasswordRecovery.id_recover == id_recover
         ).one_or_none()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if password_recovery is None:
         raise element_not_found_exception
@@ -42,13 +46,15 @@ def get_password_recovery_by_id_recover(db: Session, id_recover: int) -> DbPassw
     return password_recovery
 
 
+@full_database_exceptions
 def get_password_recovery_by_id_user(db: Session, id_user: int) -> DbPasswordRecovery:
     try:
         password_recovery = db.query(DbPasswordRecovery).where(
             DbPasswordRecovery.id_user == id_user
         ).one_or_none()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if password_recovery is None:
         raise element_not_found_exception
@@ -75,6 +81,7 @@ def check_code_of_password_recovery(db: Session, id_user: int, code: int) -> boo
 
 
 @multiple_attempts
+@full_database_exceptions
 def add_attempt(db: Session, password_recovery: DbPasswordRecovery) -> bool:
 
     if password_recovery.attempts < 5:
@@ -88,12 +95,14 @@ def add_attempt(db: Session, password_recovery: DbPasswordRecovery) -> bool:
         db.refresh(password_recovery)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return True
 
 
 @multiple_attempts
+@full_database_exceptions
 def reset_password_recovery(db: Session, password_recovery: DbPasswordRecovery) -> bool:
 
     password_recovery.is_valid = False
@@ -105,8 +114,16 @@ def reset_password_recovery(db: Session, password_recovery: DbPasswordRecovery) 
         db.refresh(password_recovery)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return True
 
 
+@multiple_attempts
+@full_database_exceptions
+def reset_password_recovery_by_id_user(db: Session, id_user: int) -> bool:
+    password_recovery = get_password_recovery_by_id_user(db, id_user)
+    result = reset_password_recovery(db, password_recovery)
+
+    return result
