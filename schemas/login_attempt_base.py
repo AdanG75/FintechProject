@@ -21,3 +21,6 @@ class LoginAttemptRequest(LoginAttemptBase):
 class LoginAttemptDisplay(LoginAttemptBase):
     attempts: int = Field(...)
     next_attempt_time: Optional[datetime] = Field(None)
+
+    class Config:
+        orm_mode = True

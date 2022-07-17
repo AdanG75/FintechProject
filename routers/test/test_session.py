@@ -98,3 +98,31 @@ async def get_sessions_of_user(
     response = sessions_orm.get_sessions_by_id_user(db, id_user)
 
     return response
+
+
+@router.get(
+    path='/active/user/{id_user}',
+    response_model=List[SessionDisplay],
+    status_code=status.HTTP_200_OK
+)
+async def get_active_sessions_of_user(
+        id_user: int = Path(..., gt=0),
+        db: Session = Depends(get_db)
+):
+    response = sessions_orm.get_active_sessions_by_id_user(db, id_user)
+
+    return response
+
+
+@router.put(
+    path='/active/user/{id_user}',
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK
+)
+async def close_active_sessions_of_user(
+        id_user: int = Path(..., gt=0),
+        db: Session = Depends(get_db)
+):
+    response = sessions_orm.finish_all_active_sessions_of_user(db, id_user)
+
+    return response

@@ -98,6 +98,43 @@ def get_sessions_by_id_user(db: Session, id_user: int) -> List[DbSession]:
     return sessions
 
 
+@full_database_exceptions
+def get_active_sessions_by_id_user(db: Session, id_user: int) -> List[DbSession]:
+    try:
+        active_sessions: List[DbSession] = db.query(DbSession).where(
+            DbSession.id_user == id_user,
+            DbSession.session_finish == None
+        ).all()
+    except Exception as e:
+        print(e)
+        raise e
+
+    return active_sessions
+
+
+@multiple_attempts
+@full_database_exceptions
+def finish_all_active_sessions_of_user(db: Session, id_user: int) -> BasicResponse:
+    active_sessions: List[DbSession] = get_active_sessions_by_id_user(db, id_user)
+
+    if len(active_sessions) > 0:
+        finish_time_session = datetime.utcnow()
+        for active_session in active_sessions:
+            active_session.session_finish = finish_time_session
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
+
+    return BasicResponse(
+        operation="Finish active sessions",
+        successful=True
+    )
+
+
 def get_time_session_as_datetime_object(session: Union[str, datetime, None]) -> Optional[datetime]:
     datetime_format = "%Y-%m-%d %H:%M:%S"
 

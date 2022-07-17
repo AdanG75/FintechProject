@@ -12,7 +12,7 @@ from schemas.password_recovery_base import PasswordRecoveryDisplay
 
 router = APIRouter(
     prefix='/test/password-recovery',
-    tags=['test', 'password recovery']
+    tags=['tests', 'password recovery']
 )
 
 

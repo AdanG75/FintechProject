@@ -76,7 +76,7 @@ async def get_all_users(
 
 
 @router.get(
-    path="/public_key/{id_user}",
+    path="/public-key/{id_user}",
     response_model=PublicKeyDisplay,
     status_code=status.HTTP_200_OK
 )

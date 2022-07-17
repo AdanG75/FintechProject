@@ -68,7 +68,7 @@ async def show_fingerprint(
 
 # Secure endpoint
 @router.post(
-    path="/create/bucket_test",
+    path="/create/bucket-test",
     status_code=status.HTTP_200_OK,
     tags=["bucket"]
 )
@@ -82,7 +82,7 @@ async def create_bucket(
 
 # Secure endpoint
 @router.get(
-    path='/detail/bucket_test',
+    path='/detail/bucket-test',
     status_code=status.HTTP_200_OK,
     response_model=StorageBase,
     tags=["bucket"]
@@ -97,7 +97,7 @@ async def get_bucket_details(
 
 # Secure endpoint
 @router.post(
-    path="/save/fingerprint_image",
+    path="/save/fingerprint-image",
     status_code=status.HTTP_200_OK,
     tags=["fingerprint", "bucket"]
 )
@@ -117,7 +117,7 @@ async def save_fingerprint_into_bucket(
 
 # Secure endpoint
 @router.get(
-    path="/download/fingerprint_image",
+    path="/download/fingerprint-image",
     status_code=status.HTTP_200_OK,
     tags=["fingerprint", "bucket"]
 )

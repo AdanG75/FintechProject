@@ -1,19 +1,20 @@
-from typing import Optional, List
+from typing import List
 import uuid
 
 from sqlalchemy.orm import Session
 
-from db.orm.exceptions_orm import db_exception, element_not_found_exception
-from db.orm.functions_orm import multiple_attempts
+from db.orm.exceptions_orm import element_not_found_exception
+from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from schemas.admin_base import AdminRequest
 from db.models.admins_db import DbAdmin
 from schemas.basic_response import BasicResponse
 
 
 @multiple_attempts
+@full_database_exceptions
 def create_admin(db: Session, request: AdminRequest) -> DbAdmin:
     admin_uuid = uuid.uuid4().hex
-    id_admin = "SSS-" + admin_uuid
+    id_admin = "ADM-" + admin_uuid
 
     new_admin = DbAdmin(
         id_admin=id_admin,
@@ -27,18 +28,21 @@ def create_admin(db: Session, request: AdminRequest) -> DbAdmin:
         db.refresh(new_admin)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return new_admin
 
 
-def get_admin_by_id_admin(db: Session, id_admin: str) -> Optional[DbAdmin]:
+@full_database_exceptions
+def get_admin_by_id_admin(db: Session, id_admin: str) -> DbAdmin:
     try:
         admin = db.query(DbAdmin).where(
             DbAdmin.id_admin == id_admin
         ).one_or_none()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if admin is None:
         raise element_not_found_exception
@@ -46,13 +50,15 @@ def get_admin_by_id_admin(db: Session, id_admin: str) -> Optional[DbAdmin]:
     return admin
 
 
-def get_admin_by_id_user(db: Session, id_user: int) -> Optional[DbAdmin]:
+@full_database_exceptions
+def get_admin_by_id_user(db: Session, id_user: int) -> DbAdmin:
     try:
         admin = db.query(DbAdmin).where(
             DbAdmin.id_user == id_user
         ).one_or_none()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if admin is None:
         raise element_not_found_exception
@@ -60,13 +66,19 @@ def get_admin_by_id_user(db: Session, id_user: int) -> Optional[DbAdmin]:
     return admin
 
 
-def get_all_admins(db: Session) -> Optional[List[DbAdmin]]:
-    admins: Optional[List[DbAdmin]] = db.query(DbAdmin).all()
+@full_database_exceptions
+def get_all_admins(db: Session) -> List[DbAdmin]:
+    try:
+        admins: List[DbAdmin] = db.query(DbAdmin).all()
+    except Exception as e:
+        print(e)
+        raise e
 
     return admins
 
 
 @multiple_attempts
+@full_database_exceptions
 def update_admin(db: Session, request: AdminRequest, id_admin: str) -> DbAdmin:
     updated_admin = get_admin_by_id_admin(db, id_admin)
 
@@ -76,27 +88,26 @@ def update_admin(db: Session, request: AdminRequest, id_admin: str) -> DbAdmin:
         # Commit all changes
         db.commit()
         db.refresh(updated_admin)
-    except Exception:
+    except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return updated_admin
 
 
 @multiple_attempts
+@full_database_exceptions
 def delete_admin(db: Session, id_admin: str) -> BasicResponse:
     admin = get_admin_by_id_admin(db, id_admin)
 
-    if admin is not None:
-        try:
-            db.delete(admin)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise db_exception
-
-    else:
-        raise element_not_found_exception
+    try:
+        db.delete(admin)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
 
     return BasicResponse(
         operation="delete",

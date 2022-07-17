@@ -18,7 +18,7 @@ class AdminRequest(AdminBase):
 
 
 class AdminDisplay(AdminBase):
-    id_admin: int = Field(...)
+    id_admin: str = Field(...)
 
     class Config:
         orm_mode = True
