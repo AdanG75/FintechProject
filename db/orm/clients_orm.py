@@ -1,5 +1,6 @@
 import uuid
-from typing import Optional
+from datetime import date, datetime
+from typing import Optional, Union
 
 from sqlalchemy.orm import Session
 
@@ -8,7 +9,7 @@ from db.models.branches_db import DbBranch  # Don't erase, it's used by relation
 from db.models.clients_db import DbClient
 from db.models.fingerprints_db import DbFingerprint  # Don't erase, it's used by relationship from SQLAlchemy
 from db.models.users_db import DbUser
-from db.orm.exceptions_orm import element_not_found_exception, type_of_value_not_compatible
+from db.orm.exceptions_orm import element_not_found_exception, type_of_value_not_compatible, wrong_data_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.users_orm import get_user_by_id
 from schemas.basic_response import BasicResponse
@@ -25,6 +26,8 @@ def create_client(db: Session, request: ClientBase) -> DbClient:
     # Clear user object to save space
     user = None
 
+    date_birthday = cast_str_date_to_date_object(request.birth_date)
+
     client_uuid = uuid.uuid4().hex
     id_client = f"CLI-{client_uuid}"
 
@@ -32,7 +35,7 @@ def create_client(db: Session, request: ClientBase) -> DbClient:
         id_client=id_client,
         id_user=request.id_user,
         last_name=request.last_name,
-        birth_date=request.birth_date
+        birth_date=date_birthday
     )
 
     try:
@@ -115,3 +118,17 @@ def delete_client(db: Session, id_client: str) -> BasicResponse:
         operation="delete",
         successful=True
     )
+
+
+def cast_str_date_to_date_object(this_date: Union[str, date]) -> date:
+    if isinstance(this_date, str):
+        date_format = "%Y-%m-%d"
+        this_date_clean = this_date.replace(".", "-").replace("/", "-")
+        try:
+            date_object = datetime.strptime(this_date_clean, date_format).date()
+        except ValueError:
+            raise wrong_data_sent_exception
+    else:
+        date_object = this_date
+
+    return date_object

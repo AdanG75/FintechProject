@@ -4,7 +4,7 @@ from typing import Union, Optional, List
 from sqlalchemy.orm import Session
 
 from db.models.sessions_db import DbSession
-from db.orm.exceptions_orm import element_not_found_exception
+from db.orm.exceptions_orm import element_not_found_exception, wrong_data_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from schemas.basic_response import BasicResponse
 from schemas.session_base import SessionRequest, SessionStrRequest
@@ -135,21 +135,6 @@ def finish_all_active_sessions_of_user(db: Session, id_user: int) -> BasicRespon
     )
 
 
-def get_time_session_as_datetime_object(session: Union[str, datetime, None]) -> Optional[datetime]:
-    datetime_format = "%Y-%m-%d %H:%M:%S"
-
-    if session is not None:
-        if isinstance(session, str):
-            session_str = session.replace("T", " ")
-            session_datetime = datetime.strptime(session_str, datetime_format)
-        else:
-            session_datetime = session
-    else:
-        return session
-
-    return session_datetime
-
-
 @multiple_attempts
 @full_database_exceptions
 def delete_session(db: Session, id_session: int) -> BasicResponse:
@@ -193,3 +178,21 @@ def delete_sessions_by_id_user(db: Session, id_user: int) -> BasicResponse:
         operation="batch delete",
         successful=True
     )
+
+
+def get_time_session_as_datetime_object(session: Union[str, datetime, None]) -> Optional[datetime]:
+    datetime_format = "%Y-%m-%d %H:%M:%S"
+
+    if session is not None:
+        if isinstance(session, str):
+            session_str = session.replace("T", " ").replace(".", "-").replace("/", "-")
+            try:
+                session_datetime = datetime.strptime(session_str, datetime_format)
+            except ValueError:
+                raise wrong_data_sent_exception
+        else:
+            session_datetime = session
+    else:
+        return session
+
+    return session_datetime

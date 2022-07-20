@@ -4,10 +4,12 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
+date_pattern: str = r"^\d{4}[-/.]{1}\d\d[-/.]{1}\d\d ?$"
+
+
 class ClientBase(BaseModel):
     id_user: int = Field(..., gt=0)
     last_name: str = Field(..., min_length=2, max_length=99)
-    birth_date: date = Field(...)
 
 
 class AddressInner(BaseModel):
@@ -36,6 +38,7 @@ class FingerprintInner(BaseModel):
 
 
 class ClientRequest(ClientBase):
+    birth_date: str = Field(..., regex=date_pattern, min_length=8, max_length=15)
 
     class Config:
         schema_extra = {
@@ -49,6 +52,7 @@ class ClientRequest(ClientBase):
 
 class ClientDisplay(ClientBase):
     id_client: str = Field(...)
+    birth_date: date = Field(...)
     age: int = Field(...)
 
     addresses: List[AddressInner] = Field(...)
@@ -56,8 +60,3 @@ class ClientDisplay(ClientBase):
 
     class Config:
         orm_mode = True
-
-
-
-
-
