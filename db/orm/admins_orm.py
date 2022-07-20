@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Optional
 import uuid
 
 from sqlalchemy.orm import Session
 
-from db.orm.exceptions_orm import element_not_found_exception, wrong_data_sent_exception
+from db.orm.exceptions_orm import element_not_found_exception, type_of_value_not_compatible
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.users_orm import get_user_by_id
 from schemas.admin_base import AdminRequest
@@ -15,9 +15,12 @@ from schemas.basic_response import BasicResponse
 @multiple_attempts
 @full_database_exceptions
 def create_admin(db: Session, request: AdminRequest) -> DbAdmin:
-    user: DbUser = get_user_by_id(db, request.id_user)
+    user: Optional[DbUser] = get_user_by_id(db, request.id_user)
     if user.type_user != 'admin':
-        raise wrong_data_sent_exception
+        raise type_of_value_not_compatible
+
+    # Clear user object to save space
+    user = None
 
     admin_uuid = uuid.uuid4().hex
     id_admin = "ADM-" + admin_uuid

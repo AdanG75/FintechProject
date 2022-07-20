@@ -34,7 +34,7 @@ class BranchInner(BaseModel):
         orm_mode = True
 
 
-class BranchDisplay(MarketBase):
+class MarketDisplay(MarketBase):
     id_market: str = Field(...)
 
     branches: List[BranchInner] = Field(...)

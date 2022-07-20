@@ -91,6 +91,11 @@ type_not_found_exception = HTTPException(
     detail="Type not found"
 )
 
+type_of_value_not_compatible = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Unsupportable data type or not compatible with the operation"
+)
+
 option_not_found_exception = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Option not found"

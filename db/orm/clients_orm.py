@@ -1,16 +1,28 @@
 import uuid
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from db.models.clients_db import DbClient
-from db.orm.exceptions_orm import db_exception, element_not_found_exception
-from db.orm.functions_orm import multiple_attempts
+from db.models.fingerprints_db import DbFingerprint  # Don't erase, it's used by relationship from SQLAlchemy
+from db.models.users_db import DbUser
+from db.orm.exceptions_orm import element_not_found_exception, type_of_value_not_compatible
+from db.orm.functions_orm import multiple_attempts, full_database_exceptions
+from db.orm.users_orm import get_user_by_id
 from schemas.basic_response import BasicResponse
 from schemas.client_base import ClientBase, ClientRequest
 
 
 @multiple_attempts
 def create_client(db: Session, request: ClientBase) -> DbClient:
+
+    user: Optional[DbUser] = get_user_by_id(db, request.id_user)
+    if user.type_user != 'client':
+        raise type_of_value_not_compatible
+
+    # Clear user object to save space
+    user = None
+
     client_uuid = uuid.uuid4().hex
     id_client = f"CLI-{client_uuid}"
 
@@ -27,18 +39,21 @@ def create_client(db: Session, request: ClientBase) -> DbClient:
         db.refresh(new_client)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return new_client
 
 
+@full_database_exceptions
 def get_client_by_id_client(db: Session, id_client: str) -> DbClient:
     try:
         client = db.query(DbClient).where(
             DbClient.id_client == id_client
         ).one_or_none()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if client is None:
         raise element_not_found_exception
@@ -46,13 +61,15 @@ def get_client_by_id_client(db: Session, id_client: str) -> DbClient:
     return client
 
 
+@full_database_exceptions
 def get_client_by_id_user(db: Session, id_user: int) -> DbClient:
     try:
         client = db.query(DbClient).where(
             DbClient.id_user == id_user
         ).one_or_none()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if client is None:
         raise element_not_found_exception
@@ -61,6 +78,7 @@ def get_client_by_id_user(db: Session, id_user: int) -> DbClient:
 
 
 @multiple_attempts
+@full_database_exceptions
 def update_client(db: Session, request: ClientRequest, id_client: str) -> DbClient:
     updated_client = get_client_by_id_client(db, id_client)
 
@@ -72,12 +90,14 @@ def update_client(db: Session, request: ClientRequest, id_client: str) -> DbClie
         db.refresh(updated_client)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return updated_client
 
 
 @multiple_attempts
+@full_database_exceptions
 def delete_client(db: Session, id_client: str) -> BasicResponse:
     client = get_client_by_id_client(db, id_client)
 
@@ -86,7 +106,8 @@ def delete_client(db: Session, id_client: str) -> BasicResponse:
         db.commit()
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return BasicResponse(
         operation="delete",
