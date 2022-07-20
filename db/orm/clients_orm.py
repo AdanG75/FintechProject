@@ -3,6 +3,8 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from db.models.addresses_db import DbAddress  # Don't erase, it's used by relationship from SQLAlchemy
+from db.models.branches_db import DbBranch  # Don't erase, it's used by relationship from SQLAlchemy
 from db.models.clients_db import DbClient
 from db.models.fingerprints_db import DbFingerprint  # Don't erase, it's used by relationship from SQLAlchemy
 from db.models.users_db import DbUser
