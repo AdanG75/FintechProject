@@ -164,6 +164,7 @@ def delete_sessions_by_id_user(db: Session, id_user: int) -> BasicResponse:
             try:
                 db.delete(session)
             except Exception as e:
+                db.rollback()
                 print(e)
                 raise e
 

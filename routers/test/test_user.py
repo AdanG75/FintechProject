@@ -8,7 +8,7 @@ from db.database import get_db
 from db.models.users_db import DbUser
 from db.orm import users_orm
 from db.orm.exceptions_orm import NotFoundException
-from schemas.basic_response import BasicResponse
+from schemas.basic_response import BasicResponse, BasicPasswordChange
 from schemas.type_user import TypeUser
 from schemas.user_base import UserRequest, UserDisplay, PublicKeyDisplay, UserPublicKeyRequest
 
@@ -48,7 +48,7 @@ async def update_user(
 
 
 @router.patch(
-    path="/{id_user}",
+    path="/public-key/{id_user}",
     response_model=BasicResponse,
     status_code=status.HTTP_200_OK
 )
@@ -58,6 +58,21 @@ async def update_public_key_of_user(
         db: Session = Depends(get_db)
 ):
     response = users_orm.set_public_key(db, id_user, request.public_key)
+
+    return response
+
+
+@router.patch(
+    path="/new-password/{id_user}",
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK
+)
+async def update_password_of_user(
+        id_user: int = Path(..., gt=0),
+        request: BasicPasswordChange = Body(...),
+        db: Session = Depends(get_db)
+):
+    response = users_orm.set_new_password(db, id_user, request.password)
 
     return response
 

@@ -13,4 +13,9 @@ class DbMarket(Base):
     web_page = Column('web_page', String)
     rfc = Column('rfc', String)
 
-    branches = relationship("db.models.branches_db.DbBranch", back_populates="market")
+    branches = relationship(
+        "db.models.branches_db.DbBranch",
+        primaryjoin="and_(DbMarket.id_market==DbBranch.id_market, "
+                    "DbBranch.dropped==False)",
+        back_populates="market"
+    )

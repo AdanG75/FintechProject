@@ -18,5 +18,10 @@ class DbUser(Base):
     updated_time = Column('updated_time', DateTime(timezone=False))
     dropped = Column('dropped', Boolean)
 
-    accounts = relationship("db.models.accounts_db.DbAccount", back_populates="user")
+    accounts = relationship(
+        "db.models.accounts_db.DbAccount",
+        primaryjoin="and_(DbUser.id_user==DbAccount.id_account, "
+                    "DbAccount.dropped==False)",
+        back_populates="user"
+    )
 

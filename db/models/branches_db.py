@@ -18,4 +18,10 @@ class DbBranch(Base):
     dropped = Column('dropped', Boolean)
 
     market = relationship("db.models.markets_db.DbMarket", back_populates="branches")
-    address = relationship("db.models.addresses_db.DbAddress", back_populates="branch", uselist=False)
+    address = relationship(
+        "db.models.addresses_db.DbAddress",
+        primaryjoin="and_(DbBranch.id_branch==DbAddress.id_branch, "
+                    "DbAddress.dropped==False)",
+        back_populates="branch",
+        uselist=False
+    )

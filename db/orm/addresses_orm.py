@@ -1,12 +1,15 @@
 from typing import Optional, List
 
-from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import Session
 
 from db.models.addresses_db import DbAddress
-from db.orm.exceptions_orm import db_exception, element_not_found_exception, type_not_found_exception, \
-    not_values_sent_exception, not_unique_value
-from db.orm.functions_orm import multiple_attempts
+from db.models.branches_db import DbBranch  # Don't erase because it is used by SQLAlchemy
+from db.models.clients_db import DbClient  # Don't erase because it is used by SQLAlchemy
+from db.models.fingerprints_db import DbFingerprint  # Don't erase because it is used by SQLAlchemy
+from db.models.markets_db import DbMarket  # Don't erase because it is used by SQLAlchemy
+from db.orm.exceptions_orm import element_not_found_exception, type_not_found_exception, \
+    not_values_sent_exception, NotFoundException
+from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from schemas.address_base import AddressRequest
 from schemas.basic_response import BasicResponse
 
@@ -30,12 +33,13 @@ def create_branch_address(db: Session, request: AddressRequest) -> DbAddress:
 
     try:
         branch_address = get_address_by_id_branch(db, request.id_branch)
-    except element_not_found_exception:
+    except NotFoundException:
         return add_address(db, request)
     else:
         return update_address(db, request, branch_address.id_address)
 
 
+@full_database_exceptions
 def create_client_address(db: Session, request: AddressRequest) -> DbAddress:
     request.id_branch = None
     if request.id_client is None:
@@ -43,7 +47,7 @@ def create_client_address(db: Session, request: AddressRequest) -> DbAddress:
 
     try:
         past_main_address = get_main_address_of_client(db, request.id_client)
-    except element_not_found_exception:
+    except NotFoundException:
         # We ensure that at least one address is main
         request.is_main = True
     else:
@@ -55,12 +59,14 @@ def create_client_address(db: Session, request: AddressRequest) -> DbAddress:
                 db.refresh(past_main_address)
             except Exception as e:
                 db.rollback()
-                raise db_exception
+                print(e)
+                raise e
 
     return add_address(db, request)
 
 
 @multiple_attempts
+@full_database_exceptions
 def add_address(db: Session, request: AddressRequest) -> DbAddress:
     new_address = DbAddress(
         id_branch=request.id_branch,
@@ -82,11 +88,13 @@ def add_address(db: Session, request: AddressRequest) -> DbAddress:
         db.refresh(new_address)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return new_address
 
 
+@full_database_exceptions
 def get_address_by_id_address(db: Session, id_address: int) -> Optional[DbAddress]:
     try:
         address = db.query(DbAddress).where(
@@ -95,7 +103,8 @@ def get_address_by_id_address(db: Session, id_address: int) -> Optional[DbAddres
         ).one_or_none()
 
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if address is None:
         raise element_not_found_exception
@@ -103,6 +112,7 @@ def get_address_by_id_address(db: Session, id_address: int) -> Optional[DbAddres
     return address
 
 
+@full_database_exceptions
 def get_addresses_by_type_owner(db: Session, type_owner: str) -> Optional[List[DbAddress]]:
     try:
         addresses = db.query(DbAddress).where(
@@ -110,11 +120,13 @@ def get_addresses_by_type_owner(db: Session, type_owner: str) -> Optional[List[D
         ).all()
 
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     return addresses
 
 
+@full_database_exceptions
 def get_address_by_id_branch(db: Session, id_branch: str) -> DbAddress:
     try:
         address = db.query(DbAddress).where(
@@ -122,10 +134,9 @@ def get_address_by_id_branch(db: Session, id_branch: str) -> DbAddress:
             DbAddress.type_owner == 'market',
             DbAddress.dropped == False
         ).one_or_none()
-    except MultipleResultsFound:
-        raise not_unique_value
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if address is None:
         raise element_not_found_exception
@@ -133,6 +144,7 @@ def get_address_by_id_branch(db: Session, id_branch: str) -> DbAddress:
     return address
 
 
+@full_database_exceptions
 def get_addresses_by_id_client(db: Session, id_client: str) -> List[DbAddress]:
     try:
         addresses = db.query(DbAddress).where(
@@ -141,7 +153,8 @@ def get_addresses_by_id_client(db: Session, id_client: str) -> List[DbAddress]:
             DbAddress.dropped == False
         ).all()
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if addresses is None:
         raise element_not_found_exception
@@ -149,6 +162,7 @@ def get_addresses_by_id_client(db: Session, id_client: str) -> List[DbAddress]:
     return addresses
 
 
+@full_database_exceptions
 def get_main_address_of_client(db: Session, id_client: str) -> DbAddress:
     try:
         address = db.query(DbAddress).where(
@@ -157,10 +171,9 @@ def get_main_address_of_client(db: Session, id_client: str) -> DbAddress:
             DbAddress.is_main == True,
             DbAddress.dropped == False
         ).one_or_none()
-    except MultipleResultsFound:
-        raise not_unique_value
     except Exception as e:
-        raise db_exception
+        print(e)
+        raise e
 
     if address is None:
         raise element_not_found_exception
@@ -169,6 +182,7 @@ def get_main_address_of_client(db: Session, id_client: str) -> DbAddress:
 
 
 @multiple_attempts
+@full_database_exceptions
 def update_address(db: Session, request: AddressRequest, id_address: int) -> DbAddress:
     updated_address = get_address_by_id_address(db, id_address)
 
@@ -187,7 +201,8 @@ def update_address(db: Session, request: AddressRequest, id_address: int) -> DbA
         db.refresh(updated_address)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return updated_address
 
@@ -203,6 +218,7 @@ def delete_addresses_by_id_owner(db: Session, id_owner: str, type_owner: str) ->
 
 
 @multiple_attempts
+@full_database_exceptions
 def delete_address(db: Session, id_address: int) -> BasicResponse:
     address = get_address_by_id_address(db, id_address)
     address.dropped = True
@@ -212,7 +228,8 @@ def delete_address(db: Session, id_address: int) -> BasicResponse:
         db.refresh(address)
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return BasicResponse(
         operation="delete",
@@ -221,6 +238,7 @@ def delete_address(db: Session, id_address: int) -> BasicResponse:
 
 
 @multiple_attempts
+@full_database_exceptions
 def delete_addresses_by_id_client(db: Session, id_client: str) -> BasicResponse:
     addresses = get_addresses_by_id_client(db, id_client)
 
@@ -231,17 +249,10 @@ def delete_addresses_by_id_client(db: Session, id_client: str) -> BasicResponse:
         db.commit()
     except Exception as e:
         db.rollback()
-        raise db_exception
+        print(e)
+        raise e
 
     return BasicResponse(
         operation="batch delete",
         successful=True
     )
-
-
-
-
-
-
-
-

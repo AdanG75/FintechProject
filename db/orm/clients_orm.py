@@ -13,11 +13,11 @@ from db.orm.exceptions_orm import element_not_found_exception, type_of_value_not
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.users_orm import get_user_by_id
 from schemas.basic_response import BasicResponse
-from schemas.client_base import ClientBase, ClientRequest
+from schemas.client_base import ClientRequest
 
 
 @multiple_attempts
-def create_client(db: Session, request: ClientBase) -> DbClient:
+def create_client(db: Session, request: ClientRequest) -> DbClient:
 
     user: Optional[DbUser] = get_user_by_id(db, request.id_user)
     if user.type_user != 'client':

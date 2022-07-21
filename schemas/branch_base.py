@@ -40,7 +40,7 @@ class AddressInner(BaseModel):
 
 
 class BranchRequest(BranchBase):
-    password: str = Field(..., min_length=8, max_length=49)
+    password: Optional[str] = Field(None, min_length=8, max_length=49)
 
     class Config:
         schema_extra = {
@@ -59,8 +59,8 @@ class BranchDisplay(BranchBase):
     id_market: str = Field(...)
     created_time: datetime = Field(...)
 
-    market: MarketInner = Field(...)
-    address: AddressInner = Field(...)
+    market: Optional[MarketInner] = Field(None)
+    address: Optional[AddressInner] = Field(None)
 
     class Config:
         orm_mode = True

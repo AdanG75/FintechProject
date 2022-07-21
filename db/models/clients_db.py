@@ -13,5 +13,15 @@ class DbClient(Base):
     birth_date = Column('birth_date', Date)
     age = Column('age', SmallInteger)
 
-    addresses = relationship("db.models.addresses_db.DbAddress", back_populates="client")
-    fingerprints = relationship("db.models.fingerprints_db.DbFingerprint", back_populates="client")
+    addresses = relationship(
+        "db.models.addresses_db.DbAddress",
+        primaryjoin="and_(DbClient.id_client==DbAddress.id_client, "
+                    "DbAddress.dropped==False)",
+        back_populates="client"
+    )
+    fingerprints = relationship(
+        "db.models.fingerprints_db.DbFingerprint",
+        primaryjoin="and_(DbClient.id_client==DbFingerprint.id_client, "
+                    "DbFingerprint.dropped==False)",
+        back_populates="client"
+    )

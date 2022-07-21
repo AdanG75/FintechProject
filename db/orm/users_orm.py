@@ -8,7 +8,7 @@ from db.models.users_db import DbUser
 from db.models.accounts_db import DbAccount  # Don't erase because it is used by SQLAlchemy
 from db.orm.exceptions_orm import email_exception, element_not_found_exception, \
     not_unique_email_exception, type_not_found_exception, phone_exception, option_not_found_exception, \
-    NotFoundException
+    NotFoundException, wrong_data_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from schemas.basic_response import BasicResponse
 from schemas.type_user import TypeUser
@@ -19,6 +19,9 @@ from secure.hash import Hash
 @multiple_attempts
 @full_database_exceptions
 def create_user(db: Session, request: UserRequest) -> DbUser:
+    if request.password is None:
+        raise wrong_data_sent_exception
+
     if len(request.email) >= 80:
         raise email_exception
 
@@ -167,9 +170,11 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
     else:
         formatted_phone = request.phone
 
+    if request.password is not None:
+        updated_user.password = Hash.bcrypt(request.password)
+
     updated_user.name = request.name
     updated_user.phone = formatted_phone
-    updated_user.password = Hash.bcrypt(request.password)
     updated_user.public_key = request.public_key
     updated_user.dropped = False
 
@@ -200,6 +205,26 @@ def set_public_key(db: Session, id_user: int, public_key: str) -> BasicResponse:
 
     return BasicResponse(
         operation="set element",
+        successful=True
+    )
+
+
+@multiple_attempts
+@full_database_exceptions
+def set_new_password(db: Session, id_user: int, new_password: str) -> BasicResponse:
+    user = get_user_by_id(db, id_user)
+    user.password = Hash.bcrypt(new_password)
+
+    try:
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
+
+    return BasicResponse(
+        operation="Change password",
         successful=True
     )
 

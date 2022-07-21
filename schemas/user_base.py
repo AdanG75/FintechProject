@@ -16,7 +16,7 @@ class UserBase(BaseModel):
 
 
 class UserRequest(UserBase):
-    password: str = Field(..., min_length=8, max_length=49)
+    password: Optional[str] = Field(None, min_length=8, max_length=49)
     public_key: Optional[str] = Field(None, min_length=32, max_length=1024)
 
     class Config:
@@ -111,4 +111,3 @@ class PublicKeyDisplay(UserPublicKey):
 
     class Config:
         orm_mode = True
-
