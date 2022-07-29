@@ -3,7 +3,11 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from db.models.addresses_db import DbAddress  # Don't erase because it is used by relationship
+from db.models.branches_db import DbBranch  # Don't erase because it is used by relationship
+from db.models.clients_db import DbClient  # Don't erase because it is used by relationship
 from db.models.fingerprints_db import DbFingerprint
+from db.models.markets_db import DbMarket  # Don't erase because it is used by relationship
 from db.orm.exceptions_orm import db_exception, element_not_found_exception, \
     not_unique_alias_exception, not_main_element_exception
 from db.orm.functions_orm import multiple_attempts
@@ -144,8 +148,8 @@ def update_fingerprint(db: Session, request: FingerprintRequest, id_fingerprint:
 
 
 @multiple_attempts
-def light_update(db: Session, request: FingerprintUpdateRequest) -> DbFingerprint:
-    fingerprint = get_fingerprint_by_id(db, request.id_fingerprint)
+def light_update(db: Session, request: FingerprintUpdateRequest, id_fingerprint: str) -> DbFingerprint:
+    fingerprint = get_fingerprint_by_id(db, id_fingerprint)
 
     if fingerprint.main_fingerprint != request.main_fingerprint and not fingerprint.main_fingerprint:
         change_main_fingerprint(db, fingerprint.id_client, fingerprint.id_fingerprint)

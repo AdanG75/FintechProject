@@ -27,9 +27,26 @@ async def create_user(
         user: UserRequest = Body(...),
         db: Session = Depends(get_db)
 ):
-    user: DbUser = users_orm.create_user(db, user)
+    # See https://docs.sqlalchemy.org/en/14/orm/session_transaction.html
+    # try:
+    #     new_user: DbUser = users_orm.create_user(db, user, mode='wait')
+    #     nested = db.begin_nested()
+    #     db.refresh(new_user)
+    #     print(new_user.id_user)
+    #     client = ClientRequest(
+    #         id_user=new_user.id_user,
+    #         last_name='False',
+    #         birth_date='1998/89/16'
+    #     )
+    #     new_client = clients_orm.create_client(db, client)
+    #     # nested.commit()
+    #     db.commit()
+    # except Exception as e:
+    #     db.rollback()
+    #     raise e
+    response = users_orm.create_user(db, user)
 
-    return user
+    return response
 
 
 @router.put(
@@ -42,9 +59,9 @@ async def update_user(
         user: UserRequest = Body(...),
         db: Session = Depends(get_db)
 ):
-    user: DbUser = users_orm.update_user(db, user, id_user)
+    response: DbUser = users_orm.update_user(db, user, id_user)
 
-    return user
+    return response
 
 
 @router.patch(
@@ -85,9 +102,9 @@ async def update_password_of_user(
 async def get_all_users(
         db: Session = Depends(get_db)
 ):
-    users = users_orm.get_all_users(db)
+    response = users_orm.get_all_users(db)
 
-    return users
+    return response
 
 
 @router.get(
@@ -136,4 +153,3 @@ async def delete_user(
     response = users_orm.delete_user(db, id_user)
 
     return response
-

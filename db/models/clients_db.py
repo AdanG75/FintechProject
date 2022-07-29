@@ -1,6 +1,6 @@
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Integer, SmallInteger, String, Date
+from sqlalchemy.sql.sqltypes import Integer, SmallInteger, String, Date, Boolean
 
 from db.database import Base
 
@@ -12,6 +12,7 @@ class DbClient(Base):
     last_name = Column('last_name', String)
     birth_date = Column('birth_date', Date)
     age = Column('age', SmallInteger)
+    dropped = Column('dropped', Boolean)
 
     addresses = relationship(
         "db.models.addresses_db.DbAddress",

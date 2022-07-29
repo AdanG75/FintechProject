@@ -1,6 +1,6 @@
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Integer, String, DateTime, Boolean
+from sqlalchemy.sql.sqltypes import String, DateTime, Boolean
 
 from db.database import Base
 
@@ -17,7 +17,12 @@ class DbBranch(Base):
     updated_time = Column('updated_time', DateTime(timezone=False))
     dropped = Column('dropped', Boolean)
 
-    market = relationship("db.models.markets_db.DbMarket", back_populates="branches")
+    market = relationship(
+        "db.models.markets_db.DbMarket",
+        primaryjoin="and_(DbBranch.id_market==DbMarket.id_market, "
+                    "DbMarket.dropped==False)",
+        back_populates="branches"
+    )
     address = relationship(
         "db.models.addresses_db.DbAddress",
         primaryjoin="and_(DbBranch.id_branch==DbAddress.id_branch, "

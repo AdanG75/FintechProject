@@ -1,6 +1,6 @@
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Integer, String
+from sqlalchemy.sql.sqltypes import Integer, String, Boolean
 
 from db.database import Base
 
@@ -12,6 +12,7 @@ class DbMarket(Base):
     type_market = Column('type_market', String)
     web_page = Column('web_page', String)
     rfc = Column('rfc', String)
+    dropped = Column('dropped', Boolean)
 
     branches = relationship(
         "db.models.branches_db.DbBranch",

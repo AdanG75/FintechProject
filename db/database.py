@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from core.config import settings
 
@@ -25,3 +25,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def commit_all(db: Session):
+    """
+    Commit all pending operation within a transaction
+    :param db: (Session) - Instance of the database
+    :return: None
+    :raise: Whatever possible exception supported by SQLAlchemy
+    """
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise e

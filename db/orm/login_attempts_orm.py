@@ -15,8 +15,14 @@ def check_attempt(db: Session, id_user: int) -> bool:
 
     if login_attempt.attempts < 5:
         return True
-    elif login_attempt.attempts < 12 and login_attempt.next_attempt_time <= datetime.utcnow():
-        return True
+    elif login_attempt.attempts < 12:
+        if login_attempt.next_attempt_time is not None:
+            if login_attempt.next_attempt_time <= datetime.utcnow():
+                return True
+            else:
+                return False
+        else:
+            raise inactive_password_exception
     elif login_attempt.attempts >= 12:
         raise inactive_password_exception
     else:

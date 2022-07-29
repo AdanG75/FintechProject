@@ -10,8 +10,8 @@ class AddressBase(BaseModel):
     is_main: bool = Field(...)
     zip_code: int = Field(..., gt=0)
     state: str = Field(..., min_length=2, max_length=79)
-    city: str = Field(None, min_length=2, max_length=79)
-    neighborhood: str = Field(None, min_length=3, max_length=79)
+    city: Optional[str] = Field(None, min_length=2, max_length=79)
+    neighborhood: Optional[str] = Field(None, min_length=3, max_length=79)
     street: str = Field(..., min_length=2, max_length=79)
     ext_number: str = Field(..., min_length=1, max_length=19)
     inner_number: Optional[str] = Field(None, min_length=1, max_length=14)
@@ -34,8 +34,8 @@ class BranchInner(BaseModel):
 
 
 class AddressRequest(AddressBase):
-    id_branch: str = Field(None, min_length=8, max_length=49)
-    id_client: str = Field(None, min_length=8, max_length=49)
+    id_branch: Optional[str] = Field(None, min_length=8, max_length=49)
+    id_client: Optional[str] = Field(None, min_length=8, max_length=49)
     type_owner: TypeUser = Field(...)
 
     class Config:

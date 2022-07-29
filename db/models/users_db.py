@@ -20,8 +20,7 @@ class DbUser(Base):
 
     accounts = relationship(
         "db.models.accounts_db.DbAccount",
-        primaryjoin="and_(DbUser.id_user==DbAccount.id_account, "
+        primaryjoin="and_(DbUser.id_user==DbAccount.id_user, "
                     "DbAccount.dropped==False)",
         back_populates="user"
     )
-

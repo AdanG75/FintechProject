@@ -99,7 +99,3 @@ async def delete_code(
         operation="Drop recovery request",
         successful=result
     )
-
-
-
-

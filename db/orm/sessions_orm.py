@@ -27,7 +27,6 @@ def start_session(db: Session, request: Union[SessionRequest, SessionStrRequest]
     try:
         db.add(new_session)
         db.commit()
-        db.refresh(new_session)
     except Exception as e:
         db.rollback()
         print(e)
@@ -57,7 +56,6 @@ def finish_session(
 
     try:
         db.commit()
-        db.refresh(updated_session)
     except Exception as e:
         db.rollback()
         print(e)

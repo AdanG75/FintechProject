@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from db.models.password_recoveries_db import DbPasswordRecovery
 from db.orm.exceptions_orm import element_not_found_exception, too_many_attempts_exception, \
-    not_valid_operation_exception
+    not_valid_operation_exception, option_not_found_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from web_utils.web_functions import generate_code, set_expiration_time
 
@@ -87,7 +87,7 @@ def add_attempt(db: Session, password_recovery: DbPasswordRecovery) -> bool:
     if password_recovery.attempts < 5:
         password_recovery.attempts += 1
     else:
-        reset_password_recovery(db, password_recovery)
+        reset_password_recovery(db, password_recovery, execute='wait')
         raise too_many_attempts_exception
 
     try:
@@ -103,25 +103,33 @@ def add_attempt(db: Session, password_recovery: DbPasswordRecovery) -> bool:
 
 @multiple_attempts
 @full_database_exceptions
-def reset_password_recovery(db: Session, password_recovery: DbPasswordRecovery) -> bool:
+def reset_password_recovery(
+        db: Session,
+        password_recovery: DbPasswordRecovery,
+        execute: str = 'now'
+) -> bool:
 
     password_recovery.is_valid = False
     password_recovery.code = None
     password_recovery.expiration_time = None
+    password_recovery.attempts = 0
 
-    try:
-        db.commit()
-        db.refresh(password_recovery)
-    except Exception as e:
-        db.rollback()
-        print(e)
-        raise e
+    if execute == 'now':
+        try:
+            db.commit()
+            db.refresh(password_recovery)
+        except Exception as e:
+            db.rollback()
+            print(e)
+            raise e
+    elif execute == 'wait':
+        pass
+    else:
+        raise option_not_found_exception
 
     return True
 
 
-@multiple_attempts
-@full_database_exceptions
 def reset_password_recovery_by_id_user(db: Session, id_user: int) -> bool:
     password_recovery = get_password_recovery_by_id_user(db, id_user)
     result = reset_password_recovery(db, password_recovery)

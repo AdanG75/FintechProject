@@ -86,6 +86,11 @@ not_main_element_exception = HTTPException(
     detail="At least one element should be the main element"
 )
 
+minimum_object_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="At least one element should be exist"
+)
+
 type_not_found_exception = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Type not found"
@@ -136,5 +141,8 @@ compile_exception = HTTPException(
     detail="A compile error occurred during execution of the process"
 )
 
-
+operation_need_a_precondition_exception = HTTPException(
+    status_code=status.HTTP_412_PRECONDITION_FAILED,
+    detail="To do this operation it is necessary have completed some conditions"
+)
 

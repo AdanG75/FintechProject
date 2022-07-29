@@ -20,4 +20,9 @@ class DbFingerprint(Base):
     updated_time = Column('updated_time', DateTime(timezone=False))
     dropped = Column('dropped', Boolean)
 
-    client = relationship("db.models.clients_db.DbClient", back_populates="fingerprints")
+    client = relationship(
+        "db.models.clients_db.DbClient",
+        primaryjoin="and_(DbFingerprint.id_client==DbClient.id_client, "
+                    "DbClient.dropped==False)",
+        back_populates="fingerprints"
+    )

@@ -3,6 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from db.models.accounts_db import DbAccount
+from db.models.users_db import DbUser  # Don't erase because it is used by relationship
 from db.orm.exceptions_orm import db_exception, element_not_found_exception, email_exception, not_main_element_exception
 from db.orm.functions_orm import multiple_attempts
 from schemas.account_base import AccountRequest

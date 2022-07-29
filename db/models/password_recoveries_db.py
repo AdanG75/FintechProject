@@ -13,4 +13,3 @@ class DbPasswordRecovery(Base):
     attempts = Column('attempts', SmallInteger)
     is_valid = Column('is_valid', Boolean)
     updated_time = Column('updated_time', DateTime(timezone=False))
-

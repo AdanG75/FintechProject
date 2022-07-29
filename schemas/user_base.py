@@ -52,6 +52,14 @@ class ClientInner(BaseModel):
         orm_mode = True
 
 
+class AdminInner(BaseModel):
+    id_admin: str = Field(...)
+    full_name: str = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
 class AccountInner(BaseModel):
     id_account: int = Field(...)
     alias_account: str = Field(...)
@@ -88,6 +96,13 @@ class UserClientDisplay(UserDisplay):
 
 class UserMarketDisplay(UserDisplay):
     market: MarketInner = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
+class UserAdminDisplay(UserDisplay):
+    admin: AdminInner = Field(...)
 
     class Config:
         orm_mode = True

@@ -82,6 +82,3 @@ class FingerprintDisplay(FingerprintBasicDisplay):
 
     class Config:
         orm_mode = True
-
-
-

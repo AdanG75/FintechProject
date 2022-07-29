@@ -4,8 +4,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from core.utils import is_valid_phone_number, set_phone_number_format
+from db.models.accounts_db import DbAccount  # Don't erase because it is used by relationship
 from db.models.users_db import DbUser
-from db.models.accounts_db import DbAccount  # Don't erase because it is used by SQLAlchemy
 from db.orm.exceptions_orm import email_exception, element_not_found_exception, \
     not_unique_email_exception, type_not_found_exception, phone_exception, option_not_found_exception, \
     NotFoundException, wrong_data_sent_exception
@@ -18,7 +18,7 @@ from secure.hash import Hash
 
 @multiple_attempts
 @full_database_exceptions
-def create_user(db: Session, request: UserRequest) -> DbUser:
+def create_user(db: Session, request: UserRequest, execute: str = 'now') -> DbUser:
     if request.password is None:
         raise wrong_data_sent_exception
 
@@ -48,8 +48,13 @@ def create_user(db: Session, request: UserRequest) -> DbUser:
 
         try:
             db.add(new_user)
-            db.commit()
-            db.refresh(new_user)
+            if execute == 'now':
+                db.commit()
+                db.refresh(new_user)
+            elif execute == 'wait':
+                pass
+            else:
+                raise option_not_found_exception
         except Exception as e:
             db.rollback()
             print(e)
@@ -58,19 +63,26 @@ def create_user(db: Session, request: UserRequest) -> DbUser:
         return new_user
 
     if user.dropped:
-        return update_user(db, request, user.id_user)
+        return update_user(db, request, user.id_user, mode='all', execute=execute)
 
     raise not_unique_email_exception
 
 
 @full_database_exceptions
-def get_user_by_id(db: Session, id_user) -> DbUser:
-    try:
-        user = db.query(DbUser).where(
-            DbUser.id_user == id_user,
-            DbUser.dropped == False
-        ).one_or_none()
+def get_user_by_id(db: Session, id_user, mode: str = 'active') -> DbUser:
 
+    try:
+        if mode == 'active':
+            user = db.query(DbUser).where(
+                DbUser.id_user == id_user,
+                DbUser.dropped == False
+            ).one_or_none()
+        elif mode == 'all':
+            user = db.query(DbUser).where(
+                DbUser.id_user == id_user
+            ).one_or_none()
+        else:
+            raise option_not_found_exception
     except Exception as e:
         print(e)
         raise e
@@ -92,10 +104,9 @@ def get_user_by_email(db: Session, email: str, mode: str = 'active') -> DbUser:
         elif mode == 'all':
             user = db.query(DbUser).where(
                 DbUser.email == email
-            ).first()
+            ).one_or_none()
         else:
             raise option_not_found_exception
-
     except Exception as e:
         print(e)
         raise e
@@ -149,12 +160,18 @@ def get_public_key_pem(db: Session, id_user) -> Optional[str]:
 
 @multiple_attempts
 @full_database_exceptions
-def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
-    updated_user = get_user_by_id(db, id_user)
+def update_user(
+        db: Session,
+        request: UserRequest,
+        id_user: int,
+        mode: str = 'active',
+        execute: str = 'now'
+) -> DbUser:
+    updated_user = get_user_by_id(db, id_user, mode=mode)
 
     if updated_user.email != request.email:
         try:
-            get_user_by_email(db, request.email)
+            get_user_by_email(db, request.email, mode='all')
         except NotFoundException:
             if len(request.email) < 80:
                 updated_user.email = request.email
@@ -178,13 +195,18 @@ def update_user(db: Session, request: UserRequest, id_user: int) -> DbUser:
     updated_user.public_key = request.public_key
     updated_user.dropped = False
 
-    try:
-        db.commit()
-        db.refresh(updated_user)
-    except Exception as e:
-        db.rollback()
-        print(e)
-        raise e
+    if execute == 'now':
+        try:
+            db.commit()
+            db.refresh(updated_user)
+        except Exception as e:
+            db.rollback()
+            print(e)
+            raise e
+    elif execute == 'wait':
+        pass
+    else:
+        raise option_not_found_exception
 
     return updated_user
 
@@ -197,7 +219,6 @@ def set_public_key(db: Session, id_user: int, public_key: str) -> BasicResponse:
 
     try:
         db.commit()
-        db.refresh(user)
     except Exception as e:
         db.rollback()
         print(e)
@@ -211,13 +232,19 @@ def set_public_key(db: Session, id_user: int, public_key: str) -> BasicResponse:
 
 @multiple_attempts
 @full_database_exceptions
-def set_new_password(db: Session, id_user: int, new_password: str) -> BasicResponse:
+def set_new_password(
+        db: Session,
+        id_user: int,
+        new_password: str,
+        recover_user: bool = False
+) -> BasicResponse:
     user = get_user_by_id(db, id_user)
     user.password = Hash.bcrypt(new_password)
+    if recover_user:
+        user.dropped = False
 
     try:
         db.commit()
-        db.refresh(user)
     except Exception as e:
         db.rollback()
         print(e)
@@ -231,17 +258,21 @@ def set_new_password(db: Session, id_user: int, new_password: str) -> BasicRespo
 
 @multiple_attempts
 @full_database_exceptions
-def delete_user(db: Session, id_user: int) -> BasicResponse:
+def delete_user(db: Session, id_user: int, execute: str = 'now') -> BasicResponse:
     user = get_user_by_id(db, id_user)
     user.dropped = True
 
-    try:
-        db.commit()
-        db.refresh(user)
-    except Exception as e:
-        db.rollback()
-        print(e)
-        raise e
+    if execute == 'now':
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(e)
+            raise e
+    elif execute == 'wait':
+        pass
+    else:
+        raise option_not_found_exception
 
     return BasicResponse(
         operation="delete",
