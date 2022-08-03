@@ -1,6 +1,6 @@
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Integer, String, BigInteger, DateTime, Boolean
+from sqlalchemy.sql.sqltypes import String, BigInteger, DateTime, Boolean
 
 from db.database import Base
 
@@ -12,7 +12,7 @@ class DbAddress(Base):
     id_client = Column('id_client', String, ForeignKey("clients.id_client"))
     type_owner = Column('type_owner', String)
     is_main = Column('is_main', Boolean)
-    zip_code = Column('zip_code', Integer)
+    zip_code = Column('zip_code', String)
     state = Column('state', String)
     city = Column('city', String)
     neighborhood = Column('neighborhood', String)

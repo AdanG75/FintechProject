@@ -63,7 +63,7 @@ class AdminInner(BaseModel):
 class AccountInner(BaseModel):
     id_account: int = Field(...)
     alias_account: str = Field(...)
-    paypal_email: EmailStr = Field(...)
+    paypal_email: Optional[str] = Field(None)
     main_account: bool = Field(...)
 
     class Config:

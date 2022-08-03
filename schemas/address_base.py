@@ -5,10 +5,12 @@ from pydantic import BaseModel, Field
 
 from schemas.type_user import TypeUser
 
+zip_code_pattern: str = r"^\d{4,7}(-\d{4})?$"
+
 
 class AddressBase(BaseModel):
     is_main: bool = Field(...)
-    zip_code: int = Field(..., gt=0)
+    zip_code: str = Field(..., regex=zip_code_pattern, min_length=4, max_length=10)
     state: str = Field(..., min_length=2, max_length=79)
     city: Optional[str] = Field(None, min_length=2, max_length=79)
     neighborhood: Optional[str] = Field(None, min_length=3, max_length=79)
@@ -45,7 +47,7 @@ class AddressRequest(AddressBase):
                 "id_client": None,
                 "type_owner": "market",
                 "is_main": True,
-                "zip_code": 18966,
+                "zip_code": "18966",
                 "state": "Ciudad de México",
                 "city": "CDMX",
                 "neighborhood": "La gran Loma",

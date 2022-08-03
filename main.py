@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from core.config import settings
 from db.orm.exceptions_orm import DBException, NotFoundException
 from routers import admin_router, home, icon, static
-from routers.test import test_address, test_admin, test_branch, test_client, test_login_attempt, test_market, test_password_recovery, test_session, test_user, test_functions
+from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_login_attempt, test_market, test_password_recovery, test_session, test_user, test_functions
 
 app = FastAPI(
     title=settings.get_project_name(),
@@ -21,6 +21,7 @@ app.include_router(router=static.router)
 # app.include_router(router=admin_router.router)
 
 # test endpoints
+app.include_router(router=test_account.router)
 app.include_router(router=test_address.router)
 app.include_router(router=test_admin.router)
 app.include_router(router=test_branch.router)

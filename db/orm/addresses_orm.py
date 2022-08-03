@@ -449,6 +449,7 @@ def delete_addresses_by_id_client(db: Session, id_client: str, execute: str = 'n
     addresses = get_addresses_by_id_client(db, id_client)
 
     for address in addresses:
+        address.is_main = False
         address.dropped = True
 
     if execute == 'now':

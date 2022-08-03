@@ -27,7 +27,7 @@ class MarketInner(BaseModel):
 
 class AddressInner(BaseModel):
     id_address: int = Field(...)
-    zip_code: int = Field(...)
+    zip_code: str = Field(...)
     state: str = Field(...)
     city: Optional[str] = Field(None)
     neighborhood: Optional[str] = Field(None)
