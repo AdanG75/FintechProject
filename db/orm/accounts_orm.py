@@ -334,6 +334,6 @@ def delete_accounts_by_id_user(db: Session, id_user: int, execute: str = 'now') 
         raise option_not_found_exception
 
     return BasicResponse(
-        operation="batch delete",
+        operation="Batch delete",
         successful=True
     )
