@@ -141,3 +141,9 @@ def is_valid_phone_number(phone: str, region: Optional[str] = None) -> bool:
     is_valid = is_valid_number(number_object)
 
     return is_valid
+
+
+def money_str_to_float(money: str) -> float:
+    money_float = float(money.replace("$", "").replace(",", ""))
+
+    return money_float

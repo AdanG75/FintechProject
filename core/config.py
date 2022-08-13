@@ -13,6 +13,7 @@ class Settings:
     __ON_ClOUD: bool
     __PROJECT_NAME: str
     __PROJECT_VERSION: str
+    __ID_SYSTEM: int
     __POSTGRES_USER: str
     __POSTGRES_PASSWORD: str
     __POSTGRES_DB: str
@@ -108,6 +109,7 @@ class Settings:
         )
 
         self.__ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES'))
+        self.__ID_SYSTEM: int = int(os.environ.get("ID_SYSTEM"))
 
     def get_database_url(self):
         # if not self.__ON_CLOUD:
@@ -169,6 +171,9 @@ class Settings:
 
     def get_server_bucket(self):
         return self.__SERVER_BUCKET
+
+    def get_id_system(self):
+        return self.__ID_SYSTEM
 
     def is_on_cloud(self):
         return self.__ON_CLOUD

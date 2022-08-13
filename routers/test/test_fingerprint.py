@@ -131,4 +131,3 @@ async def delete_fingerprints_of_client(
     response = fingerprints_orm.delete_fingerprints_by_id_client(db, id_client)
 
     return response
-

@@ -6,13 +6,16 @@ from pydantic import BaseModel, Field
 from schemas.type_credit import TypeCredit
 
 
+money_pattern: str = r"^\$?\d{1,3}(,\d{3}){0,5}(\.\d{1,2})?$"
+
+
 class CreditBase(BaseModel):
     id_client: str = Field(..., min_length=12, max_length=49)
     id_market: str = Field(..., min_length=12, max_length=49)
     id_account: Optional[int] = Field(None, gt=0)
     alias_credit: str = Field(..., min_length=3, max_length=79)
     type_credit: TypeCredit = Field(...)
-    amount: float = Field(..., ge=0)
+    amount: str = Field(..., regex=money_pattern, min_length=1, max_length=25)
     is_approved: Optional[bool] = Field(None)
 
 

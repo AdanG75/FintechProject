@@ -26,7 +26,8 @@ def create_market(
         execute: str = 'now'
 ) -> DbMarket:
     user: Optional[DbUser] = get_user_by_id(db, request.id_user)
-    if user.type_user != 'market':
+    # Raise an error when user type is different to 'market' or 'system'
+    if not (user.type_user == 'market' or user.type_user == 'system'):
         raise type_of_value_not_compatible
 
     # Clear user object to save space

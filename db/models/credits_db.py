@@ -1,5 +1,6 @@
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.sql.sqltypes import Integer, BigInteger, String, Float, DateTime, Boolean
+from sqlalchemy.dialects.postgresql import MONEY
+from sqlalchemy.sql.sqltypes import Integer, BigInteger, String, DateTime, Boolean
 
 from db.database import Base
 
@@ -12,8 +13,8 @@ class DbCredit(Base):
     id_account = Column('id_account', Integer, ForeignKey("accounts.id_account"))
     alias_credit = Column('alias_credit', String)
     type_credit = Column('type_credit', String)
-    amount = Column('amount', Float)
-    past_amount = Column('past_amount', Float)
+    amount = Column('amount', MONEY)
+    past_amount = Column('past_amount', MONEY)
     is_approved = Column('is_approved', Boolean)
     in_process = Column('in_process', Boolean)
     created_time = Column('created_time', DateTime(timezone=False))

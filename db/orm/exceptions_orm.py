@@ -32,13 +32,12 @@ multiple_elements_found_exception = NotFoundException(
     msg=f"Multiples elements ware found. Only one was expected"
 )
 
-
 # HTTPExceptions
 credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Couldn't validate credentials",
-        headers={"WWW-Authenticate": "Bearer"}
-    )
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Couldn't validate credentials",
+    headers={"WWW-Authenticate": "Bearer"}
+)
 
 email_exception = HTTPException(
     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -54,7 +53,6 @@ not_unique_email_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
     detail="Email not available, please write another one"
 )
-
 
 not_unique_username_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
@@ -136,6 +134,26 @@ existing_credit_exception = HTTPException(
     detail="Client already has a credit within the market"
 )
 
+not_void_credit_exception = HTTPException(
+    status_code=status.HTTP_412_PRECONDITION_FAILED,
+    detail="Credits with credit balance cannot be eliminated by the market"
+)
+
+movement_in_process_exception = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Movement in process, please wait until it has finished"
+)
+
+account_does_not_belong_to_market_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="The account must be owned by the market providing the credit"
+)
+
+global_credit_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Only system can create global credits"
+)
+
 compile_exception = HTTPException(
     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     detail="A compile error occurred during execution of the process"
@@ -145,4 +163,3 @@ operation_need_a_precondition_exception = HTTPException(
     status_code=status.HTTP_412_PRECONDITION_FAILED,
     detail="To do this operation it is necessary have completed some conditions"
 )
-
