@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -15,7 +15,7 @@ class CreditBase(BaseModel):
     id_account: Optional[int] = Field(None, gt=0)
     alias_credit: str = Field(..., min_length=3, max_length=79)
     type_credit: TypeCredit = Field(...)
-    amount: str = Field(..., regex=money_pattern, min_length=1, max_length=25)
+    amount: Union[str, float] = Field(..., ge=0, regex=money_pattern, min_length=1, max_length=25)
     is_approved: Optional[bool] = Field(None)
 
 

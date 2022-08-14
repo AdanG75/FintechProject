@@ -7,9 +7,10 @@ from core.config import settings
 from core.utils import money_str_to_float
 from db.models.credits_db import DbCredit
 from db.orm.accounts_orm import get_main_account_of_user, get_account_by_id
+from db.orm.clients_orm import get_client_by_id_client
 from db.orm.exceptions_orm import element_not_found_exception, option_not_found_exception, \
     existing_credit_exception, not_void_credit_exception, account_does_not_belong_to_market_exception, \
-    global_credit_exception, movement_in_process_exception
+    global_credit_exception, movement_in_process_exception, NotFoundException
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.markets_orm import get_market_by_id_market
 from schemas.basic_response import BasicResponse
@@ -24,6 +25,12 @@ def create_credit(
         type_performer: str,
         execute: str = 'now'
 ) -> DbCredit:
+    try:
+        get_market_by_id_market(db, request.id_market)
+        get_client_by_id_client(db, request.id_client)
+    except NotFoundException as e:
+        raise e
+
     existing_credit = get_credit_by_id_market_and_id_client(db, request.id_market, request.id_client, mode='all')
 
     if existing_credit is None:
@@ -529,6 +536,7 @@ def delete_credits_by_id_account(
 
 
 @multiple_attempts
+@full_database_exceptions
 def is_market_of_system(db: Session, id_market: str) -> bool:
     market = get_market_by_id_market(db, id_market)
     if not market.id_user == settings.get_id_system():
@@ -538,6 +546,7 @@ def is_market_of_system(db: Session, id_market: str) -> bool:
 
 
 @multiple_attempts
+@full_database_exceptions
 def check_account_belongs_market(db: Session, id_market: str, id_account: int) -> bool:
     market = get_market_by_id_market(db, id_market)
     account = get_account_by_id(db, id_account)
