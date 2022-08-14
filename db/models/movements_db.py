@@ -12,6 +12,7 @@ class DbMovement(Base):
     id_requester = Column('id_requester', String, ForeignKey("clients.id_client"))
     type_movement = Column('type_movement', String)
     amount = Column('amount', Float)
+    authorized = Column('authorized', Boolean)
     type_user = Column('type_user', String)
     in_process = Column('in_process', Boolean)
     successful = Column('successful', Boolean)

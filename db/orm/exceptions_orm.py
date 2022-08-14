@@ -149,6 +149,11 @@ account_does_not_belong_to_market_exception = HTTPException(
     detail="The account must be owned by the market providing the credit"
 )
 
+not_credit_of_client_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Credit does not belong to the client"
+)
+
 global_credit_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Only system can create global credits"
@@ -162,4 +167,9 @@ compile_exception = HTTPException(
 operation_need_a_precondition_exception = HTTPException(
     status_code=status.HTTP_412_PRECONDITION_FAILED,
     detail="To do this operation it is necessary have completed some conditions"
+)
+
+not_identified_client_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="A client is required to make this movement"
 )

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -7,12 +7,15 @@ from schemas.type_movement import TypeMovement
 from schemas.type_user import TypeUser
 
 
+money_pattern: str = r"^\$?\d{1,3}(,\d{3}){0,5}(\.\d{1,2})?$"
+
+
 class MovementBase(BaseModel):
-    id_credit: int = Field(..., gt=0)
+    id_credit: Optional[int] = Field(None, gt=0)
     id_performer: int = Field(..., gt=0)
     id_requester: Optional[str] = Field(None, min_length=12, max_length=49)
     type_movement: TypeMovement = Field(...)
-    amount: float = Field(..., gt=0)
+    amount: Union[str, float] = Field(..., gt=0, regex=money_pattern, min_length=1, max_length=25)
 
 
 class MovementRequest(MovementBase):
