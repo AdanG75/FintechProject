@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from db.models.movements_db import DbMovement
@@ -8,7 +9,8 @@ from db.orm.clients_orm import get_client_by_id_client
 from db.orm.credits_orm import get_credit_by_id_credit
 from db.orm.exceptions_orm import wrong_data_sent_exception, not_identified_client_exception, \
     not_credit_of_client_exception, NotFoundException, option_not_found_exception, element_not_found_exception, \
-    movement_in_process_exception, movement_finish_exception, movement_not_authorized_exception
+    movement_in_process_exception, movement_finish_exception, movement_not_authorized_exception, \
+    type_of_value_not_compatible, movement_already_linked_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.users_orm import get_user_by_id
 from schemas.movement_base import MovementRequest
@@ -247,3 +249,21 @@ def finish_movement(
         raise e
 
     return movement_object
+
+
+def check_type_and_status_of_movement(db: Session, id_movement: int, type_movement: str) -> None:
+    try:
+        movement = get_movement_by_id_movement(db, id_movement)
+
+        if movement.type_movement != type_movement:
+            raise type_of_value_not_compatible
+
+        if movement.in_process or movement.successful is not None:
+            raise movement_already_linked_exception
+    except HTTPException as httpe:
+        raise httpe
+    except NotFoundException as nfe:
+        raise nfe
+    except Exception as e:
+        print(e)
+        raise e

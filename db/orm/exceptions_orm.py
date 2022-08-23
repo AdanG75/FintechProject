@@ -183,3 +183,8 @@ not_identified_client_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="A client is required to make this movement"
 )
+
+movement_already_linked_exception = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="The movement has already been linked"
+)

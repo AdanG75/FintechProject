@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from core.config import settings
 from db.orm.exceptions_orm import DBException, NotFoundException
 from routers import admin_router, home, icon, static
-from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_credit, test_fingerprint, test_login_attempt, test_market, test_movement, test_password_recovery, test_session, test_user, test_functions
+from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_credit, test_fingerprint, test_login_attempt, test_market, test_movement, test_password_recovery, test_session, test_user, test_withdraw, test_functions
 
 app = FastAPI(
     title=settings.get_project_name(),
@@ -35,6 +35,7 @@ app.include_router(router=test_movement.router)
 app.include_router(router=test_password_recovery.router)
 app.include_router(router=test_session.router)
 app.include_router(router=test_user.router)
+app.include_router(router=test_withdraw.router)
 
 # Icon endpoint
 if not settings.is_on_cloud():
