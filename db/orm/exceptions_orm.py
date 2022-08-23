@@ -144,6 +144,16 @@ movement_in_process_exception = HTTPException(
     detail="Movement in process, please wait until it has finished"
 )
 
+movement_finish_exception = HTTPException(
+    status_code=status.HTTP_423_LOCKED,
+    detail="The movement process have been finished"
+)
+
+movement_not_authorized_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Movement must first be authorized"
+)
+
 account_does_not_belong_to_market_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="The account must be owned by the market providing the credit"

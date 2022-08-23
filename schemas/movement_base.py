@@ -34,8 +34,9 @@ class MovementRequest(MovementBase):
 
 class MovementDisplay(MovementBase):
     id_movement: int = Field(...)
+    authorized: bool = Field(...)
     in_process: bool = Field(...)
-    successful: bool = Field(...)
+    successful: Optional[bool] = Field(None)
     created_time: datetime = Field(...)
 
     class Config:

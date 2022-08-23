@@ -1,5 +1,6 @@
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.sql.sqltypes import Integer, BigInteger, String, Float, Boolean, DateTime
+from sqlalchemy.dialects.postgresql import MONEY
+from sqlalchemy.sql.sqltypes import Integer, BigInteger, String, Boolean, DateTime
 
 from db.database import Base
 
@@ -11,7 +12,7 @@ class DbMovement(Base):
     id_performer = Column('id_performer', Integer, ForeignKey("users.id_user"))
     id_requester = Column('id_requester', String, ForeignKey("clients.id_client"))
     type_movement = Column('type_movement', String)
-    amount = Column('amount', Float)
+    amount = Column('amount', MONEY)
     authorized = Column('authorized', Boolean)
     type_user = Column('type_user', String)
     in_process = Column('in_process', Boolean)
