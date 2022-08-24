@@ -2,13 +2,13 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from schemas.type_money import TypeMoney
+from schemas.type_transfer import TypeTransfer
 
 
 class TransferBase(BaseModel):
     id_movement: int = Field(...)
     id_destination_credit: int = Field(...)
-    type_transfer: TypeMoney = Field(...)
+    type_transfer: TypeTransfer = Field(...)
 
 
 class TransferRequest(TransferBase):
