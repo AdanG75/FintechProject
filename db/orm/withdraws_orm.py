@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from db.models.withdraws_db import DbWithdraw
-from db.orm.exceptions_orm import type_of_value_not_compatible, movement_already_linked_exception, NotFoundException, \
+from db.orm.exceptions_orm import NotFoundException, \
     option_not_found_exception, element_not_found_exception, not_unique_value
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.movements_orm import check_type_and_status_of_movement
@@ -77,4 +77,3 @@ def get_withdraw_by_id_movement(db: Session, id_movement: int) -> DbWithdraw:
         raise element_not_found_exception
 
     return withdraw
-
