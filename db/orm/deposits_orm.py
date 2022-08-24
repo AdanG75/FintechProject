@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from db.models.deposits_db import DbDeposit
 from db.orm.exceptions_orm import element_not_found_exception, NotFoundException, option_not_found_exception, \
-    not_unique_value, not_values_sent_exception
+    not_unique_value, not_values_sent_exception, wrong_data_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.movements_orm import check_type_and_status_of_movement
 from schemas.deposit_base import DepositRequest
@@ -19,6 +19,9 @@ def create_deposit(db: Session, request: DepositRequest, execute: str = 'now') -
     try:
         get_deposit_by_id_movement(db, request.id_movement)
     except NotFoundException:
+        if request.type_deposit.value == 'paypal' and request.paypal_id_order is None:
+            raise wrong_data_sent_exception
+
         deposit_uuid = uuid.uuid4().hex
         id_deposit = "DPT-" + deposit_uuid
 
