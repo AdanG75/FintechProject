@@ -41,6 +41,9 @@ def make_movement(
             if credit.id_client != request.id_requester and request.type_movement.value != 'deposit':
                 raise not_credit_of_client_exception
 
+            if request.type_movement.value == 'deposit':
+                request.id_credit = None
+
     except NotFoundException as nfe:
         raise nfe
     except Exception as e:

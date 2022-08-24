@@ -1,14 +1,18 @@
 import uuid
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from db.models.credits_db import DbCredit
+from db.models.movements_db import DbMovement
 from db.models.transfers_db import DbTransfer
+from db.orm.credits_orm import get_credit_by_id_credit
 from db.orm.exceptions_orm import NotFoundException, wrong_data_sent_exception, option_not_found_exception, \
-    not_unique_value, element_not_found_exception
+    not_unique_value, element_not_found_exception, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
-from db.orm.movements_orm import check_type_and_status_of_movement
+from db.orm.movements_orm import check_type_and_status_of_movement, get_movement_by_id_movement
 from schemas.transfer_base import TransferRequest
+from schemas.type_transfer import TypeTransfer
 
 
 @multiple_attempts
@@ -19,7 +23,8 @@ def create_transfer(db: Session, request: TransferRequest, execute: str = 'now')
     try:
         get_transfer_by_id_movement(db, request.id_movement)
     except NotFoundException:
-        if request.paypal_id_order is None and (request.type_transfer.value == 'localL' or 'localG'):
+        if request.paypal_id_order is None \
+                and (request.type_transfer.value == 'localL' or request.type_transfer.value == 'localG'):
             raise wrong_data_sent_exception
 
         transfer_uuid = uuid.uuid4().hex
@@ -50,7 +55,6 @@ def create_transfer(db: Session, request: TransferRequest, execute: str = 'now')
         return new_transfer
 
     raise not_unique_value
-
 
 
 @multiple_attempts
@@ -102,3 +106,36 @@ def get_transfers_by_id_destination_credit(db: Session, id_destination_credit: i
         raise element_not_found_exception
 
     return transfers
+
+
+@multiple_attempts
+@full_database_exceptions
+def get_type_of_transfer(
+        db: Session,
+        id_destination_credit: int,
+        id_movement: Optional[int] = None,
+        movement_object: Optional[DbMovement] = None
+) -> TypeTransfer:
+    if movement_object is None:
+        if id_movement is not None:
+            movement_object = get_movement_by_id_movement(db, id_movement)
+        else:
+            raise not_values_sent_exception
+
+    origin_credit = get_credit_by_id_credit(db, movement_object.id_credit)
+    destination_credit = get_credit_by_id_credit(db, id_destination_credit)
+
+    return __return_transfer_type(origin_credit, destination_credit)
+
+
+def __return_transfer_type(origin_credit: DbCredit, destination_credit: DbCredit) -> TypeTransfer:
+    if origin_credit.type_credit == 'local' and destination_credit.type_credit == 'local':
+        return TypeTransfer.local_to_local
+    elif origin_credit.type_credit == 'local' and destination_credit.type_credit == 'global':
+        return TypeTransfer.local_to_global
+    elif origin_credit.type_credit == 'global' and destination_credit.type_credit == 'local':
+        return TypeTransfer.global_to_local
+    elif origin_credit.type_credit == 'global' and destination_credit.type_credit == 'global':
+        return TypeTransfer.global_to_global
+    else:
+        return TypeTransfer.default

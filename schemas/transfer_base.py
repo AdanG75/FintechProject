@@ -27,4 +27,4 @@ class TransferDisplay(TransferBase):
     id_transfer: str = Field(...)
 
     class Config:
-        orm_mode: True
+        orm_mode = True
