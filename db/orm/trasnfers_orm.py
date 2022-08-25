@@ -28,7 +28,7 @@ def create_transfer(db: Session, request: TransferRequest, execute: str = 'now')
             raise wrong_data_sent_exception
 
         transfer_uuid = uuid.uuid4().hex
-        id_transfer = "TRS" + transfer_uuid
+        id_transfer = "TRS-" + transfer_uuid
 
         new_transfer = DbTransfer(
             id_transfer=id_transfer,
