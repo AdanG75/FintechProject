@@ -1,7 +1,6 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import HTTPException
-from pyparsing import Optional
 from sqlalchemy.orm import Session
 
 from db.models.cores_db import DbCores
@@ -29,7 +28,7 @@ def create_core_point(
         pos_x=request.get_posx(),
         pos_y=request.get_posy(),
         angle=round(request.get_angle(), 2),
-        type=request.get_point_type()
+        type_core=request.get_point_type()
     )
 
     try:
@@ -119,7 +118,7 @@ def get_core_points_by_id_fingerprint(db: Session, id_fingerprint: str) -> List[
 @full_database_exceptions
 def delete_core_point(
         db: Session,
-        id_core: Optional[str],
+        id_core: Optional[str] = None,
         core_object: Optional[DbCores] = None,
         execute: str = 'now'
 ) -> BasicResponse:

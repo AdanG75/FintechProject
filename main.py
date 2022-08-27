@@ -8,7 +8,10 @@ from starlette.responses import JSONResponse
 from core.config import settings
 from db.orm.exceptions_orm import DBException, NotFoundException
 from routers import admin_router, home, icon, static
-from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_credit, test_deposit, test_fingerprint, test_functions, test_login_attempt, test_market, test_movement, test_outstanding_payment, test_password_recovery, test_payment, test_session, test_transfer, test_user, test_withdraw
+from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_core, test_credit, \
+    test_deposit, test_fingerprint, test_functions, test_login_attempt, test_market, test_minutia, test_movement, \
+    test_outstanding_payment, test_password_recovery, test_payment, test_session, test_transfer, test_user, \
+    test_withdraw
 
 app = FastAPI(
     title=settings.get_project_name(),
@@ -26,12 +29,14 @@ app.include_router(router=test_address.router)
 app.include_router(router=test_admin.router)
 app.include_router(router=test_branch.router)
 app.include_router(router=test_client.router)
+app.include_router(router=test_core.router)
 app.include_router(router=test_credit.router)
 app.include_router(router=test_deposit.router)
 app.include_router(router=test_fingerprint.router)
 app.include_router(router=test_functions.router)
 app.include_router(router=test_login_attempt.router)
 app.include_router(router=test_market.router)
+app.include_router(router=test_minutia.router)
 app.include_router(router=test_movement.router)
 app.include_router(router=test_outstanding_payment.router)
 app.include_router(router=test_password_recovery.router)

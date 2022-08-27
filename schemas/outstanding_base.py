@@ -16,8 +16,10 @@ class OutstandingPaymentRequest(OutstandingPaymentBase):
 
     class Config:
         schema_extra = {
-            "id_market": "MKT-d7542603bf4c49e79c3d11170d5eaf12",
-            "amount": 99.99
+            "example": {
+                "id_market": "MKT-d7542603bf4c49e79c3d11170d5eaf12",
+                "amount": 99.99
+            }
         }
 
 

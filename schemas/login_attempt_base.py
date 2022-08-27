@@ -13,8 +13,10 @@ class LoginAttemptRequest(LoginAttemptBase):
 
     class Config:
         schema_extra = {
-            "id_user": 18,
-            "email": "anemail@mail.com"
+            "example": {
+                "id_user": 18,
+                "email": "anemail@mail.com"
+            }
         }
 
 

@@ -16,10 +16,12 @@ class TransferRequest(TransferBase):
 
     class Config:
         schema_extra = {
-            "id_movement": 512,
-            "id_destination_credit": 84,
-            "type_transfer": "paypal",
-            "paypal_id_order": "9B265168CF0213620"
+            "example": {
+                "id_movement": 512,
+                "id_destination_credit": 84,
+                "type_transfer": "paypal",
+                "paypal_id_order": "9B265168CF0213620"
+            }
         }
 
 

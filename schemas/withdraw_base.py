@@ -12,8 +12,10 @@ class WithdrawRequest(WithdrawBase):
 
     class Config:
         schema_extra = {
-            "id_movement": 274,
-            "type_withdraw": "cash"
+            "example": {
+                "id_movement": 274,
+                "type_withdraw": "cash"
+            }
         }
 
 

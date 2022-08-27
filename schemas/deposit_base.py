@@ -18,12 +18,14 @@ class DepositRequest(DepositBase):
 
     class Config:
         schema_extra = {
-            "id_movement": 125,
-            "id_destination_credit": 33,
-            "depositor_name": "Juan Escutia",
-            "depositor_email": "el_aventado@mail.com",
-            "type_deposit": "cash",
-            "paypal_id_order": None
+            "example": {
+                "id_movement": 125,
+                "id_destination_credit": 33,
+                "depositor_name": "Juan Escutia",
+                "depositor_email": "el_aventado@mail.com",
+                "type_deposit": "cash",
+                "paypal_id_order": None
+            }
         }
 
 

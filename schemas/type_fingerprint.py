@@ -7,3 +7,12 @@ class FingerprintType(Enum):
     match: str = "match"
 
 
+class TypeCore(Enum):
+    delta: str = 'd'
+    loop: str = 'l'
+    whorl: str = 'w'
+
+
+class TypeMinutia(Enum):
+    bifurcation: str = 'b'
+    end: str = 'e'

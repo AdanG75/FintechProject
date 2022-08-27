@@ -9,7 +9,9 @@ class PasswordRecoveryRequest(BaseModel):
 
     class Config:
         schema_extra = {
-            "email": "myemail@mail.com"
+            "example": {
+                "email": "myemail@mail.com"
+            }
         }
 
 

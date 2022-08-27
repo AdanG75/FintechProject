@@ -27,7 +27,7 @@ def create_minutia(
         pos_x=request.get_posx(),
         pos_y=request.get_posy(),
         angle=round(request.get_angle(), 2),
-        type=request.get_point_type()
+        type_minutia=request.get_point_type()
     )
 
     try:
@@ -147,7 +147,7 @@ def delete_minutia(
 
 @multiple_attempts
 @full_database_exceptions
-def delete_all_minutiae_of_fingerprint(db: Session, id_fingerprint: str, execute: str = 'naw') -> BasicResponse:
+def delete_all_minutiae_of_fingerprint(db: Session, id_fingerprint: str, execute: str = 'now') -> BasicResponse:
     fingerprint = get_fingerprint_by_id(db, id_fingerprint, mode='all')
     if not fingerprint.dropped:
         # It is necessary that fingerprint is erased to drop all associated core points
