@@ -42,7 +42,10 @@ async def get_fingerprint_image(
 
     fingerprint_string = fingerprint.decode()
 
-    return templates.TemplateResponse("raw_fingerprint.html", {"request": request, "fingerprint_img": fingerprint_string})
+    return templates.TemplateResponse(
+        "raw_fingerprint.html",
+        {"request": request, "fingerprint_img": fingerprint_string}
+    )
 
 
 @router.get(

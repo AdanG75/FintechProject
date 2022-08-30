@@ -14,6 +14,7 @@ class Settings:
     __PROJECT_NAME: str
     __PROJECT_VERSION: str
     __ID_SYSTEM: int
+    __MARKET_SYSTEM: str
     __POSTGRES_USER: str
     __POSTGRES_PASSWORD: str
     __POSTGRES_DB: str
@@ -58,6 +59,16 @@ class Settings:
                 project_id=self.__PROJECT_NAME,
                 secret_id=os.environ.get("POSTGRES_DB")
             )
+
+            self.__ID_SYSTEM: int = int(access_secret_version(
+                project_id=self.__PROJECT_NAME,
+                secret_id=os.environ.get("ID_SYSTEM")
+            ))
+            self.__POSTGRES_DB: str = access_secret_version(
+                project_id=self.__PROJECT_NAME,
+                secret_id=os.environ.get("MARKET_SYSTEM")
+            )
+
             self.__POSTGRES_SERVER: str = ""
             self.__POSTGRES_PORT: int = 0
         else:
@@ -66,6 +77,25 @@ class Settings:
             self.__POSTGRES_DB: str = os.environ.get("POSTGRES_DB")
             self.__POSTGRES_SERVER: str = os.environ.get("POSTGRES_SERVER")
             self.__POSTGRES_PORT: int = int(os.environ.get("POSTGRES_PORT"))
+
+            self.__ID_SYSTEM: int = int(os.environ.get("ID_SYSTEM"))
+            self.__MARKET_SYSTEM: str = os.environ.get("MARKET_SYSTEM")
+
+            # Hybrid test
+            # self.__POSTGRES_USER: str = access_secret_version(
+            #     project_id=self.__PROJECT_NAME,
+            #     secret_id=os.environ.get("POSTGRES_USER")
+            # )
+            # self.__POSTGRES_PASSWORD: str = access_secret_version(
+            #     project_id=self.__PROJECT_NAME,
+            #     secret_id=os.environ.get("POSTGRES_PASSWORD")
+            # )
+            # self.__POSTGRES_DB: str = access_secret_version(
+            #     project_id=self.__PROJECT_NAME,
+            #     secret_id=os.environ.get("POSTGRES_DB")
+            # )
+            # self.__POSTGRES_SERVER: str = ""
+            # self.__POSTGRES_PORT: int = 0
 
         self.__DB_SOCKET_DIR: str = access_secret_version(
             project_id=self.__PROJECT_NAME,
@@ -109,7 +139,6 @@ class Settings:
         )
 
         self.__ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES'))
-        self.__ID_SYSTEM: int = int(os.environ.get("ID_SYSTEM"))
 
     def get_database_url(self):
         # if not self.__ON_CLOUD:
@@ -121,10 +150,22 @@ class Settings:
         if not self.is_on_cloud():
             self.__DB_SOCKET_DIR = "/home/coffe/cloudsql/"
 
+            # Original
             self.__DATABASE_URL = f"postgresql://" \
                                   f"{self.__POSTGRES_USER}:{self.__POSTGRES_PASSWORD}@" \
                                   f"{self.__POSTGRES_SERVER}:{self.__POSTGRES_PORT}/" \
                                   f"{self.__POSTGRES_DB}"
+
+            # Hybrid test
+            # self.__DATABASE_URL = sqlalchemy.engine.url.URL.create(
+            #     drivername="postgresql+pg8000",
+            #     username=self.__POSTGRES_USER,
+            #     password=self.__POSTGRES_PASSWORD,
+            #     database=self.__POSTGRES_DB,
+            #     query={
+            #         "unix_sock": "{}/.s.PGSQL.5432".format(self.__DB_SOCKET_DIR + self.__INSTANCE_CONNECTION_NAME)
+            #     }
+            # )
 
         else:
             self.__DATABASE_URL = sqlalchemy.engine.url.URL.create(
