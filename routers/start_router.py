@@ -4,14 +4,13 @@ from fastapi import APIRouter, Body, Query, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.sign_up import sign_up_admin
+from controller.general import get_data_from_secure
+from controller.sign_up import get_user_type, route_user_to_sign_up
 from core.config import settings
 from db.database import get_db
-from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
 from schemas.secure_base import SecureBase, PublicKeyBase
 from schemas.type_user import TypeUser
-from secure.cipher_secure import unpack_and_decrypt_data
 
 router = APIRouter(
     tags=['main']
@@ -30,28 +29,9 @@ async def sing_up(
         notify: Optional[bool] = Query(True),
         db: Session = Depends(get_db)
 ):
-    if secure:
-        if isinstance(request, SecureBase):
-            receive_data = unpack_and_decrypt_data(request.dict())
-        else:
-            raise type_of_value_not_compatible
-
-        if type_user is None:
-            type_user = receive_data['user']['type_user']
-            try:
-                TypeUser(type_user)
-            except ValueError:
-                raise wrong_data_sent_exception
-
-    else:
-        if type_user is None:
-            if not isinstance(request, SecureBase):
-                type_user = request.user.type_user
-            else:
-                raise type_of_value_not_compatible
-
-    if type_user.value == 'admin':
-        response = await sign_up_admin(db, request)
+    data = get_data_from_secure(request) if secure else request
+    type_user = get_user_type(data) if type_user is None else type_user
+    response = await route_user_to_sign_up(db, data, type_user)
 
     return response
 
