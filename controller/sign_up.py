@@ -2,11 +2,14 @@ from typing import Union
 
 from sqlalchemy.orm import Session
 
+from core.config import settings
 from db.models.users_db import DbUser
-from db.orm.accounts_orm import create_account
+from db.orm.accounts_orm import create_account, get_main_account_of_user
 from db.orm.addresses_orm import create_address
 from db.orm.admins_orm import create_admin
 from db.orm.branches_orm import create_branch
+from db.orm.clients_orm import create_client
+from db.orm.credits_orm import create_credit
 from db.orm.functions_orm import full_database_exceptions
 from db.orm.markets_orm import create_market
 from db.orm.outstanding_payments_orm import create_outstanding_payment
@@ -14,6 +17,9 @@ from db.orm.users_orm import create_user
 from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception, option_not_found_exception
 from core.utils import check_email
 from schemas.admin_complex import AdminFullRequest, AdminFullDisplay
+from schemas.client_complex import ClientFullRequest, ClientFullDisplay
+from schemas.credit_base import CreditRequest
+from schemas.fingerprint_model import FingerprintSamples
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
 from schemas.outstanding_base import OutstandingPaymentRequest
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
@@ -48,6 +54,57 @@ def sign_up_admin(
     return AdminFullDisplay(
         user=new_user,
         admin=new_admin
+    )
+
+
+@full_database_exceptions
+def sign_up_client(
+        db: Session,
+        client: ClientFullRequest
+) -> ClientFullDisplay:
+    if not isinstance(client, ClientFullRequest):
+        raise type_of_value_not_compatible
+
+    try:
+        # Save user
+        new_user = create_user(db, client.user, execute='wait')
+        nested = db.begin_nested()
+        db.refresh(new_user)
+
+        # Save client
+        client.client.id_user = new_user.id_user
+        new_client = create_client(db, client.client, execute='wait')
+        nested.commit()
+
+        # Save address
+        client.address.id_client = new_client.id_client
+        new_address = create_address(db, client.address, execute='wait')
+
+        # Create global credit
+        global_credit_request = CreditRequest(
+            id_client=new_client.id_client,
+            id_market=settings.get_market_system(),
+            id_account=None,
+            alias_credit="Crédito global",
+            type_credit="global",
+            amount=0
+        )
+        new_global_credit = create_credit(db, global_credit_request, 'system', execute='wait')
+
+        # Save all objects
+        db.commit()
+        db.refresh(new_client)
+        db.refresh(new_address)
+        db.refresh(new_global_credit)
+    except Exception as e:
+        db.rollback()
+        raise e
+
+    return ClientFullDisplay(
+        user=new_user,
+        client=new_client,
+        address=new_address,
+        global_credit=new_global_credit
     )
 
 
@@ -167,7 +224,8 @@ async def route_user_to_sign_up(
         admin_request = AdminFullRequest.parse_obj(request) if isinstance(request, dict) else request
         response = sign_up_admin(db, admin_request)
     elif type_user.value == 'client':
-        pass
+        client_request = ClientFullRequest.parse_obj(request) if isinstance(request, dict) else request
+        response = sign_up_client(db, client_request)
     elif type_user.value == 'market':
         market_request = MarketFullRequest.parse_obj(request) if isinstance(request, dict) else request
         response = sign_up_market(db, market_request, test_mode)
@@ -178,3 +236,11 @@ async def route_user_to_sign_up(
         raise option_not_found_exception
 
     return response
+
+
+@full_database_exceptions
+def register_fingerprint(
+        db: Session,
+        fingerprints: FingerprintSamples
+):
+    pass

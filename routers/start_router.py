@@ -9,6 +9,7 @@ from controller.sign_up import get_user_type, route_user_to_sign_up
 from core.config import settings
 from db.database import get_db
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
+from schemas.client_complex import ClientFullDisplay, ClientFullRequest
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
 from schemas.secure_base import SecureBase, PublicKeyBase
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
@@ -21,11 +22,13 @@ router = APIRouter(
 
 @router.post(
     path='/sign-up/',
-    response_model=Union[SecureBase, AdminFullDisplay, MarketFullDisplay, SystemFullDisplay],
+    response_model=Union[SecureBase, AdminFullDisplay, ClientFullDisplay, MarketFullDisplay, SystemFullDisplay],
     status_code=status.HTTP_201_CREATED
 )
 async def sing_up(
-        request: Union[SecureBase, AdminFullRequest, MarketFullRequest, SystemFullRequest] = Body(...),
+        request: Union[
+            SecureBase, AdminFullRequest, ClientFullRequest, MarketFullRequest, SystemFullRequest
+        ] = Body(...),
         secure: Optional[bool] = Query(False),
         type_user: Optional[TypeUser] = Query(None),
         notify: Optional[bool] = Query(True),

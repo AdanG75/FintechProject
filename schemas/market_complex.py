@@ -4,7 +4,7 @@ from schemas.account_base import AccountRequest, AccountDisplay
 from schemas.address_base import AddressRequest, AddressDisplay
 from schemas.branch_base import BranchRequest, BranchDisplay
 from schemas.market_base import MarketRequest, MarketDisplay
-from schemas.user_base import UserRequest, UserDisplay
+from schemas.user_base import UserRequest, UserBasicDisplay
 
 
 class MarketFullRequest(BaseModel):
@@ -65,7 +65,7 @@ class MarketFullRequest(BaseModel):
 
 
 class MarketFullDisplay(BaseModel):
-    user: UserDisplay = Field(...)
+    user: UserBasicDisplay = Field(...)
     market: MarketDisplay = Field(...)
     branch: BranchDisplay = Field(...)
     address: AddressDisplay = Field(...)

@@ -72,6 +72,7 @@ class AccountInner(BaseModel):
 
 class UserBasicDisplay(UserBase):
     id_user: int = Field(...)
+    created_time: datetime = Field(...)
 
     class Config:
         orm_mode = True

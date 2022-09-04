@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FingerprintSimpleModel(BaseModel):
@@ -9,3 +9,7 @@ class FingerprintSimpleModel(BaseModel):
 
 class FingerprintB64(BaseModel):
     fingerprint: str
+
+
+class FingerprintSamples(BaseModel):
+    fingerprints: List[str] = Field(..., min_items=3, max_items=7)

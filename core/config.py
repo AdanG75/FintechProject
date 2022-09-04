@@ -64,7 +64,7 @@ class Settings:
                 project_id=self.__PROJECT_NAME,
                 secret_id=os.environ.get("ID_SYSTEM")
             ))
-            self.__POSTGRES_DB: str = access_secret_version(
+            self.__MARKET_SYSTEM: str = access_secret_version(
                 project_id=self.__PROJECT_NAME,
                 secret_id=os.environ.get("MARKET_SYSTEM")
             )
@@ -215,6 +215,9 @@ class Settings:
 
     def get_id_system(self):
         return self.__ID_SYSTEM
+
+    def get_market_system(self):
+        return self.__MARKET_SYSTEM
 
     def is_on_cloud(self):
         return self.__ON_CLOUD
