@@ -44,6 +44,11 @@ email_exception = HTTPException(
     detail="Email is too large, maximum length: 79 characters or it is null"
 )
 
+bad_email_exception = HTTPException(
+    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    detail="Value is not a valid email address"
+)
+
 phone_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="Phone number not valid"

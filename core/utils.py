@@ -4,7 +4,10 @@ import datetime
 import json
 from typing import List, Union, Optional
 
+from email_validator import validate_email, EmailNotValidError
 from phonenumbers import parse, is_valid_number
+
+from db.orm.exceptions_orm import bad_email_exception
 
 
 def bytes_to_int_array(data: bytes) -> List[int]:
@@ -141,6 +144,19 @@ def is_valid_phone_number(phone: str, region: Optional[str] = None) -> bool:
     is_valid = is_valid_number(number_object)
 
     return is_valid
+
+
+def check_email(email: str, check: bool = True, mode: str = 'normal') -> bool:
+    if check:
+        try:
+            validate_email(email)
+        except EmailNotValidError:
+            if mode == 'exception':
+                raise bad_email_exception
+            else:
+                return False
+
+    return True
 
 
 def money_str_to_float(money: str) -> float:
