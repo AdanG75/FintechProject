@@ -1,10 +1,10 @@
-from typing import Union
+from typing import Union, Tuple
 
 from sqlalchemy.orm import Session
 
 from core.config import settings
 from db.models.users_db import DbUser
-from db.orm.accounts_orm import create_account, get_main_account_of_user
+from db.orm.accounts_orm import create_account
 from db.orm.addresses_orm import create_address
 from db.orm.admins_orm import create_admin
 from db.orm.branches_orm import create_branch
@@ -16,6 +16,7 @@ from db.orm.outstanding_payments_orm import create_outstanding_payment
 from db.orm.users_orm import create_user
 from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception, option_not_found_exception
 from core.utils import check_email
+from fingerprint_process.utils.utils import get_quality_of_fingerprint
 from schemas.admin_complex import AdminFullRequest, AdminFullDisplay
 from schemas.client_complex import ClientFullRequest, ClientFullDisplay
 from schemas.credit_base import CreditRequest
@@ -244,3 +245,29 @@ def register_fingerprint(
         fingerprints: FingerprintSamples
 ):
     pass
+
+
+async def check_quality_of_fingerprints(
+        fingerprints: FingerprintSamples
+) -> Tuple[bool, list[dict]]:
+    is_there_a_good_sample = False
+    fingerprint_resume = []
+    try:
+        count = 0
+        for sample in fingerprints.fingerprints:
+            fingerprint_name = 'Fingerprint-' + str(count)
+            fingerprint_data = get_quality_of_fingerprint(sample, fingerprint_name, return_data='full')
+
+            if isinstance(fingerprint_data, dict):
+                if fingerprint_data['quality'] == 'good':
+                    fingerprint_data['pos'] = count
+                    fingerprint_resume.append(fingerprint_data)
+                    is_there_a_good_sample = True
+
+            count = count + 1
+
+    except Exception as e:
+        print(e)
+        raise e
+
+    return is_there_a_good_sample, fingerprint_resume

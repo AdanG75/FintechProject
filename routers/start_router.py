@@ -5,11 +5,14 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.general import get_data_from_secure
-from controller.sign_up import get_user_type, route_user_to_sign_up
+from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.config import settings
 from db.database import get_db
+from db.orm.exceptions_orm import bad_quality_fingerprint_exception
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
+from schemas.basic_response import BasicResponse
 from schemas.client_complex import ClientFullDisplay, ClientFullRequest
+from schemas.fingerprint_model import FingerprintSamples
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
 from schemas.secure_base import SecureBase, PublicKeyBase
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
@@ -40,6 +43,25 @@ async def sing_up(
     response = await route_user_to_sign_up(db, data, type_user, test_mode)
 
     return response
+
+
+@router.post(
+    path='/fingerprint/client/{id_client}',
+    response_model=BasicResponse,
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def register_fingerprint_of_client(
+        request: FingerprintSamples = Body(...),
+        db: Session = Depends(get_db)
+):
+    is_good, data = await check_quality_of_fingerprints(request)
+    if is_good:
+        return BasicResponse(
+          operation='Check fingerprints',
+          successful=True
+        )
+    else:
+        raise bad_quality_fingerprint_exception
 
 
 @router.get(

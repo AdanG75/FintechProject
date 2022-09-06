@@ -1,7 +1,7 @@
 import base64
 import io
 import json
-from typing import List
+from typing import List, Union
 
 from fastapi import HTTPException
 from starlette import status
@@ -12,12 +12,12 @@ from fingerprint_process.utils.utils import raw_fingerprint_construction
 
 
 def save_fingerprint_in_memory(
-        data_fingerprint: List,
+        data_fingerprint: Union[str, List],
         return_format: str = 'base64'
 ) -> bytes:
     """
     Save fingerprint into memory as bytes
-    :param data_fingerprint: (List[int]) - Data of a fingerprint sample
+    :param data_fingerprint: (Union[str, List[int])) - Data of a fingerprint sample
     :param return_format: (str) -   "base64" -> return the image in base64 encode
                                     "bytes" -> return the image in raw bytes (without encode)
     :return: Data image in bytes

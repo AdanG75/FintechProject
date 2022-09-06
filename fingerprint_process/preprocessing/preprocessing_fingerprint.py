@@ -2,6 +2,7 @@
 
 import numpy as np
 import cv2 as cv
+from numpy import ndarray
 from scipy import signal
 from scipy import ndimage
 import math
@@ -749,4 +750,12 @@ class PreprocessingFingerprint(object):
             return (skeleton_image, roi_image, self._orientim, self._stddevim, self._quality_avr)
         else:
             return (self._skeleton, self._morphology_mask, self._orientim, self._stddevim, self._quality_avr)
+
+    def get_spatial_index(self, img: ndarray) -> float:
+        self.__ridge_segment(img)
+        self.__quality_average()
+
+        return self._quality_avr
+
+
 

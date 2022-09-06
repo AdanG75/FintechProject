@@ -3,15 +3,17 @@ import io
 from typing import List, Union
 
 import cv2 as cv
-import numpy as np
 from PIL import Image
 
+from core.utils import save_object_as_json
+from db.orm.exceptions_orm import compile_exception
 from fingerprint_process.preprocessing.connect_sensor import ConnectSensor
 from fingerprint_process.preprocessing.fingerprint_raw import FingerprintRaw
 from fingerprint_process.description.fingerprint import Fingerprint
 from fingerprint_process.utils.bank_fingerprint_images import BankFingerprint
 from fingerprint_process.matching.match import match
 from fingerprint_process.utils.error_message import ErrorMessage
+from schemas.fingerprint_model import FingerprintSamples
 
 
 def create_fingerprint_samples():
@@ -20,7 +22,7 @@ def create_fingerprint_samples():
     bank_fp.generate_bank_fingerprint(auto_named=False)
 
 
-def get_data_fingerprint(source='sensor', data_fingerprint: Union[str, list] = None):
+def get_data_fingerprint(source: str = 'sensor', data_fingerprint: Union[str, list] = None):
     """
     A function to get the data of the raw fingerprint.
 
@@ -168,7 +170,31 @@ def save_fingerprint_into_json(
     return result
 
 
-def raw_fingerprint_construction(data_fingerprint: List):
+def create_fingerprint_samples_from_sensor(save_as_json: bool = False) -> FingerprintSamples:
+    fingerprint_samples = []
+    count = 0
+    while count < 5:
+        sample = get_data_of_fingerprint_from_sensor_in_base64()
+        if not isinstance(sample, tuple):
+            fingerprint_samples.append(sample)
+        else:
+            raise Exception("Something wrong occurs during the process")
+
+        count = count + 1
+
+    fingerprint_samples_object = FingerprintSamples(fingerprints=fingerprint_samples)
+
+    if save_as_json:
+        save_object_as_json(
+            fingerprint_samples_object,
+            path_json="./fingerprint_process/data/",
+            name_json="fingerprint_samples_base64.json"
+        )
+
+    return fingerprint_samples_object
+
+
+def raw_fingerprint_construction(data_fingerprint: Union[str, List], name_fingerprint: str = "Fingerprint_HTML"):
     fingerprint_raw = FingerprintRaw()
 
     raw_data_fingerprint = fingerprint_raw.get_fingerprint_raw(data=data_fingerprint)
@@ -176,11 +202,52 @@ def raw_fingerprint_construction(data_fingerprint: List):
     if isinstance(raw_data_fingerprint, tuple):
         return raw_data_fingerprint
 
-    fingerprint = Fingerprint(save_result=False, show_result=False, name_fingerprint="Fingerprint_HTML")
+    fingerprint = Fingerprint(save_result=False, show_result=False, name_fingerprint=name_fingerprint)
 
     raw_fingerprint = fingerprint.reconstruction_fingerprint(raw_data_fingerprint)
 
     return raw_fingerprint
+
+
+def get_quality_of_fingerprint(
+        data_fingerprint: Union[str, List],
+        name_fingerprint: str = "Fingerprint_HTML",
+        return_data: str = "quality"
+) -> Union[tuple, str, dict]:
+    """
+    Get the quality of a fingerprint through of its data represented using base64 or a list of integers
+
+    :param data_fingerprint: (str, list) Data which represent the fingerprint. Can be a str on base64 or a list of int
+    :param name_fingerprint: (str) The name of the fingerprint to create. By default, the name is 'Fingerprint_HTML'
+    :param return_data: (str) Specify the information to return.
+    - **quality** will return the quality ('bad' or 'good') as str
+    - **indexes** will return the indexes ('spatial_index' and 'spectral_index') as a dict
+    - **full** will return both, the quality and indexes into a dict.
+     E.g.
+        {'quality': 'good', indexes: {'spatial_index': 0.46, 'spectral_index': 0.65}}
+
+    :return: Return a tuple if an exception occurs, in other case, could return whatever type of data described above
+    (str or dict).
+    """
+    fingerprint_raw = FingerprintRaw()
+    raw_data_fingerprint = fingerprint_raw.get_fingerprint_raw(data=data_fingerprint)
+
+    if isinstance(raw_data_fingerprint, tuple):
+        return raw_data_fingerprint
+
+    fingerprint = Fingerprint(save_result=False, show_result=False, name_fingerprint=name_fingerprint)
+    indexes_dict = fingerprint.get_indexes_of_fingerprint(raw_data_fingerprint)
+    quality = fingerprint.get_quality_of_fingerprint(indexes_dict, 'register')
+
+    if return_data == "quality":
+        return quality
+    elif return_data == "indexes":
+        return indexes_dict
+    else:
+        return {
+            'quality': quality,
+            'indexes': indexes_dict
+        }
 
 
 def show_fingerprint_from_array(fingerprint_data):
@@ -196,6 +263,17 @@ def show_fingerprint_from_array(fingerprint_data):
     fingerprint_image.show()
 
     return ErrorMessage.FINGERPRINT_OK
+
+
+def get_data_of_fingerprint_from_sensor_in_base64(source: str = 'sensor') -> Union[str, tuple]:
+    connect_sensor = ConnectSensor(serial_port='/dev/ttyUSB0', baud_rate=57600, width=256, height=288)
+    data_fingerprint_raw = connect_sensor.catch_data_fingerprint_as_base64(return_mode='str')
+
+    if isinstance(data_fingerprint_raw, tuple):
+        if source.lower() == 'api':
+            raise compile_exception
+
+    return data_fingerprint_raw
 
 
 def show_fingerprint_form_base64(image_base64: bytes) -> None:

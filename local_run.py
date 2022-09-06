@@ -3,6 +3,7 @@
 from fingerprint_process.utils import utils as u_fin
 from fingerprint_process.utils.error_message import ErrorMessage
 from fingerprint_process.description.fingerprint import Fingerprint
+from schemas.fingerprint_model import FingerprintSamples
 from web_utils.image_on_web import open_fingerprint_data_from_json, save_fingerprint_in_memory
 from core.config import settings
 
@@ -22,6 +23,8 @@ def local_test():
     print('\tA.- Save fingerprint into JSON')
     print('\tB.- Show fingerprint from JSON')
     print('\tC.- Show fingerprint from Base64')
+    print('\tD.- Get fingerprint on Base64')
+    print('\tE.- Create FingerprintSamples request within a json file')
     print('\tX.- Exit the programme')
 
     print('\n')
@@ -104,6 +107,17 @@ def local_test():
         fingerprint_data = open_fingerprint_data_from_json()
         image_base64 = save_fingerprint_in_memory(fingerprint_data)
         u_fin.show_fingerprint_form_base64(image_base64)
+
+    elif option.lower() == 'd':
+        fingerprint_data_base64 = u_fin.get_data_of_fingerprint_from_sensor_in_base64()
+        if isinstance(fingerprint_data_base64, tuple):
+            print('Some error occurs during process')
+            return True
+
+        print(fingerprint_data_base64)
+
+    elif option.lower() == 'e':
+        u_fin.create_fingerprint_samples_from_sensor(save_as_json=True)
 
     elif (option.lower() == 'x'):
         return True

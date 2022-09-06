@@ -193,3 +193,8 @@ movement_already_linked_exception = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
     detail="The movement has already been linked"
 )
+
+bad_quality_fingerprint_exception = HTTPException(
+    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+    detail="All fingerprint samples are of low quality. Please capture new samples"
+)

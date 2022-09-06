@@ -4,6 +4,8 @@ import numpy as np
 import cv2 as cv
 from math import degrees
 
+from numpy import ndarray
+
 from fingerprint_process.description.local_area import LocalArea
 from fingerprint_process.models.minutia import Minutiae
 from fingerprint_process.models.core_point import CorePoint
@@ -334,6 +336,48 @@ class Fingerprint(ErrorMessage):
     def reconstruction_fingerprint(self, data_fingerprint):
         self.__reconstruction_fingerprint(data_fingerprint)
         return self._raw_image
+
+    def get_indexes_of_fingerprint(self, data_fingerprint: ndarray) -> dict:
+        self._raw_image = data_fingerprint
+        self.__get_quality_index()
+
+        preprocessing_fp = PreprocessingFingerprint(
+            name_fingerprint=self._name_fingerprint,
+            address_output=self._address_image,
+            ridge_segment_thresh=self._ridge_segment_thresh
+        )
+
+        spatial_index = preprocessing_fp.get_spatial_index(self._raw_image)
+        spectral_index = self._quality_index
+
+        return {
+            'spatial_index': spatial_index,
+            'spectral_index': spectral_index
+        }
+
+    def get_quality_of_fingerprint(self, indexes: dict, operation: str = 'register') -> str:
+        """
+        Function which return the quality of fingerprint based on the selected operation.
+
+        :param indexes: (dict) Must contain the keys 'spatial_index' and 'spectral_index' that represent the indexes to
+        evaluate
+        :param operation: (str) Could be 'register' or 'authentication'. The default value is 'register' but for unknown
+        operations, the program will select 'authentication'
+
+        :return: A string that could be 'good' or 'bad' depending on the case.
+        """
+        is_good_spatial_index: bool = indexes['spatial_index'] >= self._authentication_image_score
+
+        if operation == 'register':
+            if (indexes['spectral_index'] >= self._register_index_score) and is_good_spatial_index:
+                return 'good'
+            else:
+                return 'bad'
+        else:
+            if (indexes['spectral_index'] >= self._authentication_index_score) and is_good_spatial_index:
+                return 'good'
+            else:
+                return 'bad'
 
     def describe_fingerprint(
             self,

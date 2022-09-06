@@ -6,6 +6,7 @@ from typing import List, Union, Optional
 
 from email_validator import validate_email, EmailNotValidError
 from phonenumbers import parse, is_valid_number
+from pydantic import BaseModel
 
 from db.orm.exceptions_orm import bad_email_exception
 
@@ -48,6 +49,16 @@ def save_json_file(data: dict, file_name: str, path: str = "./") -> bool:
         raise FileExistsError
 
     return True
+
+
+def save_object_as_json(
+        object_model: BaseModel,
+        path_json: str = "./",
+        name_json: str = "object.json"
+) -> bool:
+    result = save_json_file(data=object_model.dict(), file_name=name_json, path=path_json)
+
+    return result
 
 
 def read_json_file(path: str, mode: str = "global"):

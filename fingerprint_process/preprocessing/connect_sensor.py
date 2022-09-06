@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import functools
 import json
 from typing import Optional, Union, Any
@@ -93,20 +94,23 @@ class ConnectSensor(object):
 
         return self._data_fingerprint
 
+    def catch_data_fingerprint_as_base64(self, return_mode: str = 'str') -> Union[str, bytes, tuple]:
+        sensor_fingerprint_data = self.__get_nibble_data_as_list()
+        sensor_fingerprint_data_as_bytes: bytes = bytes(sensor_fingerprint_data)
+        fingerprint_data_base64: bytes = base64.b64encode(sensor_fingerprint_data_as_bytes)
+        fingerprint_data_base64_str: str = fingerprint_data_base64.decode('utf-8')
+
+        if return_mode == 'bytes':
+            return fingerprint_data_base64
+        else:
+            return fingerprint_data_base64_str
+
     def save_fingerprint_into_json(
             self,
             path_json: str = './data/',
             name_json: str = 'fingerprintRawData'
     ) -> Union[tuple[bool], dict[str, list[Any]]]:
-
-        self.__save_nibble(count=0, byte=bytes(0))
-
-        all_int_raw_fingerprint_data = self._data_fingerprint.tolist()
-        sensor_fingerprint_data = []
-
-        for i in range(0, self._read_length_fingerprint):
-            sensor_fingerprint_data.append(all_int_raw_fingerprint_data[i])
-
+        sensor_fingerprint_data = self.__get_nibble_data_as_list()
         fingerprint_dict = {
             "fingerprint": sensor_fingerprint_data
         }
@@ -121,6 +125,17 @@ class ConnectSensor(object):
             return self._default_response
 
         return fingerprint_dict
+
+    def __get_nibble_data_as_list(self) -> list:
+        self.__save_nibble(count=0, byte=bytes(0))
+
+        all_int_raw_fingerprint_data = self._data_fingerprint.tolist()
+        sensor_fingerprint_data = []
+
+        for i in range(0, self._read_length_fingerprint):
+            sensor_fingerprint_data.append(all_int_raw_fingerprint_data[i])
+
+        return sensor_fingerprint_data
 
     @connect_with_fingerprint_sensor
     def __convert_nibble_to_high_nibble(self, count: int = 0, byte: Optional[bytes] = bytes(0)):
