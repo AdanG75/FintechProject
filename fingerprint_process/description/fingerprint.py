@@ -338,7 +338,7 @@ class Fingerprint(ErrorMessage):
         return self._raw_image
 
     def get_indexes_of_fingerprint(self, data_fingerprint: ndarray) -> dict:
-        self._raw_image = data_fingerprint
+        self.__reconstruction_fingerprint(data_fingerprint)
         self.__get_quality_index()
 
         preprocessing_fp = PreprocessingFingerprint(

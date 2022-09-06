@@ -1,6 +1,6 @@
 from typing import Union, Optional
 
-from fastapi import APIRouter, Body, Query, Depends
+from fastapi import APIRouter, Body, Query, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -32,7 +32,7 @@ async def sing_up(
         request: Union[
             SecureBase, AdminFullRequest, ClientFullRequest, MarketFullRequest, SystemFullRequest
         ] = Body(...),
-        secure: Optional[bool] = Query(False),
+        secure: Optional[bool] = Query(True),
         type_user: Optional[TypeUser] = Query(None),
         notify: Optional[bool] = Query(True),
         test_mode: Optional[bool] = Query(True),
@@ -51,11 +51,17 @@ async def sing_up(
     status_code=status.HTTP_202_ACCEPTED
 )
 async def register_fingerprint_of_client(
-        request: FingerprintSamples = Body(...),
+        id_client: str = Path(..., min_length=12, max_length=40),
+        request: Union[SecureBase, FingerprintSamples] = Body(...),
+        secure: bool = Query(True),
         db: Session = Depends(get_db)
 ):
-    is_good, data = await check_quality_of_fingerprints(request)
+    data_request = get_data_from_secure(request) if secure else request
+    fps_request = FingerprintSamples.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+
+    is_good, data = await check_quality_of_fingerprints(fps_request)
     if is_good:
+        print(data)
         return BasicResponse(
           operation='Check fingerprints',
           successful=True
