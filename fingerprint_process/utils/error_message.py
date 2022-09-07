@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from fastapi import HTTPException
+from starlette import status
+
 
 class ErrorMessage(object):
     def __init__(self) -> None:
@@ -13,27 +16,87 @@ class ErrorMessage(object):
         self._NOT_OPTION_FOUND = 7
         self._RECONSTRUCTION_FAILED = 8
 
-    def show_message(self, error_code):
+    def show_message(self, error_code, web: bool = False):
         if error_code == self._FINGERPRINT_OK:
-            print('\n\tProcess finished successfully')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_200_OK,
+                    detail='Process finished successfully'
+                )
+            else:
+                print('\n\tProcess finished successfully')
         elif error_code == self._POOR_QUALITY:
-            print('\n\tPoor quality fingerpint')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Poor quality fingerprint'
+                )
+            else:
+                print('\n\tPoor quality fingerprint')
         elif error_code == self._FEW_MINUTIAES:
-            print('\n\tFew minutiaes have been finding')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Few minutiae have been finding'
+                )
+            else:
+                print('\n\tFew minutiae have been finding')
         elif error_code == self._VOID_FINGERPRINT:
-            print('\n\tFingerprint image is void')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Fingerprint image is void'
+                )
+            else:
+                print('\n\tFingerprint image is void')
         elif error_code == self._DONT_MATCH_FINGERPRINT:
-            print('\n\tFingerprints do not match')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Fingerprints do not match'
+                )
+            else:
+                print('\n\tFingerprints do not match')
         elif error_code == self._MATCH_FINGERPRINT:
-            print('\n\tFingerprints successfully matching')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_200_OK,
+                    detail='Fingerprints successfully matching'
+                )
+            else:
+                print('\n\tFingerprints successfully matching')
         elif error_code == self._WRONG_ANGLES:
-            print('\n\tAngles do not 180°')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Angles do not 180°'
+                )
+            else:
+                print('\n\tAngles do not 180°')
         elif error_code == self._NOT_OPTION_FOUND:
-            print('\n\tOption couldn\'t be found')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail='Option couldn\'t be found'
+                )
+            else:
+                print('\n\tOption couldn\'t be found')
         elif error_code == self._RECONSTRUCTION_FAILED:
-            print('\n\tReconstruction fingerprint failed')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Reconstruction fingerprint failed'
+                )
+            else:
+                print('\n\tReconstruction fingerprint failed')
         else:
-            print('\n\tUnknown Error')
+            if web:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Unknown Error'
+                )
+            else:
+                print('\n\tUnknown Error')
 
     @property
     def FINGERPRINT_OK(self):

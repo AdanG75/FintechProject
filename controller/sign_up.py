@@ -1,4 +1,4 @@
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional, List
 
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,8 @@ from db.orm.outstanding_payments_orm import create_outstanding_payment
 from db.orm.users_orm import create_user
 from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception, option_not_found_exception
 from core.utils import check_email
-from fingerprint_process.utils.utils import get_quality_of_fingerprint
+from fingerprint_process.utils.error_message import ErrorMessage
+from fingerprint_process.utils.utils import get_quality_of_fingerprint, get_description_fingerprint
 from schemas.admin_complex import AdminFullRequest, AdminFullDisplay
 from schemas.client_complex import ClientFullRequest, ClientFullDisplay
 from schemas.credit_base import CreditRequest
@@ -242,16 +243,36 @@ async def route_user_to_sign_up(
 @full_database_exceptions
 def register_fingerprint(
         db: Session,
-        fingerprints: FingerprintSamples
+        fingerprints: FingerprintSamples,
+        id_client: str,
+        data_summary: List[dict]
 ):
-    pass
+    # Unfinished function: missing test and enhance register of fingerprint
+
+    position_best_sample = select_the_best_sample(data_summary)
+    best_sample = fingerprints.fingerprints[position_best_sample]
+    result = get_description_fingerprint(
+        name_fingerprint='example',
+        source='api',
+        data_fingerprint=best_sample,
+        mode='register',
+        show_result=False,
+        save_result=False
+    )
+
+    if isinstance(result, int):
+        console = ErrorMessage()
+        console.show_message(result, web=True)
+
+    # TODO
+
 
 
 async def check_quality_of_fingerprints(
         fingerprints: FingerprintSamples
 ) -> Tuple[bool, list[dict]]:
     is_there_a_good_sample = False
-    fingerprint_resume = []
+    fingerprint_summary = []
     try:
         count = 0
         for sample in fingerprints.fingerprints:
@@ -261,7 +282,7 @@ async def check_quality_of_fingerprints(
             if isinstance(fingerprint_data, dict):
                 if fingerprint_data['quality'] == 'good':
                     fingerprint_data['pos'] = count
-                    fingerprint_resume.append(fingerprint_data)
+                    fingerprint_summary.append(fingerprint_data)
                     is_there_a_good_sample = True
 
             count = count + 1
@@ -270,4 +291,49 @@ async def check_quality_of_fingerprints(
         print(e)
         raise e
 
-    return is_there_a_good_sample, fingerprint_resume
+    return is_there_a_good_sample, fingerprint_summary
+
+
+def select_the_best_sample(summary_sample_data: List[dict]) -> Optional[int]:
+    """
+    Return the index where the best sample of fingerprint is. If the list are void the function will return None.
+
+    :param summary_sample_data: (list) A list which contains one or more dictionaries with these keys:
+        - **quality**: Could be 'good' or 'bad'
+        - **pos**: Place into the list where are saved the sample
+        - **indexes**: Contain the indexes 'spatial_index' and 'spectral_index' within a dict
+
+    :return: (int, None) The position where the best sample is. If the list is empty or there are not a good quality
+    sample, the function will return void.
+    """
+    if len(summary_sample_data) < 1:
+        return None
+
+    item = -1
+    list_pos = -1
+    flag_firsts_item = False
+    for pos, sample in enumerate(summary_sample_data):
+        if sample['quality'] == 'good':
+            if not flag_firsts_item:
+                item = sample['pos']
+                list_pos = pos
+                flag_firsts_item = True
+            else:
+                if sample['indexes']['spectral_index'] > summary_sample_data[list_pos]['indexes']['spectral_index']:
+                    item = sample['pos']
+                    list_pos = pos
+                elif sample['indexes']['spectral_index'] == summary_sample_data[list_pos]['indexes']['spectral_index']:
+                    if sample['indexes']['spatial_index'] > summary_sample_data[list_pos]['indexes']['spatial_index']:
+                        item = sample['pos']
+                        list_pos = pos
+                    else:
+                        pass
+                else:
+                    pass
+
+    if not flag_firsts_item:
+        return None
+    else:
+        return item
+
+

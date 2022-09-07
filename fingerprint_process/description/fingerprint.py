@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Union, List, Iterable
 
 import numpy as np
 import cv2 as cv
@@ -33,7 +34,8 @@ class Fingerprint(ErrorMessage):
             register_index_score=0.62,
             register_cpthresh=0.3,
             register_rsthresh=0.15,
-            number_minutiae_neighbordings=5
+            number_minutiae_neighbordings=5,
+            min_minutiae=12
     ):
         super().__init__()
         self._fingerprint_rows = fingerprint_rows
@@ -53,6 +55,7 @@ class Fingerprint(ErrorMessage):
         self._register_cpthresh = register_cpthresh
         self._register_rsthresh = register_rsthresh
         self._number_minutiae_neighbordings = number_minutiae_neighbordings
+        self._min_minutiae = min_minutiae
 
         self._varian_index = 0.0
         self._quality_index = 0.0
@@ -60,8 +63,8 @@ class Fingerprint(ErrorMessage):
         self._rows = 0
         self._columns = 0
 
-        self._raw_image = []
-        self._ezquel_fingerprint = []
+        self._raw_image: Union[ndarray, list] = []
+        self._ezquel_fingerprint: Union[ndarray, list] = []
         self._minutiae_map = []
         self._core_map = []
         self._varian_mask = []
@@ -73,13 +76,13 @@ class Fingerprint(ErrorMessage):
         self._core_cell = []
         self._ezquel_as_image = []
 
-    def __reconstruction_fingerprint(self, data_fingerprint):
+    def __reconstruction_fingerprint(self, data_fingerprint: Union[ndarray, list, str]):
         self._raw_image = np.zeros((self._fingerprint_rows, self._figerprint_columns))
         x = 0
         y = 0
         for pixel in data_fingerprint:
             self._raw_image[y][x] = pixel
-            if (x == (self._figerprint_columns - 1)):
+            if x == (self._figerprint_columns - 1):
                 y += 1
                 x = 0
             else:
@@ -105,7 +108,7 @@ class Fingerprint(ErrorMessage):
     def __get_corepoints(self, angles_tolerance):
         for i in range(3, len(self._angles) - 2):  # Y
             for j in range(3, len(self._angles[i]) - 2):  # x
-                # mask any singularity outside of the mask
+                # mask any singularity outside the mask
                 mask_slice = self._roi[(i - 2) * self._size_window_core:(i + 3) * self._size_window_core,
                              (j - 2) * self._size_window_core:(j + 3) * self._size_window_core]
                 mask_flag = np.sum(mask_slice)
@@ -128,7 +131,7 @@ class Fingerprint(ErrorMessage):
         self.__mark_characteristic_point(colors, figure, to_show)
 
     def __mark_characteristic_point(self, colors, figure, to_show):
-        if self._void_image == False:
+        if not self._void_image:
             result = cv.cvtColor(self._ezquel_as_image, cv.COLOR_GRAY2RGB)
             characteristic_list = []
 
@@ -139,7 +142,7 @@ class Fingerprint(ErrorMessage):
             else:
                 self._void_image = True
 
-            if (not self._void_image):
+            if not self._void_image:
                 for characteristic_point in characteristic_list:
                     singularity = characteristic_point.get_point_type()
                     j = characteristic_point.get_posy()
@@ -204,7 +207,7 @@ class Fingerprint(ErrorMessage):
                 non_border = 0
                 region = ((j - 15, i), (j + 15, i), (j, i - 15), (j, i + 15))
                 for _ in range(len(region)):
-                    if ((region[_][0] >= self._rows) or (region[_][1] >= self._columns)):
+                    if (region[_][0] >= self._rows) or (region[_][1] >= self._columns):
                         non_border = 0
                         break
                     else:
@@ -241,7 +244,8 @@ class Fingerprint(ErrorMessage):
 
     def __poincare_index_at(self, j, i, tolerance):
         """
-        compute the summation difference between the adjacent orientations such that the orientations is less then 90 degrees
+        Compute the summation difference between the adjacent orientations such that the orientations is less than 90
+        degrees
         https://books.google.pl/books?id=1Wpx25D8qOwC&lpg=PA120&ots=9wRY0Rosb7&dq=poincare%20index%20fingerprint&hl=pl&pg=PA120#v=onepage&q=poincare%20index%20fingerprint&f=false
         :param i:
         :param j:
@@ -294,7 +298,7 @@ class Fingerprint(ErrorMessage):
 
     def __save_sample_fingerprint(self, name_image, image):
         if self._save_result:
-            is_saved = cv.imwrite(self._address_image + name_image + self._name_fingerprint + '.bmp', (image))
+            is_saved = cv.imwrite(self._address_image + name_image + self._name_fingerprint + '.bmp', image)
             if is_saved:
                 print(f"Image {name_image + self._name_fingerprint} was saved")
 
@@ -315,7 +319,8 @@ class Fingerprint(ErrorMessage):
             if mode == 'basic':
                 print(characteristic_point.get_description())
             else:
-                uid_point, posy, posx, angle, point_type, description_tuple_list = characteristic_point.get_full_description()
+                uid_point, posy, posx, angle, point_type, description_tuple_list = \
+                    characteristic_point.get_full_description()
                 print(uid_point, posy, posx, angle, point_type)
                 for fingerprint_tuple in description_tuple_list:
                     print("\t", fingerprint_tuple)
@@ -381,53 +386,60 @@ class Fingerprint(ErrorMessage):
 
     def describe_fingerprint(
             self,
-            data_fingerprint=None,
-            angles_tolerance=1,
-            from_image=False,
-            fingerprint_image=None,
-            neighbors_description=True
+            data_fingerprint: Union[ndarray, str, List[int], None] = None,
+            angles_tolerance: int = 1,
+            from_image: bool = False,
+            fingerprint_image: Union[ndarray, Iterable, int, float, None] = None,
+            neighbors_description: bool = True,
+            mode: str = 'auth'
     ):
-
-        if data_fingerprint is None:
-            data_fingerprint = []
-
-        global process_message
-
         if from_image:
             self._raw_image = np.asarray(fingerprint_image)
         else:
+            if data_fingerprint is None:
+                return self._VOID_FINGERPRINT
+
             self.__reconstruction_fingerprint(data_fingerprint)
 
         self.__get_quality_index()
-        if self._quality_index > self._authentication_index_score:
-            self._ridge_segment_thresh = self._register_rsthresh
+        if mode == 'register':
+            # print(self._quality_index)
+            if self._quality_index < self._register_index_score:
+                return self._POOR_QUALITY
         else:
-            return self._POOR_QUALITY
+            if self._quality_index < self._authentication_index_score:
+                return self._POOR_QUALITY
 
-        self.__save_raw_fingerprint()
+        if self._save_result:
+            self.__save_raw_fingerprint()
+
         self.__fingerprint_enhance()
-        print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
-
-        self.__ezquel_to_image()
-
-        if (self._varian_index > self._authentication_image_score):
+        if self._varian_index >= self._authentication_image_score:
             self._characteritic_point_thresh = self._register_cpthresh
         else:
             return self._POOR_QUALITY
+
+        if self._show_result:
+            print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
+
+        self.__ezquel_to_image()
 
         if not self._void_image:
             self.__get_cells()
             self.__get_minutias()
             self.__get_corepoints(angles_tolerance)
 
-            if (len(self._list_minutias) < (self._number_minutiae_neighbordings + 1)):
+            if len(self._list_minutias) < self._min_minutiae:
                 return self._FEW_MINUTIAES
 
             if neighbors_description:
-                local_description = LocalArea()
-                process_message = local_description.get_local_structure(self._list_minutias)
+                if len(self._list_minutias) < (self._number_minutiae_neighbordings + 1):
+                    return self._FEW_MINUTIAES
 
-            return process_message
+                local_description = LocalArea()
+                return local_description.get_local_structure(self._list_minutias)
+
+            return self._FINGERPRINT_OK
 
         else:
             return self._VOID_FINGERPRINT

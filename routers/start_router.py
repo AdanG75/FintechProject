@@ -3,6 +3,7 @@ from typing import Union, Optional
 from fastapi import APIRouter, Body, Query, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
+from starlette.background import BackgroundTasks
 
 from controller.general import get_data_from_secure
 from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
@@ -51,6 +52,7 @@ async def sing_up(
     status_code=status.HTTP_202_ACCEPTED
 )
 async def register_fingerprint_of_client(
+        bt: BackgroundTasks,
         id_client: str = Path(..., min_length=12, max_length=40),
         request: Union[SecureBase, FingerprintSamples] = Body(...),
         secure: bool = Query(True),
@@ -62,6 +64,8 @@ async def register_fingerprint_of_client(
     is_good, data = await check_quality_of_fingerprints(fps_request)
     if is_good:
         print(data)
+        # item = select_the_best_sample(data)
+        # print(item)
         return BasicResponse(
           operation='Check fingerprints',
           successful=True

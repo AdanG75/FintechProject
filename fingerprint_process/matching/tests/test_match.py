@@ -88,7 +88,7 @@ def match_test(path, image_reference, base_image, fingerprint):
         return False
 
     input_img = u_fin.get_description_fingerprint(name_fingerprint=image_reference,
-                                                  source='image', ubication_image=(path + image_reference),
+                                                  source='image', address_image=(path + image_reference),
                                                   show_result=False, save_result=False)
 
     result_check = check_result(input_img)
@@ -135,7 +135,7 @@ def secuence(func, pattern_name='', fingerprint=None):
 
 def match_algorithm_analysis(path, image_reference, base_image):
     base_img = u_fin.get_description_fingerprint(name_fingerprint=image_reference,
-                                                 source='image', ubication_image=(path + image_reference),
+                                                 source='image', address_image=(path + image_reference),
                                                  show_result=False, save_result=False)
 
     result_check = check_result(base_img)
