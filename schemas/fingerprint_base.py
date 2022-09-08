@@ -27,7 +27,7 @@ class FingerprintRequest(FingerprintBase):
     class Config:
         schema_extra = {
             "example": {
-                "id_client": "CLI-e549787795a645ab9caf3f9e785c8884",
+                "id_client": "CLI-f9beda22b5b84a419ab881a8583ccb8b",
                 "alias_fingerprint": "Indice derecho",
                 "main_fingerprint": True,
                 "url_fingerprint": "BKT-e549787795a645ab9caf3f9e785c8884/indice-derecho1456",

@@ -198,3 +198,13 @@ bad_quality_fingerprint_exception = HTTPException(
     status_code=status.HTTP_406_NOT_ACCEPTABLE,
     detail="All fingerprint samples are of low quality. Please capture new samples"
 )
+
+uncreated_fingerprint_exception = HTTPException(
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    detail=f"Fingerprint could not be created"
+)
+
+uncreated_bucked_exception = HTTPException(
+    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    detail="System couldn't create bucket"
+)

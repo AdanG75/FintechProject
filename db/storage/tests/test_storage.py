@@ -6,7 +6,7 @@ from starlette import status
 
 from db.storage import storage
 
-user_bucket = "CLI-first-user-985632-fgtr"
+user_bucket = "CLI-c75812d0b9d14ef3b37622f256c63aa9"
 
 
 def create_a_bucket_test(gcs: Client):
@@ -57,13 +57,13 @@ def save_fingerprint_into_bucket_test(gcs: Client, fingerprint_data: bytes, data
 
 
 def download_from_bucket_test(gcs: Client):
-    name_fingerprint_file = "test_fingerprint3"
+    name_fingerprint_file = "enhance-Main-fingerprint"
     name_fingerprint_file_with_extension = name_fingerprint_file + ".bmp"
 
     result = storage.download_file_from_bucket(
         blob_name=name_fingerprint_file,
         file_path=os.path.join(os.getcwd(), name_fingerprint_file_with_extension),
-        bucket_name=user_bucket,
+        bucket_name="CLI-f83ffeb361c940dd95a9ea9fc756888b",
         storage_client=gcs
     )
 
@@ -79,7 +79,7 @@ def download_from_bucket_test(gcs: Client):
     }
 
 
-def get_bucket_details(gcs: Client):
+def get_bucket_details_test(gcs: Client):
     details = storage.get_bucket_details(bucket_name=user_bucket, storage_client=gcs)
 
     return details

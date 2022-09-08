@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-
+from controller.test.test_sign_up import test_register_fingerprint
 from fingerprint_process.utils import utils as u_fin
 from fingerprint_process.utils.error_message import ErrorMessage
 from fingerprint_process.description.fingerprint import Fingerprint
-from schemas.fingerprint_model import FingerprintSamples
 from web_utils.image_on_web import open_fingerprint_data_from_json, save_fingerprint_in_memory
-from core.config import settings
 
 
 def local_test():
@@ -25,15 +23,16 @@ def local_test():
     print('\tC.- Show fingerprint from Base64')
     print('\tD.- Get fingerprint on Base64')
     print('\tE.- Create FingerprintSamples request within a json file')
+    print('\tF.- Test of register fingerprint')
     print('\tX.- Exit the programme')
 
     print('\n')
     option = input('Select an option: ')
 
-    if (option == '1'):
+    if option == '1':
         u_fin.create_fingerprint_samples()
 
-    elif (option == '2'):
+    elif option == '2':
         result = u_fin.get_description_fingerprint()
 
         if not isinstance(result, Fingerprint):
@@ -42,7 +41,7 @@ def local_test():
             result.show_characteristic_point_from_list(type_characteristic_point='minutiae')
             result.show_characteristic_point_from_list(type_characteristic_point='core')
 
-    elif (option == '3'):
+    elif option == '3':
         result = u_fin.get_description_fingerprint(name_fingerprint='my_fingerprint', source='image')
         if not isinstance(result, Fingerprint):
             return True
@@ -50,43 +49,43 @@ def local_test():
             result.show_characteristic_point_from_list(type_characteristic_point='minutiae', mode='full')
             result.show_characteristic_point_from_list(type_characteristic_point='core')
 
-    elif (option == '4'):
+    elif option == '4':
         fail_match = u_fin.match_index_and_base_fingerprints('base_fingerprint_S', 'index_fingerprint_S',
                                                              mode='original', source='sensor')
-        if (fail_match == True):
+        if fail_match == True:
             return fail_match
 
-    elif (option == '5'):
+    elif option == '5':
         fail_match = u_fin.match_index_and_base_fingerprints('base_fingerprint_I', 'index_fingerprint_I',
-                                                             mode='original', source='image')
-        if (fail_match == True):
+                                                        mode='original', source='image')
+        if fail_match == True:
             return fail_match
 
-    elif (option == '6'):
+    elif option == '6':
         fail_match = u_fin.match_index_and_base_fingerprints('base_fingerprint_S_tree_', 'input_fingerprint_S_tree_',
                                                              mode='tree', source='sensor')
-        if (fail_match == True):
+        if fail_match == True:
             return fail_match
 
-    elif (option == '7'):
+    elif option == '7':
         fail_match = u_fin.match_index_and_base_fingerprints('base_fingerprint_I_tree_', 'input_fingerprint_I_tree_',
                                                              mode='tree', source='image')
-        if (fail_match == True):
+        if fail_match == True:
             return fail_match
 
-    elif (option == '8'):
+    elif option == '8':
         fail_match = u_fin.match_index_and_base_fingerprints('base_fingerprint_S_core_', 'input_fingerprint_S_core_',
                                                              mode='core', source='sensor')
-        if (fail_match == True):
+        if fail_match == True:
             return fail_match
 
-    elif (option == '9'):
+    elif option == '9':
         fail_match = u_fin.match_index_and_base_fingerprints('base_fingerprint_I_core_', 'input_fingerprint_I_core_',
                                                              mode='core', source='image')
-        if (fail_match == True):
+        if fail_match == True:
             return fail_match
 
-    elif (option.lower() == 'a'):
+    elif option.lower() == 'a':
         result = u_fin.save_fingerprint_into_json()
 
         if isinstance(result, tuple):
@@ -105,7 +104,7 @@ def local_test():
 
     elif option.lower() == 'c':
         fingerprint_data = open_fingerprint_data_from_json()
-        image_base64 = save_fingerprint_in_memory(fingerprint_data)
+        image_base64 = save_fingerprint_in_memory(data_fingerprint=fingerprint_data)
         u_fin.show_fingerprint_form_base64(image_base64)
 
     elif option.lower() == 'd':
@@ -119,10 +118,13 @@ def local_test():
     elif option.lower() == 'e':
         u_fin.create_fingerprint_samples_from_sensor(save_as_json=True)
 
-    elif (option.lower() == 'x'):
+    elif option.lower() == 'f':
+        test_register_fingerprint()
+
+    elif option.lower() == 'x':
         return True
 
-    elif ((option == '\n') or (option == '')):
+    elif (option == '\n') or (option == ''):
         pass
 
     else:
@@ -132,8 +134,8 @@ def local_test():
 
 
 if __name__ == '__main__':
-    while (True):
+    while True:
         end_programme = local_test()
-        if (end_programme):
+        if end_programme:
             print('\n\tGood bye :)\n')
             break

@@ -28,7 +28,7 @@ router = APIRouter(
 )
 
 
-@router.post(
+@router.get(
     path="/fingerprint/image",
     status_code=status.HTTP_200_OK,
     response_class=HTMLResponse,
@@ -59,7 +59,7 @@ async def show_fingerprint(
 ):
     fingerprint_data = open_fingerprint_data_from_json()
 
-    fingerprint = save_fingerprint_in_memory(fingerprint_data)
+    fingerprint = save_fingerprint_in_memory(data_fingerprint=fingerprint_data)
 
     fingerprint_string = fingerprint.decode()
 
@@ -93,7 +93,7 @@ async def create_bucket(
 async def get_bucket_details(
         gcs: Client = Depends(storage.get_storage_client)
 ):
-    response = test_storage.get_bucket_details(gcs=gcs)
+    response = test_storage.get_bucket_details_test(gcs=gcs)
 
     return response
 
@@ -108,7 +108,7 @@ async def save_fingerprint_into_bucket(
         fingerprint_model: FingerprintSimpleModel = Body(...),
         gcs: Client = Depends(storage.get_storage_client)
 ):
-    fingerprint = save_fingerprint_in_memory(fingerprint_model.fingerprint, return_format="bytes")
+    fingerprint = save_fingerprint_in_memory(data_fingerprint=fingerprint_model.fingerprint, return_format="bytes")
     response = test_storage.save_fingerprint_into_bucket_test(
         gcs=gcs,
         fingerprint_data=fingerprint,

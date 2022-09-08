@@ -1,8 +1,6 @@
 import base64
-import io
-import tempfile
 from datetime import datetime, timedelta
-from typing import Union, Tuple
+from typing import Union
 
 import google
 from fastapi import HTTPException
@@ -92,7 +90,6 @@ def get_bucket_details(bucket_name: str, storage_client: Client) -> dict:
     }
 
     return response
-
 
 
 def upload_file_to_bucket(
@@ -187,7 +184,6 @@ def upload_base64_file_to_bucket(
     )
 
     return result
-
 
 
 def download_file_from_bucket(

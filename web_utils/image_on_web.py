@@ -3,34 +3,39 @@ import io
 import json
 from typing import List, Union
 
-from fastapi import HTTPException
-from starlette import status
+from numpy import ndarray
 
 from PIL import Image
 
+from db.orm.exceptions_orm import not_values_sent_exception, option_not_found_exception, uncreated_fingerprint_exception
 from fingerprint_process.utils.utils import raw_fingerprint_construction
 
 
 def save_fingerprint_in_memory(
-        data_fingerprint: Union[str, List],
+        data_fingerprint: Union[str, List, None] = None,
+        image_fingerprint: Union[ndarray, list, None] = None,
         return_format: str = 'base64'
 ) -> bytes:
     """
-    Save fingerprint into memory as bytes
+    Save fingerprint into memory as bytes. If 'data_fingerprint' and 'image_fingerprint' are passed
+    the function will take image_fingerprint to be saved.
+
     :param data_fingerprint: (Union[str, List[int])) - Data of a fingerprint sample
+    :param image_fingerprint: (ndarray, list) - Image of the fingerprint
     :param return_format: (str) -   "base64" -> return the image in base64 encode
                                     "bytes" -> return the image in raw bytes (without encode)
     :return: Data image in bytes
     """
-    raw_fingerprint = raw_fingerprint_construction(data_fingerprint=data_fingerprint)
+    if image_fingerprint is None and data_fingerprint is None:
+        raise not_values_sent_exception
 
-    if isinstance(raw_fingerprint, tuple):
-        raise HTTPException(
-            status_code=status.HTTP_418_IM_A_TEAPOT,
-            detail=f"Fingerprint could not be created"
-        )
+    if data_fingerprint is not None and image_fingerprint is None:
+        image_fingerprint = raw_fingerprint_construction(data_fingerprint=data_fingerprint)
 
-    fingerprint_image = Image.fromarray(raw_fingerprint)
+    if isinstance(image_fingerprint, tuple):
+        raise uncreated_fingerprint_exception
+
+    fingerprint_image = Image.fromarray(image_fingerprint)
     fingerprint_image = fingerprint_image.convert("L")
     buffer = io.BytesIO()
     fingerprint_image.save(buffer, format="BMP")
@@ -47,10 +52,7 @@ def save_fingerprint_in_memory(
     elif return_format == 'bytes':
         return fingerprint_image_bytes
     else:
-        raise HTTPException(
-            status_code=status.HTTP_418_IM_A_TEAPOT,
-            detail="Format type not available"
-        )
+        raise option_not_found_exception
 
 
 def open_fingerprint_data_from_json(
@@ -78,6 +80,3 @@ def open_fingerprint_data_from_json(
         data_fingerprint.append(int(data))
 
     return data_fingerprint
-
-
-

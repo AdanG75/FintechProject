@@ -1,9 +1,10 @@
 import base64
 import io
-from typing import List, Union
+from typing import List, Union, Optional
 
 import cv2 as cv
 from PIL import Image
+from numpy import ndarray
 
 from core.utils import save_object_as_json
 from db.orm.exceptions_orm import compile_exception
@@ -268,17 +269,32 @@ def get_quality_of_fingerprint(
         }
 
 
-def show_fingerprint_from_array(fingerprint_data):
+def show_fingerprint_image(
+        image: Union[ndarray, list, None] = None,
+        path: Optional[str] = None,
+        title: str = 'Fingerprint'
+):
+    if image is not None:
+        fingerprint_image = Image.fromarray(image)
+    elif path is not None:
+        fingerprint_image = Image.open(path)
+    else:
+        return ErrorMessage.NOT_OPTION_FOUND
+
+    fingerprint_image = fingerprint_image.convert("L")
+    fingerprint_image.show(title)
+
+    return ErrorMessage.FINGERPRINT_OK
+
+
+def show_fingerprint_from_array(fingerprint_data, title: str = 'Fingerprint'):
     raw_fingerprint = raw_fingerprint_construction(data_fingerprint=fingerprint_data)
     if isinstance(raw_fingerprint, tuple):
         return ErrorMessage.RECONSTRUCTION_FAILED
 
-    fingerprint_image = Image.fromarray(raw_fingerprint)
-    fingerprint_image = fingerprint_image.convert("L")
+    result = show_fingerprint_image(image=raw_fingerprint, title=title)
 
-    fingerprint_image.show()
-
-    return ErrorMessage.FINGERPRINT_OK
+    return result
 
 
 def get_data_of_fingerprint_from_sensor_in_base64(source: str = 'sensor') -> Union[str, tuple]:

@@ -2,6 +2,8 @@ import base64
 import binascii
 import datetime
 import json
+import random
+import string
 from typing import List, Union, Optional
 
 from email_validator import validate_email, EmailNotValidError
@@ -174,3 +176,11 @@ def money_str_to_float(money: str) -> float:
     money_float = float(money.replace("$", "").replace(",", ""))
 
     return money_float
+
+
+def replace_spaces_with_hyphens(my_string: str) -> str:
+    return my_string.strip().replace(' ', '-').lower()
+
+
+def generate_random_string(length: int) -> str:
+    return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length))

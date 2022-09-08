@@ -16,7 +16,6 @@ from db.orm.outstanding_payments_orm import create_outstanding_payment
 from db.orm.users_orm import create_user
 from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception, option_not_found_exception
 from core.utils import check_email
-from fingerprint_process.utils.error_message import ErrorMessage
 from fingerprint_process.utils.utils import get_quality_of_fingerprint, get_description_fingerprint
 from schemas.admin_complex import AdminFullRequest, AdminFullDisplay
 from schemas.client_complex import ClientFullRequest, ClientFullDisplay
@@ -238,34 +237,6 @@ async def route_user_to_sign_up(
         raise option_not_found_exception
 
     return response
-
-
-@full_database_exceptions
-def register_fingerprint(
-        db: Session,
-        fingerprints: FingerprintSamples,
-        id_client: str,
-        data_summary: List[dict]
-):
-    # Unfinished function: missing test and enhance register of fingerprint
-
-    position_best_sample = select_the_best_sample(data_summary)
-    best_sample = fingerprints.fingerprints[position_best_sample]
-    result = get_description_fingerprint(
-        name_fingerprint='example',
-        source='api',
-        data_fingerprint=best_sample,
-        mode='register',
-        show_result=False,
-        save_result=False
-    )
-
-    if isinstance(result, int):
-        console = ErrorMessage()
-        console.show_message(result, web=True)
-
-    # TODO
-
 
 
 async def check_quality_of_fingerprints(

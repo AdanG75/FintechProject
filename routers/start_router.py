@@ -13,7 +13,7 @@ from db.orm.exceptions_orm import bad_quality_fingerprint_exception
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
 from schemas.basic_response import BasicResponse
 from schemas.client_complex import ClientFullDisplay, ClientFullRequest
-from schemas.fingerprint_model import FingerprintSamples
+from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
 from schemas.secure_base import SecureBase, PublicKeyBase
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
@@ -54,18 +54,19 @@ async def sing_up(
 async def register_fingerprint_of_client(
         bt: BackgroundTasks,
         id_client: str = Path(..., min_length=12, max_length=40),
-        request: Union[SecureBase, FingerprintSamples] = Body(...),
+        request: Union[SecureBase, FingerprintFullRequest] = Body(...),
         secure: bool = Query(True),
         db: Session = Depends(get_db)
 ):
     data_request = get_data_from_secure(request) if secure else request
-    fps_request = FingerprintSamples.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    fps_request = FingerprintFullRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
 
-    is_good, data = await check_quality_of_fingerprints(fps_request)
+    is_good, data = await check_quality_of_fingerprints(fps_request.samples)
     if is_good:
         print(data)
         # item = select_the_best_sample(data)
         # print(item)
+        # register_fingerprint(db, fps_request, id_client, data)
         return BasicResponse(
           operation='Check fingerprints',
           successful=True

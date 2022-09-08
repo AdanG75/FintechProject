@@ -335,8 +335,17 @@ class Fingerprint(ErrorMessage):
     def get_minutiae_list(self):
         return self._list_minutias
 
+    def get_raw_fingerprint_image(self):
+        return self._raw_image
+
     def get_fingerprint_image(self):
         return self._ezquel_as_image
+
+    def get_spatial_index(self):
+        return self._varian_index
+
+    def get_spectral_index(self):
+        return self._quality_index
 
     def reconstruction_fingerprint(self, data_fingerprint):
         self.__reconstruction_fingerprint(data_fingerprint)
