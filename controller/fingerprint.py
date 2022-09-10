@@ -20,15 +20,13 @@ from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.fingerprint_model import FingerprintSamples
 
 
-def register_fingerprint(
+async def register_fingerprint(
         db: Session,
         gcs: Client,
         fingerprint_request: FingerprintFullRequest,
         id_client: str,
         data_summary: List[dict]
 ):
-    # Unfinished function: missing test and enhance register of fingerprint
-
     # Get best sample
     fingerprints: FingerprintSamples = fingerprint_request.samples
     position_best_sample = select_the_best_sample(data_summary)
@@ -62,8 +60,6 @@ def register_fingerprint(
             raise uncreated_bucked_exception
 
         # Here we save the characteristic data into DB
-        print('hi')
-        url_sample = f'{id_client.lower()}/raw-main-fingerprint-IJWe6'
         fingerprint_request.metadata.id_client = id_client
         response = save_fingerprint_into_database(
             db,

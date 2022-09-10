@@ -1,15 +1,18 @@
 from typing import Union, Optional
 
 from fastapi import APIRouter, Body, Query, Depends, Path
+from google.cloud.storage.client import Client
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.background import BackgroundTasks
 
+from controller.fingerprint import register_fingerprint
 from controller.general import get_data_from_secure
 from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.config import settings
 from db.database import get_db
 from db.orm.exceptions_orm import bad_quality_fingerprint_exception
+from db.storage.storage import get_storage_client
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
 from schemas.basic_response import BasicResponse
 from schemas.client_complex import ClientFullDisplay, ClientFullRequest
@@ -56,17 +59,23 @@ async def register_fingerprint_of_client(
         id_client: str = Path(..., min_length=12, max_length=40),
         request: Union[SecureBase, FingerprintFullRequest] = Body(...),
         secure: bool = Query(True),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        gcs: Client = Depends(get_storage_client)
 ):
     data_request = get_data_from_secure(request) if secure else request
     fps_request = FingerprintFullRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
 
     is_good, data = await check_quality_of_fingerprints(fps_request.samples)
     if is_good:
-        print(data)
-        # item = select_the_best_sample(data)
-        # print(item)
-        # register_fingerprint(db, fps_request, id_client, data)
+        bt.add_task(
+            register_fingerprint,
+            db=db,
+            gcs=gcs,
+            fingerprint_request=fps_request,
+            id_client=id_client,
+            data_summary=data
+        )
+
         return BasicResponse(
           operation='Check fingerprints',
           successful=True

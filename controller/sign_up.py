@@ -16,7 +16,7 @@ from db.orm.outstanding_payments_orm import create_outstanding_payment
 from db.orm.users_orm import create_user
 from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception, option_not_found_exception
 from core.utils import check_email
-from fingerprint_process.utils.utils import get_quality_of_fingerprint, get_description_fingerprint
+from fingerprint_process.utils.utils import get_quality_of_fingerprint
 from schemas.admin_complex import AdminFullRequest, AdminFullDisplay
 from schemas.client_complex import ClientFullRequest, ClientFullDisplay
 from schemas.credit_base import CreditRequest

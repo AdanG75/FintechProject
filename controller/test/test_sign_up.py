@@ -5,7 +5,7 @@ from google.cloud.storage.client import Client
 from sqlalchemy.orm import Session
 
 from controller.fingerprint import register_fingerprint
-from db.database import get_db, SessionLocal
+from db.database import SessionLocal
 from schemas.fingerprint_base import FingerprintBase
 from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.fingerprint_model import FingerprintSamples
