@@ -10,7 +10,7 @@ from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from web_utils.web_functions import set_expiration_time
 
 
-def check_attempt(db: Session, id_user: int) -> bool:
+def check_attempt(db: Session, id_user: int, raise_exception: bool = False) -> bool:
     login_attempt = get_login_attempt_by_id_user(db, id_user)
 
     if login_attempt.attempts < 5:
@@ -20,12 +20,26 @@ def check_attempt(db: Session, id_user: int) -> bool:
             if login_attempt.next_attempt_time <= datetime.utcnow():
                 return True
             else:
+                if raise_exception:
+                    date_str = login_attempt.next_attempt_time.__str__()
+                    raise HTTPException(
+                        status_code=status.HTTP_425_TOO_EARLY,
+                        detail=f"You must try after of time: {date_str} (UTC)"
+                    )
+
                 return False
         else:
             raise inactive_password_exception
     elif login_attempt.attempts >= 12:
         raise inactive_password_exception
     else:
+        if raise_exception:
+            date_str = login_attempt.next_attempt_time.__str__()
+            raise HTTPException(
+                status_code=status.HTTP_425_TOO_EARLY,
+                detail=f"You must try after of time: {date_str} (UTC)"
+            )
+
         return False
 
 
@@ -70,7 +84,7 @@ def add_attempt(db: Session, id_user: int) -> DbLoginAttempt:
         if login_attempt.next_attempt_time > datetime.utcnow():
             date_str = login_attempt.next_attempt_time.__str__()
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_425_TOO_EARLY,
                 detail=f"You must try after of time: {date_str} (UTC)"
             )
 

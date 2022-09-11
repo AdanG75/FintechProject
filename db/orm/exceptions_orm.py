@@ -208,3 +208,23 @@ uncreated_bucked_exception = HTTPException(
     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
     detail="System couldn't create bucket"
 )
+
+email_or_password_are_wrong_exception = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Username or password are wrong"
+)
+
+too_early_exception = HTTPException(
+    status_code=status.HTTP_425_TOO_EARLY,
+    detail="Please, try again later"
+)
+
+expired_session_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Session has been finished"
+)
+
+expired_toke_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Token has expired"
+)

@@ -4,11 +4,13 @@ from fastapi import APIRouter, Body, Depends, Path, Query
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.models.users_db import DbUser
 from db.orm import users_orm
-from db.orm.exceptions_orm import NotFoundException
+from db.orm.exceptions_orm import NotFoundException, credentials_exception
 from schemas.basic_response import BasicResponse, BasicPasswordChange
+from schemas.token_base import TokenSummary
 from schemas.type_user import TypeUser
 from schemas.user_base import UserRequest, UserDisplay, PublicKeyDisplay, UserPublicKeyRequest
 
@@ -100,8 +102,12 @@ async def update_password_of_user(
     response_model=Optional[List[UserDisplay]]
 )
 async def get_all_users(
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_user: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_user, is_a='admin'):
+        raise credentials_exception
+
     response = users_orm.get_all_users(db)
 
     return response

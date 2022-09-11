@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from starlette import status
 
@@ -11,6 +12,8 @@ from core.config import settings
 SECRET_KEY: str = settings.get_secret_key()
 ALGORITHM: str = settings.get_algorithm()
 ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.get_expire_minutes()
+
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="/login")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

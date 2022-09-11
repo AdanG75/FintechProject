@@ -31,7 +31,7 @@ def pack_and_encrypt_data(data: Union[Dict, str], public_key_pem: str) -> Dict:
     json_secure_str = json_secure_2.encode('utf-8')
 
     # Get RSA public key
-    # with open("/home/coffe/Documentos/fintech75_api/secure/kotlin_public_key.pem", "r") as pem:
+    # with open("./fintech75_api/secure/kotlin_public_key.pem", "r") as pem:
     #     public_key_pem = pem.read()
 
     public_key = rsa_secure.get_public_key_from_pem(public_key_pem)
@@ -58,7 +58,7 @@ def unpack_and_decrypt_data(data: Union[Dict, SecureBase]) -> Dict:
 
     # Load private key
     private_key_pem = settings.get_server_private_key()
-    # with open("/home/coffe/Documentos/fintech75_api/secure/private_key.pem", "r") as pem:
+    # with open("./fintech75_api/secure/private_key.pem", "r") as pem:
     #     private_key_pem = pem.read()
 
     private_key = rsa_secure.get_private_key_from_pem(private_key_pem)
@@ -81,6 +81,31 @@ def unpack_and_decrypt_data(data: Union[Dict, SecureBase]) -> Dict:
     receive_data: Dict = json.loads(message_bytes.decode('utf-8'))
 
     return receive_data
+
+
+def decrypt_data(msg: Union[bytes, str], return_mode: str = 'plain') -> Union[str, dict]:
+    """
+    Decipher the passed message using the system private key
+    :param msg: (bytes, str) Whatever data which was ciphered with the system public key
+    :param return_mode: (str) Indicates what type of data is to be returned.
+    It can be a **dict** if you select 'json' or 'dict' or a **str** if you select 'plain'
+    :return: (dict, str) Return a dict or a str depending on what has been selected
+    """
+
+    # Load private key
+    private_key_pem = settings.get_server_private_key()
+    private_key = rsa_secure.get_private_key_from_pem(private_key_pem)
+
+    # Decrypt message
+    receive_secure_bytes = utils.cast_base64_to_bytes(msg)
+    decrypt_secure_bytes = rsa_secure.decrypt_data(private_key, receive_secure_bytes)
+
+    if return_mode == 'json' or return_mode == 'dict':
+        decrypt_secure_to_return = json.loads(decrypt_secure_bytes.decode('utf-8'))
+    else:
+        decrypt_secure_to_return = decrypt_secure_bytes.decode('utf-8')
+
+    return decrypt_secure_to_return
 
 
 def cipher_data(msg: Union[bytes, str]) -> str:
