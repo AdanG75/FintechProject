@@ -4,10 +4,13 @@ from fastapi import APIRouter, Body, Depends, Path, Query
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import outstanding_payments_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.basic_response import BasicResponse
 from schemas.outstanding_base import OutstandingPaymentRequest, OutstandingPaymentDisplay
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix='/test/outstanding-payment',
@@ -22,8 +25,12 @@ router = APIRouter(
 )
 async def create_outstanding_payment(
         request: OutstandingPaymentRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.create_outstanding_payment(db, request)
 
     return response
@@ -35,8 +42,12 @@ async def create_outstanding_payment(
     status_code=status.HTTP_200_OK
 )
 async def get_outstanding_payments(
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.get_all_outstanding_payments(db)
 
     return response
@@ -49,8 +60,12 @@ async def get_outstanding_payments(
 )
 async def get_outstanding_payments(
         id_outstanding: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.get_outstanding_payment_by_id_outstanding(db, id_outstanding)
 
     return response
@@ -63,8 +78,12 @@ async def get_outstanding_payments(
 )
 async def delete_outstanding_payment(
         id_outstanding: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.delete_outstanding_payment(db, id_outstanding)
 
     return response
@@ -77,8 +96,12 @@ async def delete_outstanding_payment(
 )
 async def get_outstanding_payment_by_id_market(
         id_market: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.get_outstanding_payment_by_id_market(db, id_market)
 
     return response
@@ -92,8 +115,12 @@ async def get_outstanding_payment_by_id_market(
 async def add_amount_to_outstanding_payment(
         id_outstanding: int = Path(..., gt=0),
         amount: Optional[float] = Query(0, ge=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.add_amount(db, id_outstanding, amount)
 
     return response
@@ -106,8 +133,12 @@ async def add_amount_to_outstanding_payment(
 )
 async def start_cash_closing(
         id_outstanding: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.start_cash_closing(db, id_outstanding)
 
     return response
@@ -120,8 +151,12 @@ async def start_cash_closing(
 )
 async def cancel_cash_closing(
         id_outstanding: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.cancel_cash_closing(db, id_outstanding)
 
     return response
@@ -134,8 +169,12 @@ async def cancel_cash_closing(
 )
 async def finish_cash_closing(
         id_outstanding: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = outstanding_payments_orm.finish_cash_closing(db, id_outstanding)
 
     return response

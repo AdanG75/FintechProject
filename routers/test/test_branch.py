@@ -4,10 +4,13 @@ from fastapi import APIRouter, Body, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import branches_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.basic_response import BasicResponse, BasicPasswordChange
 from schemas.branch_base import BranchDisplay, BranchRequest
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix='/test/branch',
@@ -22,8 +25,12 @@ router = APIRouter(
 )
 async def create_branch(
         request: BranchRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.create_branch(db, request)
 
     return response
@@ -36,8 +43,12 @@ async def create_branch(
 )
 async def get_branch(
         id_branch: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.get_branch_by_id(db, id_branch)
 
     return response
@@ -50,8 +61,12 @@ async def get_branch(
 )
 async def get_branches_by_id_market(
         id_market: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.get_branches_by_id_market(db, id_market)
 
     return response
@@ -64,8 +79,12 @@ async def get_branches_by_id_market(
 )
 async def get_branches_by_name(
         branch_name: str = Path(..., min_length=1, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.get_branches_by_branch_name(db, branch_name)
 
     return response
@@ -79,8 +98,12 @@ async def get_branches_by_name(
 async def update_branch(
         id_branch: str = Path(..., min_length=12, max_length=49),
         request: BranchRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.update_branch(db, request, id_branch)
 
     return response
@@ -94,8 +117,12 @@ async def update_branch(
 async def update_password_of_branch(
         id_branch: str = Path(..., min_length=12, max_length=49),
         request: BasicPasswordChange = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.set_new_password(db, id_branch, request.password)
 
     return response
@@ -108,8 +135,12 @@ async def update_password_of_branch(
 )
 async def delete_branch(
         id_branch: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.delete_branch(db, id_branch)
 
     return response
@@ -122,8 +153,12 @@ async def delete_branch(
 )
 async def delete_branches_of_market(
         id_market: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = branches_orm.delete_branches_by_id_market(db, id_market)
 
     return response

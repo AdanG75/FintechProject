@@ -5,10 +5,13 @@ from fastapi import APIRouter, Body, Depends, Path, Query, HTTPException
 from requests import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import accounts_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.account_base import AccountDisplay, AccountRequest
 from schemas.basic_response import BasicResponse
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix='/test/accounts',
@@ -24,8 +27,12 @@ router = APIRouter(
 async def create_account(
         request: AccountRequest = Body(...),
         test: Optional[bool] = Query(False),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     check_email(test, request.paypal_email)
     response = accounts_orm.create_account(db, request)
 
@@ -39,8 +46,12 @@ async def create_account(
 )
 async def get_account(
         id_account: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = accounts_orm.get_account_by_id(db, id_account)
 
     return response
@@ -55,8 +66,12 @@ async def update_account(
         id_account: int = Path(..., gt=0),
         request: AccountRequest = Body(...),
         test: Optional[bool] = Query(False),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     check_email(test, request.paypal_email)
     response = accounts_orm.update_account(db, request, id_account)
 
@@ -70,8 +85,12 @@ async def update_account(
 )
 async def delete_account(
         id_account: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = accounts_orm.delete_account(db, id_account)
 
     return response
@@ -86,8 +105,12 @@ async def get_accounts_of_user(
         id_user: int = Path(..., gt=0),
         main: Optional[bool] = Query(False),
         alias: Optional[str] = Query(None, min_length=2, max_length=79),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     if main:
         response = [accounts_orm.get_main_account_of_user(db, id_user), ]
     else:
@@ -106,8 +129,12 @@ async def get_accounts_of_user(
 )
 async def delete_accounts_of_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = accounts_orm.delete_accounts_by_id_user(db, id_user)
 
     return response

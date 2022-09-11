@@ -4,11 +4,14 @@ from fastapi import APIRouter, Body, Path, Query, Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from core.utils import money_str_to_float
 from db.database import get_db
 from db.orm import credits_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.basic_response import BasicResponse
 from schemas.credit_base import CreditDisplay, CreditRequest
+from schemas.token_base import TokenSummary
 from schemas.type_user import TypeUser
 
 router = APIRouter(
@@ -25,8 +28,12 @@ router = APIRouter(
 async def create_credit(
         request: CreditRequest = Body(...),
         type_performer: Optional[TypeUser] = Query(None),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     if type_performer is not None:
         response = credits_orm.create_credit(db, request, type_performer.value)
     else:
@@ -42,8 +49,12 @@ async def create_credit(
 )
 async def get_credit(
         id_credit: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.get_credit_by_id_credit(db, id_credit)
 
     return response
@@ -57,8 +68,12 @@ async def get_credit(
 async def update_credit(
         id_credit: int = Path(..., gt=0),
         request: CreditRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.update_credit(db, id_credit, request)
 
     return response
@@ -72,8 +87,12 @@ async def update_credit(
 async def approve_credit(
         id_credit: int = Path(..., gt=0),
         id_market: Optional[str] = Query(None, min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     credit = credits_orm.get_credit_by_id_credit(db, id_credit)
     if id_market is None:
         return credit
@@ -96,8 +115,12 @@ async def approve_credit(
 async def delete_credit(
         id_credit: int = Path(..., gt=0),
         type_performer: Optional[TypeUser] = Query(None),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     if type_performer is None:
         response = credits_orm.delete_credit(db=db, id_credit=id_credit, type_performer='market')
     else:
@@ -114,8 +137,12 @@ async def delete_credit(
 async def start_credit_movement(
         id_credit: int = Path(..., gt=0),
         amount: Optional[float] = Query(0, ge=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     credit = credits_orm.start_credit_in_process(db, id_credit, execute='wait')
     if money_str_to_float(str(credit.amount)) < amount:
         raise HTTPException(
@@ -137,8 +164,12 @@ async def start_credit_movement(
 )
 async def cancel_credit_movement(
         id_credit: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.cancel_amount_movement(db, id_credit)
 
     return response
@@ -151,8 +182,12 @@ async def cancel_credit_movement(
 )
 async def finish_credit_movement(
         id_credit: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.finish_credit_in_process(db, id_credit)
 
     return response
@@ -166,8 +201,12 @@ async def finish_credit_movement(
 async def change_account_of_credit(
         id_credit: int = Path(..., gt=0),
         id_account: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     result = credits_orm.change_account_of_credit(db=db, id_credit=id_credit, id_account=id_account)
 
     return BasicResponse(
@@ -183,8 +222,12 @@ async def change_account_of_credit(
 )
 async def get_credits_of_client(
         id_client: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.get_credits_by_id_client(db, id_client)
 
     return response
@@ -197,8 +240,12 @@ async def get_credits_of_client(
 )
 async def get_credits_of_market(
         id_market: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.get_credits_by_id_market(db, id_market)
 
     return response
@@ -211,8 +258,12 @@ async def get_credits_of_market(
 )
 async def delete_credits_of_user(
         id_client: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.delete_credits_by_id_client(db, id_client)
 
     return response
@@ -225,8 +276,12 @@ async def delete_credits_of_user(
 )
 async def delete_credits_of_market(
         id_market: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = credits_orm.delete_credits_by_id_market(db, id_market)
 
     return response

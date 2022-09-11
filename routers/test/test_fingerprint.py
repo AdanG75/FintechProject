@@ -4,10 +4,13 @@ from fastapi import APIRouter, Depends, Body, Path, Query
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import fingerprints_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.basic_response import BasicResponse
 from schemas.fingerprint_base import FingerprintBasicDisplay, FingerprintRequest, FingerprintUpdateRequest
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix='/test/fingerprints',
@@ -22,8 +25,12 @@ router = APIRouter(
 )
 async def create_fingerprint(
         request: FingerprintRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = fingerprints_orm.create_fingerprint(db, request)
 
     return response
@@ -36,8 +43,12 @@ async def create_fingerprint(
 )
 async def get_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = fingerprints_orm.get_fingerprint_by_id(db, id_fingerprint)
 
     return response
@@ -51,8 +62,12 @@ async def get_fingerprint(
 async def light_update(
         id_fingerprint: str = Path(..., min_length=12, max_length=49),
         request: FingerprintUpdateRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     if request.request.value == "main":
         result = fingerprints_orm.change_main_fingerprint(
             db=db,
@@ -90,8 +105,12 @@ async def light_update(
 )
 async def delete_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = fingerprints_orm.delete_fingerprint(db, id_fingerprint)
 
     return response
@@ -106,8 +125,12 @@ async def get_fingerprints_of_user(
         id_client: str = Path(..., min_length=12, max_length=49),
         main: Optional[bool] = Query(False),
         alias: Optional[str] = Query(None, min_length=2, max_length=79),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     if main:
         response = [fingerprints_orm.get_main_fingerprint_of_client(db, id_client), ]
     else:
@@ -126,8 +149,12 @@ async def get_fingerprints_of_user(
 )
 async def delete_fingerprints_of_client(
         id_client: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = fingerprints_orm.delete_fingerprints_by_id_client(db, id_client)
 
     return response

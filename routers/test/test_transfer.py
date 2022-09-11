@@ -4,8 +4,11 @@ from fastapi import APIRouter, Body, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import trasnfers_orm
+from db.orm.exceptions_orm import credentials_exception
+from schemas.token_base import TokenSummary
 from schemas.transfer_base import TransferDisplay, TransferRequest
 
 router = APIRouter(
@@ -21,8 +24,12 @@ router = APIRouter(
 )
 async def create_transfer(
         request: TransferRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     request.type_transfer = trasnfers_orm.get_type_of_transfer(
         db=db,
         id_destination_credit=request.id_destination_credit,
@@ -41,8 +48,12 @@ async def create_transfer(
 )
 async def get_transfer(
         id_transfer: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = trasnfers_orm.get_transfer_by_id_transfer(db, id_transfer)
 
     return response
@@ -55,8 +66,12 @@ async def get_transfer(
 )
 async def get_transfer_by_id_movement(
         id_movement: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = trasnfers_orm.get_transfer_by_id_movement(db, id_movement)
 
     return response
@@ -69,8 +84,12 @@ async def get_transfer_by_id_movement(
 )
 async def get_transfers_by_id_credit(
         id_credit: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = trasnfers_orm.get_transfers_by_id_destination_credit(db, id_credit)
 
     return response

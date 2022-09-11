@@ -4,12 +4,14 @@ from fastapi import APIRouter, Body, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import minutiae_orm
-from db.orm.exceptions_orm import wrong_data_sent_exception
+from db.orm.exceptions_orm import wrong_data_sent_exception, credentials_exception
 from fingerprint_process.models.minutia import Minutiae
 from schemas.basic_response import BasicResponse
 from schemas.minutia_base import MinutiaDisplay, MinutiaRequest
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix='/test/minutia',
@@ -24,8 +26,12 @@ router = APIRouter(
 )
 async def create_minutia(
         request: MinutiaRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     new_minutia = Minutiae(
         posy=request.pos_y,
         posx=request.pos_x,
@@ -48,8 +54,12 @@ async def create_minutia(
 )
 async def get_minutia(
         id_minutia: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = minutiae_orm.get_minutia_by_id(db, id_minutia)
 
     return response
@@ -62,8 +72,12 @@ async def get_minutia(
 )
 async def delete_minutia(
         id_minutia: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = minutiae_orm.delete_minutia(db=db, id_minutia=id_minutia)
 
     return response
@@ -77,8 +91,12 @@ async def delete_minutia(
 async def create_all_minutiae_of_a_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=40),
         request: List[MinutiaRequest] = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     id_fingerprint_of_request = request[0].id_fingerprint
     new_minutiae: List[Minutiae] = []
 
@@ -112,8 +130,12 @@ async def create_all_minutiae_of_a_fingerprint(
 )
 async def get_minutiae_of_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = minutiae_orm.get_minutiae_by_id_fingerprint(db, id_fingerprint)
 
     return response
@@ -126,8 +148,12 @@ async def get_minutiae_of_fingerprint(
 )
 async def delete_minutiae_of_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = minutiae_orm.delete_all_minutiae_of_fingerprint(db, id_fingerprint)
 
     return response

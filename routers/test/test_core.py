@@ -4,12 +4,14 @@ from fastapi import APIRouter, Body, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import cores_orm
-from db.orm.exceptions_orm import wrong_data_sent_exception
+from db.orm.exceptions_orm import wrong_data_sent_exception, credentials_exception
 from fingerprint_process.models.core_point import CorePoint
 from schemas.basic_response import BasicResponse
 from schemas.core_base import CoreDisplay, CoreRequest
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix='/test/core',
@@ -24,8 +26,12 @@ router = APIRouter(
 )
 async def create_core_point(
         request: CoreRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     new_core = CorePoint(
         posy=request.pos_y,
         posx=request.pos_x,
@@ -48,8 +54,12 @@ async def create_core_point(
 )
 async def get_core_point(
         id_core: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = cores_orm.get_core_point_by_id(db, id_core)
 
     return response
@@ -62,8 +72,12 @@ async def get_core_point(
 )
 async def delete_core_point(
         id_core: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = cores_orm.delete_core_point(db=db, id_core=id_core)
 
     return response
@@ -77,8 +91,12 @@ async def delete_core_point(
 async def create_all_core_points_of_a_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=40),
         request: List[CoreRequest] = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     id_fingerprint_of_request = request[0].id_fingerprint
     new_cores: List[CorePoint] = []
 
@@ -112,8 +130,12 @@ async def create_all_core_points_of_a_fingerprint(
 )
 async def get_core_points_of_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = cores_orm.get_core_points_by_id_fingerprint(db, id_fingerprint)
 
     return response
@@ -126,8 +148,12 @@ async def get_core_points_of_fingerprint(
 )
 async def delete_core_points_of_fingerprint(
         id_fingerprint: str = Path(..., min_length=12, max_length=40),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = cores_orm.delete_all_core_points_of_fingerprint(db, id_fingerprint)
 
     return response

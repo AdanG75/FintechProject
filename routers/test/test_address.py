@@ -4,11 +4,14 @@ from fastapi import APIRouter, Depends, Body, Path, Query
 from requests import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.models.addresses_db import DbAddress
 from db.orm import addresses_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.address_base import AddressDisplay, AddressDisplayMarket, AddressDisplayClient, AddressRequest
 from schemas.basic_response import BasicResponse
+from schemas.token_base import TokenSummary
 from schemas.type_user import TypeUser
 
 router = APIRouter(
@@ -24,8 +27,12 @@ router = APIRouter(
 )
 async def create_address(
         request: AddressRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.create_address(db, request)
 
     return response
@@ -38,8 +45,12 @@ async def create_address(
 )
 async def get_address(
         id_address: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response: DbAddress = addresses_orm.get_address_by_id_address(db, id_address)
 
     return response
@@ -52,8 +63,12 @@ async def get_address(
 )
 async def get_addresses_of_client(
         id_client: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.get_addresses_by_id_client(db, id_client)
 
     return response
@@ -66,8 +81,12 @@ async def get_addresses_of_client(
 )
 async def get_main_address_of_client(
         id_client: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.get_main_address_of_client(db, id_client)
 
     return response
@@ -80,8 +99,12 @@ async def get_main_address_of_client(
 )
 async def get_address_of_branch(
         id_branch: str = Path(..., min_length=12, max_length=49),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.get_address_by_id_branch(db, id_branch)
 
     return response
@@ -95,8 +118,12 @@ async def get_address_of_branch(
 async def update_address(
         id_address: int = Path(..., gt=0),
         request: AddressRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.update_address(db, request, id_address)
 
     return response
@@ -109,8 +136,12 @@ async def update_address(
 )
 async def set_main_address(
         id_address: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     result = addresses_orm.change_main_address(db=db, id_address=id_address)
 
     return BasicResponse(
@@ -126,8 +157,12 @@ async def set_main_address(
 )
 async def delete_address(
         id_address: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.delete_address(db, id_address)
 
     return response
@@ -141,8 +176,12 @@ async def delete_address(
 async def delete_addresses_of_owner(
         id_owner: str = Path(..., min_length=12, max_length=49),
         type_owner: TypeUser = Query('client'),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = addresses_orm.delete_addresses_by_id_owner(db, id_owner, type_owner.value)
 
     return response

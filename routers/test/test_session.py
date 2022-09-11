@@ -4,10 +4,13 @@ from fastapi import APIRouter, Body, Depends, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import sessions_orm
+from db.orm.exceptions_orm import credentials_exception
 from schemas.basic_response import BasicResponse
 from schemas.session_base import SessionDisplay, SessionStrRequest
+from schemas.token_base import TokenSummary
 
 router = APIRouter(
     prefix="/test/session",
@@ -22,8 +25,12 @@ router = APIRouter(
 )
 async def new_session(
         request: SessionStrRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.start_session(db, request)
 
     return response
@@ -37,8 +44,12 @@ async def new_session(
 async def finnish_session(
         id_session: int = Path(..., gt=0),
         request: SessionStrRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.finish_session(db, request, id_session)
 
     return response
@@ -51,8 +62,12 @@ async def finnish_session(
 )
 async def delete_session(
         id_session: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.delete_session(db, id_session)
 
     return response
@@ -65,8 +80,12 @@ async def delete_session(
 )
 async def delete_sessions_of_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.delete_sessions_by_id_user(db, id_user)
 
     return response
@@ -79,8 +98,12 @@ async def delete_sessions_of_user(
 )
 async def get_session(
         id_session: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.get_session_by_id_session(db, id_session)
 
     return response
@@ -93,8 +116,12 @@ async def get_session(
 )
 async def get_sessions_of_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.get_sessions_by_id_user(db, id_user)
 
     return response
@@ -107,8 +134,12 @@ async def get_sessions_of_user(
 )
 async def get_active_sessions_of_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.get_active_sessions_by_id_user(db, id_user)
 
     return response
@@ -121,8 +152,12 @@ async def get_active_sessions_of_user(
 )
 async def close_active_sessions_of_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = sessions_orm.finish_all_active_sessions_of_user(db, id_user)
 
     return response
