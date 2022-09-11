@@ -7,13 +7,13 @@ from sqlalchemy.orm import Session
 from starlette import status
 from starlette.background import BackgroundTasks
 
-from controller.fingerprint import register_fingerprint
+from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered
 from controller.general import get_data_from_secure
 from controller import login as c_login
 from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.config import settings
 from db.database import get_db
-from db.orm.exceptions_orm import bad_quality_fingerprint_exception
+from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception
 from db.storage.storage import get_storage_client
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
 from schemas.basic_response import BasicResponse
@@ -70,6 +70,9 @@ async def register_fingerprint_of_client(
         db: Session = Depends(get_db),
         gcs: Client = Depends(get_storage_client)
 ):
+    if does_client_have_fingerprints_samples_registered(db, id_client):
+        raise not_valid_operation_exception
+
     data_request = get_data_from_secure(request) if secure else request
     fps_request = FingerprintFullRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
 

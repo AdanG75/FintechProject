@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from google.cloud.storage.client import Client
 from sqlalchemy.orm import Session
@@ -8,8 +8,9 @@ from controller.sign_up import select_the_best_sample
 from db.models.fingerprints_db import DbFingerprint
 from db.orm.clients_orm import get_client_by_id_client
 from db.orm.cores_orm import insert_list_of_core_points
-from db.orm.exceptions_orm import uncreated_bucked_exception, compile_exception, uncreated_fingerprint_exception
-from db.orm.fingerprints_orm import create_fingerprint
+from db.orm.exceptions_orm import uncreated_bucked_exception, compile_exception, uncreated_fingerprint_exception, \
+    NotFoundException, wrong_data_sent_exception
+from db.orm.fingerprints_orm import create_fingerprint, get_fingerprints_by_id_client
 from db.orm.functions_orm import full_database_exceptions, multiple_attempts
 from db.orm.minutiae_orm import insert_list_of_minutiae
 from fingerprint_process.description.fingerprint import Fingerprint
@@ -26,7 +27,7 @@ async def register_fingerprint(
         fingerprint_request: FingerprintFullRequest,
         id_client: str,
         data_summary: List[dict]
-):
+) -> Optional[FingerprintBasicDisplay]:
     # Get best sample
     fingerprints: FingerprintSamples = fingerprint_request.samples
     position_best_sample = select_the_best_sample(data_summary)
@@ -98,7 +99,7 @@ def save_fingerprint_into_database(
     try:
         # Save fingerprint
         new_fingerprint: DbFingerprint = create_fingerprint(db, fingerprint_request, 'wait')
-        nested = db.begin_nested()
+        db.begin_nested()
         db.refresh(new_fingerprint)
 
         # Insert Minutiae
@@ -143,3 +144,18 @@ def save_fingerprint_into_database(
             id_user=client.id_user
         )
     )
+
+
+def does_client_have_fingerprints_samples_registered(db: Session, id_client: str) -> bool:
+    try:
+        get_client_by_id_client(db, id_client)
+    except NotFoundException:
+        raise wrong_data_sent_exception
+
+    # Check if client have a fingerprint sample registered
+    try:
+        get_fingerprints_by_id_client(db, id_client)
+    except NotFoundException:
+        return False
+    else:
+        return True
