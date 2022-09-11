@@ -1,22 +1,22 @@
-from typing import Optional
-
-from fastapi import APIRouter, Body, Request, Depends, HTTPException
+from fastapi import APIRouter, Body, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from google.cloud.storage import Client
 from sqlalchemy.orm import Session
 from starlette import status
 
+from controller.login import get_current_token, check_type_user
 from core.utils import get_current_utc_timestamp
 from db.database import get_db
-from db.models.admins_db import DbAdmin
-from db.orm import admins_orm
+from db.orm.exceptions_orm import credentials_exception
+from db.orm.users_orm import get_public_key_pem
 from db.storage import storage
 from db.storage.tests import test_storage
 from schemas.fingerprint_model import FingerprintSimpleModel
 from schemas.message_model import MessageDisplay
 from schemas.secure_base import SecureBase
 from schemas.storage_base import StorageBase
+from schemas.token_base import TokenSummary
 from secure.cipher_secure import unpack_and_decrypt_data, pack_and_encrypt_data
 from web_utils.image_on_web import open_fingerprint_data_from_json, save_fingerprint_in_memory
 
@@ -76,8 +76,12 @@ async def show_fingerprint(
     tags=["bucket"]
 )
 async def create_bucket(
-        gcs: Client = Depends(storage.get_storage_client)
+        gcs: Client = Depends(storage.get_storage_client),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = test_storage.create_a_bucket_test(gcs=gcs)
 
     return response
@@ -91,8 +95,12 @@ async def create_bucket(
     tags=["bucket"]
 )
 async def get_bucket_details(
-        gcs: Client = Depends(storage.get_storage_client)
+        gcs: Client = Depends(storage.get_storage_client),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = test_storage.get_bucket_details_test(gcs=gcs)
 
     return response
@@ -106,8 +114,12 @@ async def get_bucket_details(
 )
 async def save_fingerprint_into_bucket(
         fingerprint_model: FingerprintSimpleModel = Body(...),
-        gcs: Client = Depends(storage.get_storage_client)
+        gcs: Client = Depends(storage.get_storage_client),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     fingerprint = save_fingerprint_in_memory(data_fingerprint=fingerprint_model.fingerprint, return_format="bytes")
     response = test_storage.save_fingerprint_into_bucket_test(
         gcs=gcs,
@@ -125,8 +137,11 @@ async def save_fingerprint_into_bucket(
     tags=["fingerprint", "bucket"]
 )
 async def download_fingerprint_from_bucket(
-        gcs: Client = Depends(storage.get_storage_client)
+        gcs: Client = Depends(storage.get_storage_client),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
 
     response = test_storage.download_from_bucket_test(gcs=gcs)
 
@@ -134,34 +149,30 @@ async def download_fingerprint_from_bucket(
 
 
 # Secure endpoint
-# @router.post(
-#     path="/secure",
-#     status_code=status.HTTP_200_OK,
-#     response_model=SecureBase,
-#     tags=["secure"]
-# )
-# async def secure_message(
-#         message: SecureBase = Body(...),
-#         db: Session = Depends(get_db),
-#         current_admin: DbAdmin = Depends(admins_orm.get_current_admin)
-# ):
-#     public_key_pem: Optional[str] = current_admin.public_key
-#
-#     if public_key_pem is None or public_key_pem.isspace() or public_key_pem == '':
-#         raise HTTPException(
-#             status_code=status.HTTP_418_IM_A_TEAPOT,
-#             detail="The operation need a saved public key into admin's data."
-#         )
-#
-#     receive_data: dict = unpack_and_decrypt_data(message.dict())
-#
-#     send_data = MessageDisplay(
-#         message="Receive message.\nWe will take the world.",
-#         datetime=get_current_utc_timestamp(),
-#         user="Server"
-#     )
-#
-#     response: dict = pack_and_encrypt_data(send_data.dict(), public_key_pem)
-#
-#     return response
+@router.post(
+    path="/secure",
+    status_code=status.HTTP_200_OK,
+    response_model=SecureBase,
+    tags=["secure"]
+)
+async def secure_message(
+        message: SecureBase = Body(...),
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
 
+    receive_data: dict = unpack_and_decrypt_data(message.dict())
+    print(receive_data)
+
+    send_data = MessageDisplay(
+        message="Receive message.\nWe will take the world.",
+        datetime=get_current_utc_timestamp(),
+        user="Server"
+    )
+
+    public_key_pem = get_public_key_pem(db, current_token.id_user)
+    response: dict = pack_and_encrypt_data(send_data.dict(), public_key_pem)
+
+    return response
