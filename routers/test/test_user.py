@@ -27,25 +27,13 @@ router = APIRouter(
 )
 async def create_user(
         user: UserRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     # See https://docs.sqlalchemy.org/en/14/orm/session_transaction.html
-    # try:
-    #     new_user: DbUser = users_orm.create_user(db, user, mode='wait')
-    #     nested = db.begin_nested()
-    #     db.refresh(new_user)
-    #     print(new_user.id_user)
-    #     client = ClientRequest(
-    #         id_user=new_user.id_user,
-    #         last_name='False',
-    #         birth_date='1998/89/16'
-    #     )
-    #     new_client = clients_orm.create_client(db, client)
-    #     # nested.commit()
-    #     db.commit()
-    # except Exception as e:
-    #     db.rollback()
-    #     raise e
     response = users_orm.create_user(db, user)
 
     return response
@@ -59,8 +47,12 @@ async def create_user(
 async def update_user(
         id_user: int = Path(..., gt=0),
         user: UserRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response: DbUser = users_orm.update_user(db, user, id_user)
 
     return response
@@ -74,8 +66,12 @@ async def update_user(
 async def update_public_key_of_user(
         id_user: int = Path(..., gt=0),
         request: UserPublicKeyRequest = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = users_orm.set_public_key(db, id_user, request.public_key)
 
     return response
@@ -89,8 +85,12 @@ async def update_public_key_of_user(
 async def update_password_of_user(
         id_user: int = Path(..., gt=0),
         request: BasicPasswordChange = Body(...),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = users_orm.set_new_password(db, id_user, request.password)
 
     return response
@@ -103,9 +103,9 @@ async def update_password_of_user(
 )
 async def get_all_users(
         db: Session = Depends(get_db),
-        current_user: TokenSummary = Depends(get_current_token)
+        current_token: TokenSummary = Depends(get_current_token)
 ):
-    if not check_type_user(current_user, is_a='admin'):
+    if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
     response = users_orm.get_all_users(db)
@@ -120,8 +120,12 @@ async def get_all_users(
 )
 async def get_public_key_of_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     pem: str = users_orm.get_public_key_pem(db, id_user)
 
     return PublicKeyDisplay(public_key=pem)
@@ -134,10 +138,11 @@ async def get_public_key_of_user(
 )
 async def get_users_by_type(
         type_user: TypeUser = Query(TypeUser.market),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
-    # if type_user is None:
-    #     type_user = TypeUser.client
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
 
     try:
         users: List[DbUser] = users_orm.get_users_by_type(db, type_user.value)
@@ -154,8 +159,12 @@ async def get_users_by_type(
 )
 async def delete_user(
         id_user: int = Path(..., gt=0),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
     response = users_orm.delete_user(db, id_user)
 
     return response
