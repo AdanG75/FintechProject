@@ -12,7 +12,7 @@ from db.models.users_db import DbUser
 from db.orm.exceptions_orm import email_or_password_are_wrong_exception, NotFoundException, too_early_exception, \
     credentials_exception, expired_session_exception, expired_toke_exception
 from db.orm.login_attempts_orm import check_attempt, add_attempt, reset_login_attempt
-from db.orm.sessions_orm import start_session, get_session_by_id_session
+from db.orm.sessions_orm import start_session, get_session_by_id_session, finish_session
 from db.orm.users_orm import get_user_by_email
 from schemas.session_base import SessionRequest
 from schemas.token_base import TokenBase, TokenSummary
@@ -67,6 +67,17 @@ def login(db: Session, email: str, password: str) -> TokenBase:
     )
 
 
+def logout(db: Session, id_session: int) -> bool:
+    session_request = SessionRequest(
+        id_user=1,
+        session_start=None,
+        session_finish=datetime.utcnow()
+    )
+    finish_session(db, session_request, id_session=id_session)
+
+    return True
+
+
 def get_current_token(token: str = Depends(oauth2_schema), db: Session = Depends(get_db)) -> TokenSummary:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -87,6 +98,13 @@ def get_current_token(token: str = Depends(oauth2_schema), db: Session = Depends
         return token_obj
 
     else:
+        session_request = SessionRequest(
+            id_user=1,
+            session_start=None,
+            session_finish=datetime.utcnow()
+        )
+        finish_session(db, session_request, session_obj=current_session)
+
         raise expired_toke_exception
 
 

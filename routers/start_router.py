@@ -8,8 +8,9 @@ from starlette import status
 from starlette.background import BackgroundTasks
 
 from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered
-from controller.general import get_data_from_secure
+from controller.general import get_data_from_secure, get_data_from_rsa_message
 from controller import login as c_login
+from controller.login import get_current_token
 from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.config import settings
 from db.database import get_db
@@ -22,9 +23,8 @@ from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
 from schemas.secure_base import SecureBase, PublicKeyBase
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
-from schemas.token_base import TokenBase
+from schemas.token_base import TokenBase, TokenSummary
 from schemas.type_user import TypeUser
-from secure.cipher_secure import decrypt_data
 
 router = APIRouter(
     tags=['main']
@@ -105,13 +105,30 @@ async def login(
         secure: bool = Query(True),
         db: Session = Depends(get_db)
 ):
-    email = decrypt_data(request.username) if secure else request.username
-    password = decrypt_data(request.password) if secure else request.password
+    email = get_data_from_rsa_message(request.username) if secure else request.username
+    password = get_data_from_rsa_message(request.password) if secure else request.password
 
     # Call login in controller/login
     token = c_login.login(db, email, password)
 
     return token
+
+
+@router.delete(
+    path="/logout",
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK
+)
+async def logout(
+        db: Session = Depends(get_db),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    result = c_login.logout(db, current_token.id_session)
+
+    return BasicResponse(
+        operation='Logout',
+        successful=result
+    )
 
 
 @router.get(

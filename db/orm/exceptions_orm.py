@@ -228,3 +228,8 @@ expired_toke_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Token has expired"
 )
+
+bad_cipher_data_exception = HTTPException(
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    detail="Ensure that the data sent is ciphered by our public key"
+)

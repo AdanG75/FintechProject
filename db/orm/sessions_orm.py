@@ -40,9 +40,16 @@ def start_session(db: Session, request: Union[SessionRequest, SessionStrRequest]
 def finish_session(
         db: Session,
         request: Union[SessionRequest, SessionStrRequest],
-        id_session: int
+        id_session: int = None,
+        session_obj: DbSession = None
 ) -> DbSession:
-    updated_session = get_session_by_id_session(db, id_session)
+
+    if isinstance(session_obj, DbSession):
+        updated_session = session_obj
+    elif isinstance(id_session, int):
+        updated_session = get_session_by_id_session(db, id_session)
+    else:
+        raise wrong_data_sent_exception
 
     if updated_session.session_finish is None:
         if request.session_finish is None:
