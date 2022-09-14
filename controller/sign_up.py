@@ -306,5 +306,3 @@ def select_the_best_sample(summary_sample_data: List[dict]) -> Optional[int]:
         return None
     else:
         return item
-
-

@@ -410,7 +410,14 @@ def delete_address(db: Session, id_address: int, execute: str = 'now') -> BasicR
                 secondary_address = get_a_secondary_address_of_client(db, address.id_client)
                 change_main_address(db, new_main_address=secondary_address, execute='wait')
             except NotFoundException:
-                raise not_main_element_exception
+                try:
+                    get_client_by_id_client(db, address.id_client)
+                except NotFoundException:
+                    # That is meant that client is deleted
+                    pass
+                else:
+                    # It is necessary that client is deleted to erase the last main address
+                    raise not_main_element_exception
     else:
         raise option_not_found_exception
 

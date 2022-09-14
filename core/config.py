@@ -35,7 +35,7 @@ class Settings:
 
     def __init__(self):
         # Change value to True if app will being deployed to AppEngine
-        self.__ON_CLOUD = False
+        self.__ON_CLOUD = True
 
         if not self.__ON_CLOUD:
             env_path = Path('.') / '.env'
