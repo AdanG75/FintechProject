@@ -6,12 +6,14 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.login import get_current_token, check_type_user
+from core.app_email import gmail_send_message
 from core.utils import get_current_utc_timestamp
 from db.database import get_db
 from db.orm.exceptions_orm import credentials_exception
 from db.orm.users_orm import get_public_key_pem
 from db.storage import storage
 from db.storage.tests import test_storage
+from schemas.basic_response import BasicResponse
 from schemas.fingerprint_model import FingerprintSimpleModel
 from schemas.message_model import MessageDisplay
 from schemas.secure_base import SecureBase
@@ -176,3 +178,22 @@ async def secure_message(
     response: dict = pack_and_encrypt_data(send_data.dict(), public_key_pem)
 
     return response
+
+
+@router.post(
+    path='/email',
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK
+)
+async def send_email(
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
+    gmail_send_message()
+
+    return BasicResponse(
+        operation='Send Email',
+        successful=True
+    )

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
 from typing import Union
 
 from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from core.config import settings
+from core.config import charge_settings
 from db.orm.exceptions_orm import DBException, NotFoundException
 from routers import home, icon, start_router, static
 from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_core, test_credit, \
@@ -14,9 +15,18 @@ from routers.test import test_account, test_address, test_admin, test_branch, te
     test_withdraw
 
 app = FastAPI(
-    title=settings.get_project_name(),
-    version=settings.get_project_version()
+    title=os.environ.get("PROJECT_NAME"),
+    version=os.environ.get("PROJECT_VERSION")
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    settings = charge_settings()
+
+    # Icon endpoint
+    if not settings.is_on_cloud():
+        app.include_router(router=icon.router)
 
 # Main endpoints
 app.include_router(router=home.router)
@@ -47,10 +57,6 @@ app.include_router(router=test_transfer.router)
 app.include_router(router=test_user.router)
 app.include_router(router=test_withdraw.router)
 
-# Icon endpoint
-if not settings.is_on_cloud():
-    app.include_router(router=icon.router)
-
 
 @app.exception_handler(DBException)
 @app.exception_handler(NotFoundException)
@@ -59,6 +65,3 @@ async def cast_dbexception_to_http_exception(request: Request, exc: Union[DBExce
         status_code=exc.code,
         content={"detail": exc.message}
     )
-
-
-

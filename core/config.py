@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from core.secret_manager import access_secret_version
 
 
-class Settings:
+class Settings(object):
     __ON_ClOUD: bool
     __PROJECT_NAME: str
     __PROJECT_VERSION: str
@@ -32,6 +32,11 @@ class Settings:
     __PUBLIC_KEY: str
     __PRIVATE_KEY: str
     __SERVER_BUCKET: str
+    __GOOGLE_TOKEN: str
+    __GOOGLE_REFRESH_TOKEN: str
+    __GOOGLE_CLIENT_ID: str
+    __GOOGLE_CLIENT_SECRET: str
+    __TOKEN_URI: str
 
     def __init__(self):
         # Change value to True if app will being deployed to AppEngine
@@ -137,8 +142,31 @@ class Settings:
             project_id=self.__PROJECT_NAME,
             secret_id=os.environ.get("SERVER_BUCKET")
         )
+        self.__GOOGLE_TOKEN: str = access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("GOOGLE_TOKEN")
+        )
+        self.__GOOGLE_REFRESH_TOKEN: str = access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("GOOGLE_REFRESH_TOKEN")
+        )
+        self.__GOOGLE_CLIENT_ID: str = access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("GOOGLE_CLIENT_ID")
+        )
+        self.__GOOGLE_CLIENT_SECRET: str = access_secret_version(
+            project_id=self.__PROJECT_NAME,
+            secret_id=os.environ.get("GOOGLE_CLIENT_SECRET")
+        )
 
+        self.__TOKEN_URI: str = os.environ.get('TOKEN_URI')
         self.__ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES'))
+
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(Settings, cls).__new__(cls)
+
+        return cls.instance
 
     def get_database_url(self):
         # if not self.__ON_CLOUD:
@@ -219,8 +247,29 @@ class Settings:
     def get_market_system(self):
         return self.__MARKET_SYSTEM
 
+    def get_google_token(self):
+        return self.__GOOGLE_TOKEN
+
+    def get_google_refresh_token(self):
+        return self.__GOOGLE_REFRESH_TOKEN
+
+    def get_google_client_id(self):
+        return self.__GOOGLE_CLIENT_ID
+
+    def get_google_client_secret(self):
+        return self.__GOOGLE_CLIENT_SECRET
+
+    def get_token_uri(self):
+        return self.__TOKEN_URI
+
     def is_on_cloud(self):
         return self.__ON_CLOUD
+
+
+def charge_settings() -> Settings:
+    setting = Settings()
+
+    return setting
 
 
 settings = Settings()
