@@ -8,10 +8,11 @@ from starlette import status
 from starlette.background import BackgroundTasks
 
 from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered
-from controller.general import get_data_from_secure, get_data_from_rsa_message
+from controller.general import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
 from controller import login as c_login
 from controller.login import get_current_token
 from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
+from core.app_email import send_register_email
 from core.config import settings
 from db.database import get_db
 from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception
@@ -37,6 +38,7 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED
 )
 async def sing_up(
+        bt: BackgroundTasks,
         request: Union[
             SecureBase, AdminFullRequest, ClientFullRequest, MarketFullRequest, SystemFullRequest
         ] = Body(...),
@@ -51,10 +53,18 @@ async def sing_up(
     response = await route_user_to_sign_up(db, data, type_user, test_mode)
 
     if notify:
-        # Send an email using a background task
-        pass
+        bt.add_task(
+            send_register_email,
+            email_user=response.user.email,
+            id_user=response.user.id_user,
+            name_user=response.user.name
+        )
 
-    return response
+    if secure:
+        secure_response = cipher_response_message(db, response.user.id_user, response)
+        return secure_response
+    else:
+        return response
 
 
 @router.post(

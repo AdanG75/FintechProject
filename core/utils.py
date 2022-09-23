@@ -4,11 +4,12 @@ import datetime
 import json
 import random
 import string
-from typing import List, Union, Optional
+from enum import Enum
+from typing import List, Union, Optional, Any
 
 from email_validator import validate_email, EmailNotValidError
 from phonenumbers import parse, is_valid_number
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 from db.orm.exceptions_orm import bad_email_exception
 
@@ -184,3 +185,30 @@ def replace_spaces_with_hyphens(my_string: str) -> str:
 
 def generate_random_string(length: int) -> str:
     return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length))
+
+
+def check_type_and_become_serializable(value: Any, pos: Union[int, str], my_object: Union[dict, list]) -> None:
+    if isinstance(value, dict):
+        iter_object_to_become_serializable(value)
+
+    if isinstance(value, list):
+        iter_object_to_become_serializable(value)
+
+    if isinstance(value, Enum):
+        my_object[pos] = value.value
+
+    if isinstance(value, datetime.datetime):
+        my_object[pos] = value.strftime(r"%Y-%m-%dT%H:%M:%S.%f")
+
+
+def iter_object_to_become_serializable(my_object: Union[dict, list]) -> None:
+    if isinstance(my_object, list):
+        for index, value in enumerate(my_object):
+            check_type_and_become_serializable(value, index, my_object)
+
+    elif isinstance(my_object, dict):
+        for key, value in my_object.items():
+            check_type_and_become_serializable(value, key, my_object)
+
+    else:
+        return None

@@ -217,10 +217,10 @@ def get_user_type(
 
 async def route_user_to_sign_up(
         db: Session,
-        request: Union[dict, AdminFullRequest, MarketFullRequest],
+        request: Union[dict, AdminFullRequest, ClientFullRequest, MarketFullRequest, SystemFullRequest],
         type_user: TypeUser,
         test_mode: bool = False
-) -> Union[AdminFullDisplay]:
+) -> Union[AdminFullDisplay, ClientFullDisplay, MarketFullDisplay, SystemFullDisplay]:
     if type_user.value == 'admin':
         admin_request = AdminFullRequest.parse_obj(request) if isinstance(request, dict) else request
         response = sign_up_admin(db, admin_request)
@@ -267,7 +267,7 @@ async def check_quality_of_fingerprints(
 
 def select_the_best_sample(summary_sample_data: List[dict]) -> Optional[int]:
     """
-    Return the index where the best sample of fingerprint is. If the list are void the function will return None.
+    Return the index where the best sample of fingerprint is. If the list are void the function will return None
 
     :param summary_sample_data: (list) A list which contains one or more dictionaries with these keys:
         - **quality**: Could be 'good' or 'bad'

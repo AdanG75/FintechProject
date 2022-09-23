@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.login import get_current_token, check_type_user
-from core.app_email import gmail_send_message
+from core.app_email import send_email_from_system, send_register_email
 from core.utils import get_current_utc_timestamp
 from db.database import get_db
 from db.orm.exceptions_orm import credentials_exception
@@ -183,7 +183,8 @@ async def secure_message(
 @router.post(
     path='/email',
     response_model=BasicResponse,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
+    tags=['email']
 )
 async def send_email(
         current_token: TokenSummary = Depends(get_current_token)
@@ -191,9 +192,29 @@ async def send_email(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    gmail_send_message()
+    send_email_from_system('fintech75.official@gmail.com', 'Simple test', 'This is a simple test.\nPlease, not reply.')
 
     return BasicResponse(
         operation='Send Email',
+        successful=True
+    )
+
+
+@router.post(
+    path='/email-registered-example',
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK,
+    tags=['email']
+)
+async def register_email_example(
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
+    email_sent = await send_register_email('fintech75.official@gmail.com', 9, 'Juan')
+
+    return BasicResponse(
+        operation=f'Send Email: {email_sent["id"]}',
         successful=True
     )
