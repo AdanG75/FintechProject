@@ -9,6 +9,8 @@ from google.cloud.storage import Bucket
 from google.cloud.storage.client import Client
 from starlette import status
 
+from core.logs import write_data_log
+
 
 def get_storage_client() -> Client:
     """
@@ -248,7 +250,7 @@ def get_file_path(
             detail=f"File {blob_name} not found."
         )
     except Exception as e:
-        print(e)
+        write_data_log(e.__str__(), "ERROR")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
