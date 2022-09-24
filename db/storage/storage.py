@@ -9,6 +9,7 @@ from google.cloud.storage import Bucket
 from google.cloud.storage.client import Client
 from starlette import status
 
+from core.config import settings
 from core.logs import write_data_log
 
 
@@ -18,8 +19,8 @@ def get_storage_client() -> Client:
 
     :return: The Cloud Storage Client
     """
-    storage_client: Client = storage.Client()
-
+    credentials, project_id = google.auth.default()
+    storage_client: Client = storage.Client(credentials=credentials)
     try:
         yield storage_client
     finally:
@@ -45,7 +46,7 @@ def create_bucket(bucket_name: str, storage_client: Client) -> bool:
 
         return True
     except Exception as e:
-        print(e)
+        show_error(e)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
@@ -65,7 +66,7 @@ def get_bucket(bucket_name: str, storage_client: Client) -> Bucket:
         my_bucket = storage_client.get_bucket(bucket_name.lower())
         return my_bucket
     except Exception as e:
-        print(e)
+        show_error(e)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
@@ -117,7 +118,7 @@ def upload_file_to_bucket(
 
         return True
     except Exception as e:
-        print(e)
+        show_error(e)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
@@ -152,7 +153,7 @@ def upload_bytes_or_string_file_to_bucket(
 
         return True
     except Exception as e:
-        print(e)
+        show_error(e)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
@@ -214,7 +215,7 @@ def download_file_from_bucket(
         print('Saved')
         return True
     except Exception as e:
-        print(e)
+        show_error(e)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
@@ -250,8 +251,15 @@ def get_file_path(
             detail=f"File {blob_name} not found."
         )
     except Exception as e:
-        write_data_log(e.__str__(), "ERROR")
+        show_error(e)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Couldn't communicate with cloud storage"
         )
+
+
+def show_error(e: Exception) -> None:
+    if settings.is_on_cloud():
+        write_data_log(e.__str__(), "ERROR")
+    else:
+        print(e)

@@ -6,7 +6,7 @@ from starlette import status
 
 from db.storage import storage
 
-user_bucket = "CLI-c75812d0b9d14ef3b37622f256c63aa9"
+user_bucket = "TST-777992d0b9d14ef3b37622f256c63aa9"
 
 
 def create_a_bucket_test(gcs: Client):
