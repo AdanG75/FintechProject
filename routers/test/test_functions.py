@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Body, Request, Depends
+from typing import Optional, Union
+
+from fastapi import APIRouter, Body, Request, Depends, Path, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from google.cloud.storage import Client
+from redis.client import Redis
 from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.login import get_current_token, check_type_user
 from core.app_email import send_email_from_system, send_register_email
+from core.cache import get_cache_client
 from core.utils import get_current_utc_timestamp
 from db.database import get_db
 from db.orm.exceptions_orm import credentials_exception
@@ -218,3 +222,41 @@ async def register_email_example(
         operation=f'Send Email: {email_sent["id"]}',
         successful=True
     )
+
+
+@router.put(
+    path='/cache/{key}',
+    status_code=status.HTTP_200_OK,
+    tags=['cache']
+)
+async def get_value_from_cache(
+        key: str = Path(..., min_length=1, max_length=31),
+        value: Optional[Union[str, int, float]] = Query(None, min_length=1, max_length=31),
+        seconds: Optional[int] = Query(1, ge=1, le=600),
+        r: Redis = Depends(get_cache_client),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
+    current_value = r.get(key)
+    created = False
+    updated = False
+
+    if current_value is None:
+        value = 'Hello' if value is None else value
+        r.setex(key, seconds, value)
+        current_value = r.get(key)
+        created = True
+    else:
+        if current_value.decode('utf-8') != value and value is not None:
+            r.setex(key, seconds, value)
+            current_value = r.get(key)
+            updated = True
+
+    return {
+        'value': current_value.decode('utf-8'),
+        'created': created,
+        'updated': updated
+    }
+

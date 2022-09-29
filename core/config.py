@@ -37,6 +37,8 @@ class Settings(object):
     __GOOGLE_CLIENT_ID: str
     __GOOGLE_CLIENT_SECRET: str
     __TOKEN_URI: str
+    __REDIS_HOST: str
+    __REDIS_PORT: int
 
     def __init__(self):
         # Change value to True if app will being deployed to AppEngine
@@ -73,6 +75,10 @@ class Settings(object):
                 project_id=self.__PROJECT_NAME,
                 secret_id=os.environ.get("MARKET_SYSTEM")
             )
+            self.__REDIS_HOST: str = access_secret_version(
+                project_id=self.__PROJECT_NAME,
+                secret_id=os.environ.get("REDIS_HOST")
+            )
 
             self.__POSTGRES_SERVER: str = ""
             self.__POSTGRES_PORT: int = 0
@@ -85,6 +91,8 @@ class Settings(object):
 
             self.__ID_SYSTEM: int = int(os.environ.get("ID_SYSTEM"))
             self.__MARKET_SYSTEM: str = os.environ.get("MARKET_SYSTEM")
+
+            self.__REDIS_HOST: str = os.environ.get("REDIS_HOST")
 
             # Hybrid test
             # self.__POSTGRES_USER: str = access_secret_version(
@@ -161,6 +169,8 @@ class Settings(object):
 
         self.__TOKEN_URI: str = os.environ.get('TOKEN_URI')
         self.__ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES'))
+
+        self.__REDIS_PORT: int = int(os.environ.get("REDIS_PORT"))
 
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -264,6 +274,12 @@ class Settings(object):
 
     def is_on_cloud(self):
         return self.__ON_CLOUD
+
+    def get_redis_host(self):
+        return self.__REDIS_HOST
+
+    def get_redis_port(self):
+        return self.__REDIS_PORT
 
 
 def charge_settings() -> Settings:

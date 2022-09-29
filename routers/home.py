@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette import status
 
+from core.config import charge_settings
 
 router = APIRouter(
     tags=['main']
@@ -23,6 +24,17 @@ async def home(
         "index.html",
         {"request": request}
     )
+
+
+@router.get(
+    path='/_ah/warmup',
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False
+)
+def warmup(request: Request):
+    settings = charge_settings()
+
+    return {"Warmup": "OK"}
 
 
 @router.get(

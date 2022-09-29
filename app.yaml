@@ -26,6 +26,8 @@ env_variables:
   GOOGLE_CLIENT_ID: "SECRET_GOOGLE_CLIENT_ID"
   GOOGLE_CLIENT_SECRET: "SECRET_GOOGLE_CLIENT_SECRET"
   TOKEN_URI: "https://oauth2.googleapis.com/token"
+  REDIS_HOST: "SECRET_REDIS_HOST"
+  REDIS_PORT: "6379"
 
 handlers:
   - url: /favicon\.ico
@@ -35,3 +37,9 @@ handlers:
   - url: /.*
     script: main.app
     secure: always
+
+vpc_access_connector:
+    name: projects/fintech75/locations/us-central1/connectors/conector-fintech75
+
+inbound_services:
+- warmup
