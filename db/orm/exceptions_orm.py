@@ -14,6 +14,11 @@ db_exception = DBException(
     code=status.HTTP_503_SERVICE_UNAVAILABLE
 )
 
+cache_exception = DBException(
+    msg="Couldn't connect to Cache",
+    code=status.HTTP_503_SERVICE_UNAVAILABLE
+)
+
 
 class NotFoundException(Exception):
     def __init__(self, msg, code):
@@ -227,6 +232,16 @@ expired_session_exception = HTTPException(
 expired_toke_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Token has expired"
+)
+
+expired_ticket_or_is_incorrect_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Ticket is wrong or it has expired"
+)
+
+expired_cache_exception = HTTPException(
+    status_code=status.HTTP_408_REQUEST_TIMEOUT,
+    detail="Cache has expired. Please try again from begin."
 )
 
 bad_cipher_data_exception = HTTPException(

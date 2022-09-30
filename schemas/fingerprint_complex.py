@@ -12,7 +12,7 @@ class FingerprintFullRequest(BaseModel):
         schema_extra = {
             "example": {
                 "metadata": {
-                   "id_client": "CLI-e549787795a645ab9caf3f9e785c8884",
+                    "id_client": "CLI-e549787795a645ab9caf3f9e785c8884",
                     "alias_fingerprint": "Indice izquierdo",
                     "main_fingerprint": True
                 },
@@ -27,3 +27,8 @@ class FingerprintFullRequest(BaseModel):
                 }
             }
         }
+
+
+class FingerprintRegisterRequest(BaseModel):
+    fingerprint_full_request: FingerprintFullRequest = Field(...)
+    summary: list[dict] = Field(..., min_items=1, max_items=9)

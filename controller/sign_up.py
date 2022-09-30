@@ -6,12 +6,12 @@ from core.config import settings
 from db.models.users_db import DbUser
 from db.orm.accounts_orm import create_account
 from db.orm.addresses_orm import create_address
-from db.orm.admins_orm import create_admin
+from db.orm.admins_orm import create_admin, get_admin_by_id_admin
 from db.orm.branches_orm import create_branch
-from db.orm.clients_orm import create_client
+from db.orm.clients_orm import create_client, get_client_by_id_client
 from db.orm.credits_orm import create_credit
 from db.orm.functions_orm import full_database_exceptions
-from db.orm.markets_orm import create_market
+from db.orm.markets_orm import create_market, get_market_by_id_market
 from db.orm.outstanding_payments_orm import create_outstanding_payment
 from db.orm.users_orm import create_user
 from db.orm.exceptions_orm import type_of_value_not_compatible, wrong_data_sent_exception, option_not_found_exception
@@ -306,3 +306,16 @@ def select_the_best_sample(summary_sample_data: List[dict]) -> Optional[int]:
         return None
     else:
         return item
+
+
+def get_id_user_using_id_type(db: Session, id_type: str, user_type: str) -> int:
+    if user_type == TypeUser.client.value:
+        sub_user = get_client_by_id_client(db, id_type)
+    elif user_type == TypeUser.market.value or user_type == TypeUser.system.value:
+        sub_user = get_market_by_id_market(db, id_type)
+    elif user_type == TypeUser.admin.value:
+        sub_user = get_admin_by_id_admin(db, id_type)
+    else:
+        raise option_not_found_exception
+
+    return sub_user.id_user

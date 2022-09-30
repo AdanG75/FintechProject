@@ -3,23 +3,28 @@ from typing import Union, Optional
 from fastapi import APIRouter, Body, Query, Depends, Path
 from fastapi.security import OAuth2PasswordRequestForm
 from google.cloud.storage.client import Client
+from redis.client import Redis
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.background import BackgroundTasks
 
-from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered
+from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered, \
+    preregister_fingerprint, check_fingerprint_request
 from controller.general import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
 from controller import login as c_login
 from controller.login import get_current_token
-from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
+from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints, \
+    get_id_user_using_id_type
 from core.app_email import send_register_email
+from core.cache import get_cache_client
 from core.config import settings
 from db.database import get_db
 from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception
 from db.storage.storage import get_storage_client
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
-from schemas.basic_response import BasicResponse
+from schemas.basic_response import BasicResponse, BasicTicketResponse
 from schemas.client_complex import ClientFullDisplay, ClientFullRequest
+from schemas.fingerprint_base import FingerprintBasicDisplay
 from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
 from schemas.secure_base import SecureBase, PublicKeyBase
@@ -68,17 +73,16 @@ async def sing_up(
 
 
 @router.post(
-    path='/fingerprint/client/{id_client}',
-    response_model=BasicResponse,
+    path='/fingerprint/pre-register/client/{id_client}',
+    response_model=BasicTicketResponse,
     status_code=status.HTTP_202_ACCEPTED
 )
-async def register_fingerprint_of_client(
-        bt: BackgroundTasks,
+async def preregister_fingerprint_of_client(
         id_client: str = Path(..., min_length=12, max_length=40),
         request: Union[SecureBase, FingerprintFullRequest] = Body(...),
         secure: bool = Query(True),
         db: Session = Depends(get_db),
-        gcs: Client = Depends(get_storage_client)
+        r: Redis = Depends(get_cache_client)
 ):
     if does_client_have_fingerprints_samples_registered(db, id_client):
         raise not_valid_operation_exception
@@ -88,21 +92,47 @@ async def register_fingerprint_of_client(
 
     is_good, data = await check_quality_of_fingerprints(fps_request.samples)
     if is_good:
-        bt.add_task(
-            register_fingerprint,
-            db=db,
-            gcs=gcs,
-            fingerprint_request=fps_request,
-            id_client=id_client,
-            data_summary=data
-        )
-
-        return BasicResponse(
-          operation='Check fingerprints',
-          successful=True
-        )
+        ticket = preregister_fingerprint(id_client, data, fps_request, r)
     else:
         raise bad_quality_fingerprint_exception
+
+    return BasicTicketResponse(
+        ticket=ticket
+    )
+
+
+@router.post(
+    path='/fingerprint/register/client/{id_client}',
+    response_model=Union[SecureBase, FingerprintBasicDisplay],
+    status_code=status.HTTP_201_CREATED
+)
+async def register_fingerprint_of_client(
+        id_client: str = Path(..., min_length=12, max_length=40),
+        request: BasicTicketResponse = Body(...),
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        gcs: Client = Depends(get_storage_client),
+        r: Redis = Depends(get_cache_client)
+):
+    if does_client_have_fingerprints_samples_registered(db, id_client):
+        raise not_valid_operation_exception
+
+    fingerprint_request = check_fingerprint_request(id_client, request.ticket, r)
+
+    fingerprint_response = await register_fingerprint(
+        db=db,
+        gcs=gcs,
+        fingerprint_request=fingerprint_request.fingerprint_full_request,
+        id_client=id_client,
+        data_summary=fingerprint_request.summary
+    )
+
+    if secure:
+        id_user = get_id_user_using_id_type(db, id_client, 'client')
+        secure_response = cipher_response_message(db, id_user, fingerprint_response)
+        return secure_response
+
+    return fingerprint_response
 
 
 @router.post(

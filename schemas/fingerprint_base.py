@@ -8,7 +8,7 @@ from schemas.type_quality import QualityType
 from schemas.type_request import RequestType
 
 
-alias_pattern: str = r"^[A-Za-z0-9_ -]+$"
+alias_pattern: str = r"^[ÑñA-Za-z0-9_ -]+$"
 
 
 class FingerprintBase(BaseModel):

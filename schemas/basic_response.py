@@ -8,3 +8,11 @@ class BasicResponse(BaseModel):
 
 class BasicPasswordChange(BaseModel):
     password: str = Field(..., min_length=8, max_length=69)
+
+
+class BasicDataResponse(BaseModel):
+    data: str
+
+
+class BasicTicketResponse(BaseModel):
+    ticket: str = Field(..., min_length=4, max_length=16)
