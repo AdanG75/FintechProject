@@ -248,3 +248,13 @@ bad_cipher_data_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
     detail="Ensure that the data sent is ciphered by our public key"
 )
+
+required_public_pem_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="It is necessary send your public pem to receive a secure response"
+)
+
+wrong_public_pem_format_exception = HTTPException(
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    detail="PEM format are wrong, please sent it based on PKCS8"
+)

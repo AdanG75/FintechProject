@@ -200,6 +200,9 @@ def check_type_and_become_serializable(value: Any, pos: Union[int, str], my_obje
     if isinstance(value, datetime.datetime):
         my_object[pos] = value.strftime(r"%Y-%m-%dT%H:%M:%S.%f")
 
+    if isinstance(value, datetime.date):
+        my_object[pos] = value.strftime(r"%Y-%m-%d")
+
 
 def iter_object_to_become_serializable(my_object: Union[dict, list]) -> None:
     if isinstance(my_object, list):

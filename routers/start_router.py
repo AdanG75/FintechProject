@@ -10,13 +10,12 @@ from starlette.background import BackgroundTasks
 
 from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered, \
     preregister_fingerprint, check_fingerprint_request
-from controller.general import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
+from controller.secure_controller import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
 from controller import login as c_login
 from controller.login import get_current_token
-from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints, \
-    get_id_user_using_id_type
+from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.app_email import send_register_email
-from core.cache import get_cache_client
+from core.cache import get_cache_client, item_save, item_get
 from core.config import settings
 from db.database import get_db
 from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception
@@ -27,7 +26,7 @@ from schemas.client_complex import ClientFullDisplay, ClientFullRequest
 from schemas.fingerprint_base import FingerprintBasicDisplay
 from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
-from schemas.secure_base import SecureBase, PublicKeyBase
+from schemas.secure_base import SecureBase, PublicKeyBase, SecureRequest
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
 from schemas.token_base import TokenBase, TokenSummary
 from schemas.type_user import TypeUser
@@ -38,14 +37,15 @@ router = APIRouter(
 
 
 @router.post(
-    path='/sign-up/',
-    response_model=Union[SecureBase, AdminFullDisplay, ClientFullDisplay, MarketFullDisplay, SystemFullDisplay],
+    path='/sign-up',
+    response_model=Union[SecureBase, AdminFullDisplay, ClientFullDisplay,
+                         MarketFullDisplay, SystemFullDisplay, BasicResponse],
     status_code=status.HTTP_201_CREATED
 )
 async def sing_up(
         bt: BackgroundTasks,
         request: Union[
-            SecureBase, AdminFullRequest, ClientFullRequest, MarketFullRequest, SystemFullRequest
+            SecureRequest, AdminFullRequest, ClientFullRequest, MarketFullRequest, SystemFullRequest
         ] = Body(...),
         secure: Optional[bool] = Query(True),
         type_user: Optional[TypeUser] = Query(None),
@@ -66,7 +66,13 @@ async def sing_up(
         )
 
     if secure:
-        secure_response = cipher_response_message(db, response.user.id_user, response)
+        if request.public_pem is None:
+            return BasicResponse(
+                operation="Register user",
+                successful=True
+            )
+
+        secure_response = cipher_response_message(response, without_auth=True, user_pem=request.public_pem)
         return secure_response
     else:
         return response
@@ -74,12 +80,12 @@ async def sing_up(
 
 @router.post(
     path='/fingerprint/pre-register/client/{id_client}',
-    response_model=BasicTicketResponse,
+    response_model=Union[SecureBase, BasicTicketResponse],
     status_code=status.HTTP_202_ACCEPTED
 )
 async def preregister_fingerprint_of_client(
         id_client: str = Path(..., min_length=12, max_length=40),
-        request: Union[SecureBase, FingerprintFullRequest] = Body(...),
+        request: Union[SecureRequest, FingerprintFullRequest] = Body(...),
         secure: bool = Query(True),
         db: Session = Depends(get_db),
         r: Redis = Depends(get_cache_client)
@@ -96,19 +102,29 @@ async def preregister_fingerprint_of_client(
     else:
         raise bad_quality_fingerprint_exception
 
-    return BasicTicketResponse(
+    plain_response = BasicTicketResponse(
         ticket=ticket
     )
+
+    if secure:
+        if request.public_pem is None:
+            return plain_response
+
+        item_save(r, f'PEM-{id_client}', request.public_pem)
+        secure_response = cipher_response_message(plain_response, without_auth=True, user_pem=request.public_pem)
+        return secure_response
+
+    return plain_response
 
 
 @router.post(
     path='/fingerprint/register/client/{id_client}',
-    response_model=Union[SecureBase, FingerprintBasicDisplay],
+    response_model=Union[SecureBase, FingerprintBasicDisplay, BasicResponse],
     status_code=status.HTTP_201_CREATED
 )
 async def register_fingerprint_of_client(
         id_client: str = Path(..., min_length=12, max_length=40),
-        request: BasicTicketResponse = Body(...),
+        request: Union[SecureRequest, BasicTicketResponse] = Body(...),
         secure: bool = Query(True),
         db: Session = Depends(get_db),
         gcs: Client = Depends(get_storage_client),
@@ -117,7 +133,10 @@ async def register_fingerprint_of_client(
     if does_client_have_fingerprints_samples_registered(db, id_client):
         raise not_valid_operation_exception
 
-    fingerprint_request = check_fingerprint_request(id_client, request.ticket, r)
+    data_request = get_data_from_secure(request) if secure else request
+    ticket_request = BasicTicketResponse.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+
+    fingerprint_request = check_fingerprint_request(id_client, ticket_request.ticket, r)
 
     fingerprint_response = await register_fingerprint(
         db=db,
@@ -128,8 +147,14 @@ async def register_fingerprint_of_client(
     )
 
     if secure:
-        id_user = get_id_user_using_id_type(db, id_client, 'client')
-        secure_response = cipher_response_message(db, id_user, fingerprint_response)
+        public_pem = item_get(r, f'PEM-{id_client}')
+        if public_pem is None:
+            return BasicResponse(
+                operation="Register fingerprint",
+                successful=True
+            )
+
+        secure_response = cipher_response_message(fingerprint_response, without_auth=True, user_pem=public_pem)
         return secure_response
 
     return fingerprint_response
@@ -172,7 +197,7 @@ async def logout(
 
 
 @router.get(
-    path='/public-key/',
+    path='/public-key',
     response_model=PublicKeyBase,
     status_code=status.HTTP_200_OK
 )

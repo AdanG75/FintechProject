@@ -1,11 +1,11 @@
-from typing import Union, List
+from typing import Union, List, Optional
 
 from redis import Redis
 
 from core.config import settings
 from db.orm.exceptions_orm import cache_exception
 
-CACHE_TIME = 180
+CACHE_TIME = 300
 
 
 def get_cache_client() -> Redis:
@@ -33,3 +33,23 @@ def batch_save(r: Redis, values: dict, seconds: int = CACHE_TIME) -> List[bool]:
             raise cache_exception
 
     return result
+
+
+def item_save(
+        r: Redis,
+        r_key: str,
+        r_value: Union[float, int, str, bytes],
+        seconds: int = CACHE_TIME
+) -> bool:
+    return r.setex(r_key, time=seconds, value=r_value)
+
+
+def item_get(
+        r: Redis,
+        r_key: str
+) -> Optional[str]:
+    item_value = r.get(r_key)
+    if item_value is not None:
+        return item_value.decode('utf-8')
+    else:
+        return None
