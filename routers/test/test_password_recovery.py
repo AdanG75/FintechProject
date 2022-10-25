@@ -84,7 +84,7 @@ async def get_password_recovery_of_user(
 )
 async def check_code(
         id_user: int = Path(..., gt=0),
-        code: int = Query(None, lt=100000000),
+        code: str = Query(None, min_length=7, max_length=9),
         db: Session = Depends(get_db),
         current_token: TokenSummary = Depends(get_current_token)
 ):

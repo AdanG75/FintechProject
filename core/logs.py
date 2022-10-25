@@ -1,10 +1,13 @@
 
 from enum import Enum
+from typing import Union
 
 from fastapi import HTTPException
 from google.cloud import logging
 
 from starlette import status
+
+from core.config import settings
 
 
 def get_logging_client():
@@ -47,6 +50,22 @@ def write_data_log(data: str, severity: str = "INFO", logger_name: str = 'fintec
 
     logging_client.close()
     return True
+
+
+def show_error_message(error: Union[Exception, str]) -> None:
+    """
+    Show an error in console or log
+
+    :param error: (Exception, str) The error to report
+
+    :return: (None)
+    """
+    msg = error.__str__() if isinstance(error, Exception) else error
+
+    if settings.is_on_cloud():
+        write_data_log(msg, "ERROR")
+    else:
+        print(msg)
 
 
 class LogSeverity(Enum):

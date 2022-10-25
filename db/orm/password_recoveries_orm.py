@@ -6,7 +6,7 @@ from db.models.password_recoveries_db import DbPasswordRecovery
 from db.orm.exceptions_orm import element_not_found_exception, too_many_attempts_exception, \
     not_valid_operation_exception, option_not_found_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
-from web_utils.web_functions import generate_code, set_expiration_time
+from web_utils.web_functions import set_expiration_time, generate_code_str
 
 
 @multiple_attempts
@@ -14,8 +14,8 @@ from web_utils.web_functions import generate_code, set_expiration_time
 def create_code_to_recover_password(db: Session, id_user: int) -> DbPasswordRecovery:
     password_recovery = get_password_recovery_by_id_user(db, id_user)
 
-    password_recovery.code = generate_code()
-    password_recovery.expiration_time = set_expiration_time(minutes=20)
+    password_recovery.code = generate_code_str()
+    password_recovery.expiration_time = set_expiration_time(minutes=60)
     password_recovery.attempts = 0
     password_recovery.is_valid = True
 
@@ -62,7 +62,7 @@ def get_password_recovery_by_id_user(db: Session, id_user: int) -> DbPasswordRec
     return password_recovery
 
 
-def check_code_of_password_recovery(db: Session, id_user: int, code: int) -> bool:
+def check_code_of_password_recovery(db: Session, id_user: int, code: str) -> bool:
     password_recovery = get_password_recovery_by_id_user(db, id_user)
 
     if not password_recovery.is_valid:

@@ -139,6 +139,11 @@ inactive_password_exception = HTTPException(
     detail="Current password was disabled, please generate a new one"
 )
 
+error_while_generating_code_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="An error occurred while code was being generated"
+)
+
 existing_credit_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
     detail="Client already has a credit within the market"

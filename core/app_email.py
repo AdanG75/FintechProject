@@ -200,4 +200,25 @@ async def send_movement_email(
     return message_send
 
 
+async def send_recovery_code(
+        email_user: str,
+        code: str
+) -> dict:
+    message = f'''
+    Un gusto saludarle de nuevo.
+    
+        Este es su código para recuperar su contraseña: {code}.
+    
+    Si no fue usted quien solicitó esta operación, le recomendamos que cancele la operación o en su defecto que proteja
+    su cuenta de correo electrónico {email_user} para que no puedan hacer uso de este código.
+    
+    Sin más que agregar el equipo de fintech75 le desea un excelente día.
+
+    '''
+
+    message_subject = "Cambio de contraseña"
+
+    message_send = send_email_from_system(email_user, message_subject, message)
+
+    return message_send
 

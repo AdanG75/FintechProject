@@ -10,11 +10,12 @@ from starlette.background import BackgroundTasks
 
 from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered, \
     preregister_fingerprint, check_fingerprint_request
+from controller.password_recovery import generate_new_code_to_recover_password
 from controller.secure_controller import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
 from controller import login as c_login
 from controller.login import get_current_token
 from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
-from core.app_email import send_register_email
+from core.app_email import send_register_email, send_recovery_code
 from core.cache import get_cache_client, item_save, item_get
 from core.config import settings
 from db.database import get_db
@@ -26,6 +27,7 @@ from schemas.client_complex import ClientFullDisplay, ClientFullRequest
 from schemas.fingerprint_base import FingerprintBasicDisplay
 from schemas.fingerprint_complex import FingerprintFullRequest
 from schemas.market_complex import MarketFullRequest, MarketFullDisplay
+from schemas.password_recovery_base import PasswordRecoveryRequest
 from schemas.secure_base import SecureBase, PublicKeyBase, SecureRequest
 from schemas.system_complex import SystemFullRequest, SystemFullDisplay
 from schemas.token_base import TokenBase, TokenSummary
@@ -193,6 +195,35 @@ async def logout(
     return BasicResponse(
         operation='Logout',
         successful=result
+    )
+
+
+@router.post(
+    path='/forgot-password',
+    response_model=BasicResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def create_password_code(
+        bt: BackgroundTasks,
+        request: Union[SecureRequest, PasswordRecoveryRequest] = Body(...),
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client)
+):
+    data_request = get_data_from_secure(request) if secure else request
+    password_recovery_request = PasswordRecoveryRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+
+    code = generate_new_code_to_recover_password(db, password_recovery_request.email, r)
+
+    bt.add_task(
+        send_recovery_code,
+        email_user=password_recovery_request.email,
+        code=code
+    )
+
+    return BasicResponse(
+        operation='Generate password recovery code',
+        successful=True
     )
 
 

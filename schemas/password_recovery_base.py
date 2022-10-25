@@ -17,7 +17,7 @@ class PasswordRecoveryRequest(BaseModel):
 
 class PasswordRecoveryDisplay(BaseModel):
     id_user: int = Field(...)
-    code: Optional[int] = Field(None)
+    code: Optional[str] = Field(None)
     expiration_time: Optional[datetime] = Field(None)
     attempts: int = Field(...)
     is_valid: bool = Field(...)

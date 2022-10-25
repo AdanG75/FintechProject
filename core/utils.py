@@ -9,7 +9,7 @@ from typing import List, Union, Optional, Any
 
 from email_validator import validate_email, EmailNotValidError
 from phonenumbers import parse, is_valid_number
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 from db.orm.exceptions_orm import bad_email_exception
 
