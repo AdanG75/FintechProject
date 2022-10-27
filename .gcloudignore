@@ -47,3 +47,5 @@ old_code/
 # Ignore JSON data and PEM files
 *.json
 *.pem
+# Ignore other files
+dump.rdb
