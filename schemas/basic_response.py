@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
+
+code_pattern = r"^\d{7,9}$"
 
 
 class BasicResponse(BaseModel):
@@ -16,3 +18,32 @@ class BasicDataResponse(BaseModel):
 
 class BasicTicketResponse(BaseModel):
     ticket: str = Field(..., min_length=4, max_length=16)
+
+
+class ChangePasswordRequest(BasicPasswordChange, BasicTicketResponse):
+    email: EmailStr = Field(...)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "password": "ultra-$3CR3T",
+                "ticket": "AB15689rst12Gntp",
+                "email": "my_email@mail.com"
+            }
+        }
+
+
+class BasicCodeRequest(BaseModel):
+    code: str = Field(..., regex=code_pattern)
+
+
+class CodeRequest(BasicCodeRequest):
+    email: EmailStr = Field(...)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "code": "12345678",
+                "email": "my_email@mail.com"
+            }
+        }

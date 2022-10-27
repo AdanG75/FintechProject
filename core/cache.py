@@ -53,3 +53,16 @@ def item_get(
         return item_value.decode('utf-8')
     else:
         return None
+
+
+def check_item_if_exist(
+        r: Redis,
+        r_key: str,
+        value: Union[str, bytes, int, float, bool]
+) -> Optional[bool]:
+
+    r_value = r.get(r_key)
+    if value is not None:
+        return is_the_same(r_value, value)
+
+    return None

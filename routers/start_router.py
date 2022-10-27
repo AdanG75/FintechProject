@@ -3,6 +3,7 @@ from typing import Union, Optional
 from fastapi import APIRouter, Body, Query, Depends, Path
 from fastapi.security import OAuth2PasswordRequestForm
 from google.cloud.storage.client import Client
+from pydantic.error_wrappers import ValidationError
 from redis.client import Redis
 from sqlalchemy.orm import Session
 from starlette import status
@@ -10,7 +11,7 @@ from starlette.background import BackgroundTasks
 
 from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered, \
     preregister_fingerprint, check_fingerprint_request
-from controller.password_recovery import generate_new_code_to_recover_password
+from controller.password_recovery import generate_new_code_to_recover_password, check_code, change_password
 from controller.secure_controller import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
 from controller import login as c_login
 from controller.login import get_current_token
@@ -19,10 +20,11 @@ from core.app_email import send_register_email, send_recovery_code
 from core.cache import get_cache_client, item_save, item_get
 from core.config import settings
 from db.database import get_db
-from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception
+from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception, \
+    wrong_code_exception, validation_request_exception
 from db.storage.storage import get_storage_client
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
-from schemas.basic_response import BasicResponse, BasicTicketResponse
+from schemas.basic_response import BasicResponse, BasicTicketResponse, CodeRequest, ChangePasswordRequest
 from schemas.client_complex import ClientFullDisplay, ClientFullRequest
 from schemas.fingerprint_base import FingerprintBasicDisplay
 from schemas.fingerprint_complex import FingerprintFullRequest
@@ -96,7 +98,10 @@ async def preregister_fingerprint_of_client(
         raise not_valid_operation_exception
 
     data_request = get_data_from_secure(request) if secure else request
-    fps_request = FingerprintFullRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    try:
+        fps_request = FingerprintFullRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
 
     is_good, data = await check_quality_of_fingerprints(fps_request.samples)
     if is_good:
@@ -136,7 +141,10 @@ async def register_fingerprint_of_client(
         raise not_valid_operation_exception
 
     data_request = get_data_from_secure(request) if secure else request
-    ticket_request = BasicTicketResponse.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    try:
+        ticket_request = BasicTicketResponse.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
 
     fingerprint_request = check_fingerprint_request(id_client, ticket_request.ticket, r)
 
@@ -200,7 +208,7 @@ async def logout(
 
 @router.post(
     path='/forgot-password',
-    response_model=BasicResponse,
+    response_model=Union[SecureBase, BasicResponse],
     status_code=status.HTTP_201_CREATED
 )
 async def create_password_code(
@@ -211,20 +219,99 @@ async def create_password_code(
         r: Redis = Depends(get_cache_client)
 ):
     data_request = get_data_from_secure(request) if secure else request
-    password_recovery_request = PasswordRecoveryRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    try:
+        pr_request = PasswordRecoveryRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
 
-    code = generate_new_code_to_recover_password(db, password_recovery_request.email, r)
+    code = generate_new_code_to_recover_password(db, pr_request.email, r)
 
     bt.add_task(
         send_recovery_code,
-        email_user=password_recovery_request.email,
+        email_user=pr_request.email,
         code=code
     )
 
-    return BasicResponse(
+    basic_response = BasicResponse(
         operation='Generate password recovery code',
         successful=True
     )
+
+    if secure:
+        if request.public_pem is None:
+            return basic_response
+
+        secure_response = cipher_response_message(basic_response, without_auth=True, user_pem=request.public_pem)
+        return secure_response
+
+    return basic_response
+
+
+@router.post(
+    path='/forgot-password/validate',
+    response_model=Union[SecureBase, BasicTicketResponse],
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def validate_code(
+        request: Union[SecureRequest, CodeRequest],
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client)
+):
+    data_request = get_data_from_secure(request) if secure else request
+    try:
+        code_request = CodeRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
+
+    ticket = check_code(db, code_request, r)
+    if ticket is None:
+        raise wrong_code_exception
+
+    ticket_response = BasicTicketResponse(
+        ticket=ticket
+    )
+    if secure:
+        if request.public_pem is None:
+            return ticket_response
+
+        secure_response = cipher_response_message(ticket_response, without_auth=True, user_pem=request.public_pem)
+        return secure_response
+
+    return ticket_response
+
+
+@router.patch(
+    path='/recover-password',
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK
+)
+async def change_password_request(
+        request: Union[SecureRequest, ChangePasswordRequest] = Body(...),
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client)
+):
+    data_request = get_data_from_secure(request) if secure else request
+    try:
+        pw_request = ChangePasswordRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
+
+    change_password(db, r, pw_request)
+    response = BasicResponse(
+        operation='Recover password',
+        successful=True
+    )
+
+    if secure:
+        if request.public_pem is None:
+            return response
+
+        secure_response = cipher_response_message(response, without_auth=True, user_pem=request.public_pem)
+        return secure_response
+
+    return response
 
 
 @router.get(

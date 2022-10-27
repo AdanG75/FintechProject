@@ -10,7 +10,7 @@ from db.database import get_db
 from db.models.sessions_db import DbSession
 from db.models.users_db import DbUser
 from db.orm.exceptions_orm import email_or_password_are_wrong_exception, NotFoundException, too_early_exception, \
-    credentials_exception, expired_session_exception, expired_toke_exception
+    credentials_exception, expired_session_exception, expired_token_exception
 from db.orm.login_attempts_orm import check_attempt, add_attempt, reset_login_attempt
 from db.orm.sessions_orm import start_session, get_session_by_id_session, finish_session
 from db.orm.users_orm import get_user_by_email
@@ -105,7 +105,7 @@ def get_current_token(token: str = Depends(oauth2_schema), db: Session = Depends
         )
         finish_session(db, session_request, session_obj=current_session)
 
-        raise expired_toke_exception
+        raise expired_token_exception
 
 
 def check_type_user(token_summary: TokenSummary, is_a: str) -> bool:

@@ -109,6 +109,16 @@ type_of_value_not_compatible = HTTPException(
     detail="Unsupportable data type or not compatible with the operation"
 )
 
+validation_request_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Error to validate data. Please check the allowed schemas in this entry point"
+)
+
+not_authorized_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="You do not have authorization to enter to this entry point"
+)
+
 option_not_found_exception = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Option not found"
@@ -142,6 +152,11 @@ inactive_password_exception = HTTPException(
 error_while_generating_code_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="An error occurred while code was being generated"
+)
+
+error_while_checking_code_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="An error occurred while code was being checked"
 )
 
 existing_credit_exception = HTTPException(
@@ -234,7 +249,7 @@ expired_session_exception = HTTPException(
     detail="Session has been finished"
 )
 
-expired_toke_exception = HTTPException(
+expired_token_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Token has expired"
 )
@@ -242,6 +257,11 @@ expired_toke_exception = HTTPException(
 expired_ticket_or_is_incorrect_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Ticket is wrong or it has expired"
+)
+
+wrong_code_exception = HTTPException(
+    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+    detail="Code do not match with the code sent"
 )
 
 expired_cache_exception = HTTPException(
