@@ -21,7 +21,7 @@ from core.cache import get_cache_client, item_save, item_get
 from core.config import settings
 from db.database import get_db
 from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception, \
-    wrong_code_exception, validation_request_exception
+    wrong_code_exception, validation_request_exception, not_authorized_exception
 from db.storage.storage import get_storage_client
 from schemas.admin_complex import AdminFullDisplay, AdminFullRequest
 from schemas.basic_response import BasicResponse, BasicTicketResponse, CodeRequest, ChangePasswordRequest
@@ -102,6 +102,9 @@ async def preregister_fingerprint_of_client(
         fps_request = FingerprintFullRequest.parse_obj(data_request) if isinstance(data_request, dict) else data_request
     except ValidationError:
         raise validation_request_exception
+
+    if fps_request.metadata.id_client != id_client:
+        raise not_authorized_exception
 
     is_good, data = await check_quality_of_fingerprints(fps_request.samples)
     if is_good:
