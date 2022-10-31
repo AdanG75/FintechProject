@@ -13,7 +13,7 @@ from db.orm.clients_orm import get_client_by_id_client
 from db.orm.cores_orm import insert_list_of_core_points
 from db.orm.exceptions_orm import uncreated_bucked_exception, compile_exception, uncreated_fingerprint_exception, \
     NotFoundException, wrong_data_sent_exception, expired_cache_exception, expired_ticket_or_is_incorrect_exception
-from db.orm.fingerprints_orm import create_fingerprint, get_fingerprints_by_id_client
+from db.orm.fingerprints_orm import create_fingerprint, get_fingerprints_by_id_client, get_main_fingerprint_of_client
 from db.orm.functions_orm import full_database_exceptions, multiple_attempts
 from db.orm.minutiae_orm import insert_list_of_minutiae
 from fingerprint_process.description.fingerprint import Fingerprint
@@ -22,6 +22,7 @@ from fingerprint_process.utils.utils import get_description_fingerprint
 from schemas.fingerprint_base import FingerprintBase, FingerprintBasicDisplay, FingerprintRequest, ClientInner
 from schemas.fingerprint_complex import FingerprintFullRequest, FingerprintRegisterRequest
 from schemas.fingerprint_model import FingerprintSamples
+from schemas.type_user import TypeUser
 from secure.cipher_secure import cipher_data, decipher_data
 
 
@@ -213,3 +214,16 @@ def check_fingerprint_request(
             raise expired_ticket_or_is_incorrect_exception
     else:
         raise expired_cache_exception
+
+
+def check_if_user_have_fingerprint_registered(db: Session, type_user: str, id_type: str) -> bool:
+    if type_user == TypeUser.client.value:
+        try:
+            get_main_fingerprint_of_client(db, id_type)
+        except NotFoundException:
+            return False
+
+    else:
+        return False
+
+    return True

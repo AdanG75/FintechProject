@@ -13,4 +13,4 @@ class SecureRequest(SecureBase):
 
 
 class PublicKeyBase(BaseModel):
-    pem: str = Field(...)
+    pem: str = Field(..., min_length=350, max_length=650)

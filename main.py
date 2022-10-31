@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 
 from core.config import charge_settings
 from db.orm.exceptions_orm import DBException, NotFoundException
-from routers import home, icon, start_router, static
+from routers import credit_router, fingerprint_router, home, icon, start_router, static, user_router
 from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_core, test_credit, \
     test_deposit, test_fingerprint, test_functions, test_login_attempt, test_market, test_minutia, test_movement, \
     test_outstanding_payment, test_password_recovery, test_payment, test_session, test_transfer, test_user, \
@@ -29,9 +29,12 @@ async def startup_event():
         app.include_router(router=icon.router)
 
 # Main endpoints
+app.include_router(router=credit_router.router)
+app.include_router(router=fingerprint_router.router)
 app.include_router(router=home.router)
 app.include_router(router=start_router.router)
 app.include_router(router=static.router)
+app.include_router(router=user_router.router)
 
 
 # test endpoints

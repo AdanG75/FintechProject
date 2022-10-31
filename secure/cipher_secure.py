@@ -5,6 +5,7 @@ from core import utils
 from core.config import settings
 from schemas.secure_base import SecureBase
 from secure import aes_secure, rsa_secure
+from secure.rsa_secure import get_public_key_from_pem
 
 
 def pack_and_encrypt_data(data: Union[Dict, str], public_key_pem: str) -> Dict:
@@ -133,6 +134,22 @@ def decipher_data(data: Union[bytes, str]) -> str:
     data_bytes = aes_secure.AES_decrypt(data, server_block_size, cipher)
 
     return data_bytes.decode('utf-8')
+
+
+def is_pem_correct_formatted(pem: str) -> bool:
+    """
+    Check if the public key value is a correct serializable value based on PKCS8 but, other serialized formats can
+    be acceptance like PKCS12
+
+    :param pem: (str) A public pem. It should be serialized using PKCS8
+    :return: True if the value is well formatted, in other case, return False
+    """
+    try:
+        get_public_key_from_pem(pem)
+    except ValueError:
+        return False
+
+    return True
 
 
 

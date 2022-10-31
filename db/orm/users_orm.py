@@ -151,7 +151,7 @@ def get_all_users(db: Session) -> Optional[List[DbUser]]:
 
 
 @full_database_exceptions
-def get_public_key_pem(db: Session, id_user) -> Optional[str]:
+def get_public_key_pem(db: Session, id_user: int) -> Optional[str]:
     user = get_user_by_id(db, id_user)
     public_key_pem = user.public_key
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from pydantic import BaseModel, Field
 
@@ -38,6 +38,13 @@ class CreditDisplay(CreditBase):
     id_credit: int = Field(...)
     in_process: bool = Field(...)
     created_time: datetime = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
+class ListCreditsDisplay(BaseModel):
+    credits: List[CreditDisplay] = Field(...)
 
     class Config:
         orm_mode = True

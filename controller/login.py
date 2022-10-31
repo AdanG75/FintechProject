@@ -63,7 +63,8 @@ def login(db: Session, email: str, password: str) -> TokenBase:
     return TokenBase(
         access_token=access_token,
         token_type="bearer",
-        user_id=user.id_user
+        user_id=user.id_user,
+        type_user=user.type_user
     )
 
 

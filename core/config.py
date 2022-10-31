@@ -48,7 +48,7 @@ class Settings(object):
             env_path = Path('.') / '.env'
             load_dotenv(dotenv_path=env_path)
 
-            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'fintech75-aa48eab9d1dc.json'
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'fintech75-39f2ac75468d.json'
 
         self.__PROJECT_NAME: str = os.environ.get("PROJECT_NAME")
         self.__PROJECT_VERSION: str = os.environ.get("PROJECT_VERSION")

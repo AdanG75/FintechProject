@@ -209,8 +209,8 @@ async def send_recovery_code(
     
         Este es su código para recuperar su contraseña: {code}.
     
-    Si no fue usted quien solicitó esta operación, le recomendamos que cancele la operación o en su defecto que proteja
-    su cuenta de correo electrónico {email_user} para que no puedan hacer uso de este código.
+    Si no fue usted quien solicitó esta operación, le recomendamos que proteja su cuenta de 
+    correo electrónico {email_user} para que no puedan hacer uso de este código.
     
     Sin más que agregar el equipo de fintech75 le desea un excelente día.
 
