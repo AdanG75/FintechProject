@@ -1,10 +1,12 @@
+from typing import List
+
 from pydantic import BaseModel, Field
 
 from schemas.account_base import AccountRequest, AccountDisplay
 from schemas.address_base import AddressRequest, AddressDisplay
 from schemas.branch_base import BranchRequest, BranchDisplay
-from schemas.market_base import MarketRequest, MarketDisplay
-from schemas.user_base import UserRequest, UserBasicDisplay
+from schemas.market_base import MarketRequest, MarketDisplay, MarketBasicDisplay
+from schemas.user_base import UserRequest, UserBasicDisplay, UserBase
 
 
 class MarketFullRequest(BaseModel):
@@ -70,6 +72,21 @@ class MarketFullDisplay(BaseModel):
     branch: BranchDisplay = Field(...)
     address: AddressDisplay = Field(...)
     account: AccountDisplay = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
+class MarketSimpleDisplay(BaseModel):
+    market: MarketBasicDisplay = Field(...)
+    user: UserBase = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
+class MarketSimpleListDisplay(BaseModel):
+    markets: List[MarketSimpleDisplay] = Field(..., min_items=0)
 
     class Config:
         orm_mode = True

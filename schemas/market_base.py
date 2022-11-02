@@ -43,3 +43,8 @@ class MarketDisplay(MarketBase):
         orm_mode = True
 
 
+class MarketBasicDisplay(MarketBase):
+    id_market: str = Field(...)
+
+    class Config:
+        orm_mode = True

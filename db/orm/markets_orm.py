@@ -1,9 +1,10 @@
 import uuid
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy.orm import Session
 
 
+from core.config import settings
 from db.models.addresses_db import DbAddress  # Don't erase because it is used by relationship
 from db.models.branches_db import DbBranch  # Don't erase because it is used by relationship
 from db.models.clients_db import DbClient  # Don't erase because it is used by relationship
@@ -122,6 +123,32 @@ def get_market_by_id_user(db: Session, id_user: int, mode: str = 'active') -> Db
         raise element_not_found_exception
 
     return market
+
+
+@full_database_exceptions
+def get_all_markets(db: Session, mode: str = 'active', remove_market_system: bool = True) -> List[DbMarket]:
+    if mode == 'active' and remove_market_system:
+        markets = db.query(DbMarket).where(
+            DbMarket.id_market != settings.get_market_system(),
+            DbMarket.dropped == False
+        ).all()
+    elif mode == 'active' and not remove_market_system:
+        markets = db.query(DbMarket).where(
+            DbMarket.dropped == False
+        ).all()
+    elif mode == 'all' and remove_market_system:
+        markets = db.query(DbMarket).where(
+            DbMarket.id_market != settings.get_market_system()
+        ).all()
+    elif mode == 'all' and not remove_market_system:
+        markets = db.query(DbMarket).all()
+    else:
+        raise option_not_found_exception
+
+    if markets is None:
+        markets = []
+
+    return markets
 
 
 @multiple_attempts

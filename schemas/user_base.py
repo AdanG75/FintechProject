@@ -14,6 +14,9 @@ class UserBase(BaseModel):
     phone: Optional[str] = Field(None, regex=pattern_phone, min_length=7, max_length=25)
     type_user: TypeUser = Field(...)
 
+    class Config:
+        orm_mode = True
+
 
 class UserRequest(UserBase):
     password: Optional[str] = Field(None, min_length=8, max_length=49)
