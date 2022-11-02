@@ -44,11 +44,19 @@ class ClientFullRequest(BaseModel):
         }
 
 
-class ClientFullDisplay(BaseModel):
+class ClientComplexDisplay(BaseModel):
     user: UserBasicDisplay = Field(...)
     client: ClientDisplay = Field(...)
+
+
+class ClientFullDisplay(ClientComplexDisplay):
     address: AddressDisplay = Field(...)
     global_credit: CreditDisplay = Field(...)
 
+    class Config:
+        orm_mode = True
+
+
+class ClientProfileDisplay(ClientComplexDisplay):
     class Config:
         orm_mode = True

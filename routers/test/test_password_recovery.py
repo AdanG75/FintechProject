@@ -3,7 +3,7 @@ from fastapi import APIRouter, Path, Depends, Query
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.login import get_current_token, check_type_user
+from controller.login_controller import get_current_token, check_type_user
 from db.database import get_db
 from db.models.password_recoveries_db import DbPasswordRecovery
 from db.orm import password_recoveries_orm

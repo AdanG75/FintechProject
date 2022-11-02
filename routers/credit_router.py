@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.credit_controller import get_credits
-from controller.login import get_current_token
+from controller.login_controller import get_current_token
 from controller.secure_controller import cipher_response_message
 from db.database import get_db
 from db.orm.exceptions_orm import not_authorized_exception

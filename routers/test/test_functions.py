@@ -8,7 +8,7 @@ from redis.client import Redis
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.login import get_current_token, check_type_user
+from controller.login_controller import get_current_token, check_type_user
 from core.app_email import send_email_from_system, send_register_email
 from core.cache import get_cache_client
 from core.utils import get_current_utc_timestamp

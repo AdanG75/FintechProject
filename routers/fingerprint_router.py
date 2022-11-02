@@ -4,8 +4,8 @@ from fastapi import APIRouter, Path, Query, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.fingerprint import check_if_user_have_fingerprint_registered
-from controller.login import get_current_token
+from controller.fingerprint_controller import check_if_user_have_fingerprint_registered
+from controller.login_controller import get_current_token
 from controller.secure_controller import cipher_response_message
 from db.database import get_db
 from db.orm.exceptions_orm import not_authorized_exception

@@ -34,6 +34,27 @@ class BranchInner(BaseModel):
         orm_mode = True
 
 
+class AddressInner(BaseModel):
+    id_address: int = Field(...)
+    zip_code: str = Field(...)
+    state: str = Field(...)
+    city: Optional[str] = Field(None)
+    neighborhood: Optional[str] = Field(None)
+    street: str = Field(...)
+    ext_number: str = Field(...)
+    inner_number: Optional[str] = Field(None)
+
+    class Config:
+        orm_mode = True
+
+
+class BranchComplexInner(BranchInner):
+    address: AddressInner = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
 class MarketDisplay(MarketBase):
     id_market: str = Field(...)
 
@@ -45,6 +66,13 @@ class MarketDisplay(MarketBase):
 
 class MarketBasicDisplay(MarketBase):
     id_market: str = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
+class MarketComplexDisplay(MarketBasicDisplay):
+    branches: List[BranchComplexInner] = Field(...)
 
     class Config:
         orm_mode = True

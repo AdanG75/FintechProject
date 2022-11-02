@@ -9,13 +9,13 @@ from sqlalchemy.orm import Session
 from starlette import status
 from starlette.background import BackgroundTasks
 
-from controller.fingerprint import register_fingerprint, does_client_have_fingerprints_samples_registered, \
+from controller.fingerprint_controller import register_fingerprint, does_client_have_fingerprints_samples_registered, \
     preregister_fingerprint, check_fingerprint_request
-from controller.password_recovery import generate_new_code_to_recover_password, check_code, change_password
+from controller.password_recovery_controller import generate_new_code_to_recover_password, check_code, change_password
 from controller.secure_controller import get_data_from_secure, get_data_from_rsa_message, cipher_response_message
-from controller import login as c_login
-from controller.login import get_current_token
-from controller.sign_up import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
+from controller import login_controller as c_login
+from controller.login_controller import get_current_token
+from controller.sign_up_controller import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.app_email import send_register_email, send_recovery_code
 from core.cache import get_cache_client, item_save, item_get
 from core.config import settings

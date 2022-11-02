@@ -5,7 +5,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
 from auth.token_functions import create_access_token, oauth2_schema, SECRET_KEY, ALGORITHM, is_token_expired
-from controller.user import return_type_id_based_on_type_of_user
+from controller.user_controller import return_type_id_based_on_type_of_user
 from db.database import get_db
 from db.models.sessions_db import DbSession
 from db.models.users_db import DbUser

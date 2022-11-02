@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Path, Query, Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.login import get_current_token, check_type_user
+from controller.login_controller import get_current_token, check_type_user
 from core.utils import money_str_to_float
 from db.database import get_db
 from db.orm import credits_orm

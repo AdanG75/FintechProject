@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body, Path, Depends
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.login import get_current_token, check_type_user
+from controller.login_controller import get_current_token, check_type_user
 from db.database import get_db
 from db.orm import admins_orm
 from db.orm.exceptions_orm import credentials_exception

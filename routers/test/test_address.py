@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Body, Path, Query
 from requests import Session
 from starlette import status
 
-from controller.login import get_current_token, check_type_user
+from controller.login_controller import get_current_token, check_type_user
 from db.database import get_db
 from db.models.addresses_db import DbAddress
 from db.orm import addresses_orm

@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 from schemas.account_base import AccountRequest, AccountDisplay
 from schemas.address_base import AddressRequest, AddressDisplay
 from schemas.branch_base import BranchRequest, BranchDisplay
-from schemas.market_base import MarketRequest, MarketDisplay, MarketBasicDisplay
-from schemas.user_base import UserRequest, UserBasicDisplay, UserBase
+from schemas.market_base import MarketRequest, MarketDisplay, MarketBasicDisplay, MarketComplexDisplay
+from schemas.user_base import UserRequest, UserBasicDisplay, UserBase, UserDisplay
 
 
 class MarketFullRequest(BaseModel):
@@ -72,6 +72,14 @@ class MarketFullDisplay(BaseModel):
     branch: BranchDisplay = Field(...)
     address: AddressDisplay = Field(...)
     account: AccountDisplay = Field(...)
+
+    class Config:
+        orm_mode = True
+
+
+class MarketProfileDisplay(BaseModel):
+    user: UserDisplay = Field(...)
+    market: MarketComplexDisplay = Field(...)
 
     class Config:
         orm_mode = True

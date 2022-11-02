@@ -4,8 +4,8 @@ from google.cloud.storage.client import Client
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
-from controller.bucket import create_bucket_and_save_samples_from_fingerprint
-from controller.sign_up import select_the_best_sample
+from controller.bucket_controller import create_bucket_and_save_samples_from_fingerprint
+from controller.sign_up_controller import select_the_best_sample
 from core.cache import is_the_same, batch_save
 from core.utils import generate_random_string
 from db.models.fingerprints_db import DbFingerprint
