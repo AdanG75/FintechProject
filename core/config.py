@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 from core.secret_manager import access_secret_version
 
 
+BOUND_TEST_ENTRYPOINTS: bool = False
+
+
 class Settings(object):
     __ON_ClOUD: bool
     __PROJECT_NAME: str
