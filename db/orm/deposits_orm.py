@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy.orm import Session
 
@@ -86,6 +86,23 @@ def get_deposit_by_id_movement(db: Session, id_movement: int) -> DbDeposit:
         raise element_not_found_exception
 
     return deposit
+
+
+@multiple_attempts
+@full_database_exceptions
+def get_deposits_by_id_destination_credit(db: Session, id_destination_credit: int) -> List[DbDeposit]:
+    try:
+        deposits = db.query(DbDeposit).where(
+            DbDeposit.id_destination_credit == id_destination_credit
+        ).all()
+    except Exception as e:
+        print(e)
+        raise e
+
+    if deposits is None:
+        raise element_not_found_exception
+
+    return deposits
 
 
 @multiple_attempts

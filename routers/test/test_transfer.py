@@ -6,7 +6,7 @@ from starlette import status
 
 from controller.login_controller import get_current_token, check_type_user
 from db.database import get_db
-from db.orm import trasnfers_orm
+from db.orm import transfers_orm
 from db.orm.exceptions_orm import credentials_exception
 from schemas.token_base import TokenSummary
 from schemas.transfer_base import TransferDisplay, TransferRequest

@@ -6,3 +6,8 @@ class TypeMovement(Enum):
     payment = 'payment'
     transfer = 'transfer'
     withdraw = 'withdraw'
+
+
+class NatureMovement(Enum):
+    income = 'income'
+    outgoings = 'outgoings'
