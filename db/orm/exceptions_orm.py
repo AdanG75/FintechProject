@@ -283,3 +283,8 @@ wrong_public_pem_format_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
     detail="PEM format are wrong, please sent it based on PKCS8"
 )
+
+only_available_client_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="This operation is only available to clients"
+)

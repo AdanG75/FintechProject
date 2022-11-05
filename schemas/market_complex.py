@@ -98,3 +98,15 @@ class MarketSimpleListDisplay(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class CreditClientInner(BaseModel):
+    id_client: str = Field(...)
+    have_credit: bool = Field(...)
+    id_credit: int = Field(None)
+    type_credit: str = Field(None, min_length=3, max_length=8)
+
+
+class MarketCreditClient(BaseModel):
+    market: MarketComplexDisplay = Field(...)
+    credit_client: CreditClientInner = Field(...)
