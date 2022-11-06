@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
+from schemas.movement_complex import BasicExtraMovement
 from schemas.type_money import TypeMoney
 
 
@@ -30,3 +31,7 @@ class PaymentDisplay(PaymentBase):
 
     class Config:
         orm_mode = True
+
+
+class PaymentComplexList(BaseModel):
+    payments: List[BasicExtraMovement] = Field(...)

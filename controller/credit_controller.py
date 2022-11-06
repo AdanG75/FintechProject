@@ -46,7 +46,7 @@ async def get_owner_credit(db: Session, id_credit: int, type_user: str) -> Owner
         market = get_market_by_id_market(db, credit.id_market)
         user = get_user_by_id(db, market.id_user)
         name_owner = user.name
-        type_owner = TypeUser.market.value
+        type_owner = user.type_user
 
     elif type_user == TypeUser.market.value or type_user == TypeUser.system.value:
         credit = get_credit_by_id_credit(db, id_credit)

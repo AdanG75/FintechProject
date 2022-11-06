@@ -9,11 +9,13 @@ from db.models.transfers_db import DbTransfer
 from db.models.withdraws_db import DbWithdraw
 from db.orm.deposits_orm import get_deposits_by_id_destination_credit
 from db.orm.exceptions_orm import NotFoundException
-from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_movement_by_id_movement
-from db.orm.payments_orm import get_payment_by_id_movement
+from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_movement_by_id_movement, \
+    get_movements_by_id_requester_and_type
+from db.orm.payments_orm import get_payment_by_id_movement, get_payments_by_id_market
 from db.orm.transfers_orm import get_transfer_by_id_movement, get_transfers_by_id_destination_credit
 from db.orm.withdraws_orm import get_withdraw_by_id_movement
 from schemas.movement_complex import BasicExtraMovement, ExtraMovement
+from schemas.payment_base import PaymentComplexList
 from schemas.type_movement import TypeMovement, NatureMovement
 
 
@@ -71,6 +73,52 @@ async def get_payment_movements_of_credit(db: Session, id_credit: int) -> List[B
         return extra_movements
 
     return movements
+
+
+def get_payments_of_client(db: Session, id_client: str) -> PaymentComplexList:
+    movements = get_movements_by_id_requester_and_type(db, id_client, TypeMovement.payment.value)
+
+    if len(movements) > 0:
+        extra_movements = []
+        for movement in movements:
+            try:
+                payment: DbPayment = get_payment_by_id_movement(db, movement.id_movement)
+            except NotFoundException:
+                pass
+            else:
+                extra_information = pasrse_DbPayment_to_ExtraMovement(payment)
+                extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
+                extra_movements.append(extra_movement)
+
+    else:
+        extra_movements = movements
+
+    return PaymentComplexList(
+        payments=extra_movements
+    )
+
+
+def get_payments_of_market(db: Session, id_market: str) -> PaymentComplexList:
+    payments = get_payments_by_id_market(db, id_market)
+
+    if len(payments) > 0:
+        extra_movements = []
+        for payment in payments:
+            try:
+                movement = get_movement_by_id_movement(db, payment.id_movement)
+            except NotFoundException:
+                pass
+            else:
+                extra_information = pasrse_DbPayment_to_ExtraMovement(payment, NatureMovement.income.value)
+                extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
+                extra_movements.append(extra_movement)
+
+    else:
+        extra_movements = payments
+
+    return PaymentComplexList(
+        payments=extra_movements
+    )
 
 
 async def get_transfer_movements_of_credit(db: Session, id_credit: int) -> List[BasicExtraMovement]:
@@ -181,10 +229,13 @@ def parse_DbDeposit_to_ExtraMovement(deposit: DbDeposit) -> ExtraMovement:
     )
 
 
-def pasrse_DbPayment_to_ExtraMovement(payment: DbPayment) -> ExtraMovement:
+def pasrse_DbPayment_to_ExtraMovement(
+        payment: DbPayment,
+        nature_movement: str = NatureMovement.outgoings.value
+) -> ExtraMovement:
     return ExtraMovement(
         id_detail=payment.id_payment,
-        movement_nature=NatureMovement.outgoings.value,
+        movement_nature=nature_movement,
         type_submov=payment.type_payment,
         destination_credit=None,
         id_market=payment.id_market,

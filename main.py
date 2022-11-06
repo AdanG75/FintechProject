@@ -19,6 +19,7 @@ app = FastAPI(
 add_main_routers(app)
 add_test_routers(app)
 
+
 @app.on_event("startup")
 async def startup_event():
     settings = charge_settings()

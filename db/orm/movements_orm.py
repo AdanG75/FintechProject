@@ -177,6 +177,29 @@ def get_movements_by_id_credit_and_type(db: Session, id_credit: Optional[int], t
 
 @multiple_attempts
 @full_database_exceptions
+def get_movements_by_id_requester_and_type(
+        db: Session,
+        id_requester: Optional[str] = None,
+        type_movement: str = 'payment'
+) -> List[DbMovement]:
+    try:
+        TypeMovement(type_movement)
+    except ValueError:
+        raise wrong_data_sent_exception
+
+    movements = db.query(DbMovement).where(
+        DbMovement.id_requester == id_requester,
+        DbMovement.type_movement == type_movement
+    ).all()
+
+    if movements is None:
+        return []
+
+    return movements
+
+
+@multiple_attempts
+@full_database_exceptions
 def authorized_movement(
         db: Session,
         id_movement: Optional[int] = None,
