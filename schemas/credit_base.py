@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Union, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 from schemas.type_credit import TypeCredit
 
@@ -32,6 +32,14 @@ class CreditRequest(CreditBase):
                 "amount": 25.00
             }
         }
+
+
+class CreditBasicRequest(BaseModel):
+    id_market: str = Field(..., min_length=12, max_length=49)
+    id_client: Optional[str] = Field(None, min_length=12, max_length=49)
+    client_email: Optional[EmailStr] = Field(None)
+    alias_credit: str = Field(..., min_length=3, max_length=79)
+    amount: Union[str, float] = Field(..., ge=0, regex=money_pattern, min_length=1, max_length=25)
 
 
 class CreditDisplay(CreditBase):

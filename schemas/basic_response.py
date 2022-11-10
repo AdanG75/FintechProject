@@ -4,8 +4,8 @@ code_pattern = r"^\d{7,9}$"
 
 
 class BasicResponse(BaseModel):
-    operation: str
-    successful: bool
+    operation: str = Field(...)
+    successful: bool = Field(...)
 
 
 class BasicPasswordChange(BaseModel):
@@ -13,7 +13,7 @@ class BasicPasswordChange(BaseModel):
 
 
 class BasicDataResponse(BaseModel):
-    data: str
+    data: str = Field(...)
 
 
 class BasicTicketResponse(BaseModel):

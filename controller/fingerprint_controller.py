@@ -12,7 +12,8 @@ from db.models.fingerprints_db import DbFingerprint
 from db.orm.clients_orm import get_client_by_id_client
 from db.orm.cores_orm import insert_list_of_core_points
 from db.orm.exceptions_orm import uncreated_bucked_exception, compile_exception, uncreated_fingerprint_exception, \
-    NotFoundException, wrong_data_sent_exception, expired_cache_exception, expired_ticket_or_is_incorrect_exception
+    NotFoundException, wrong_data_sent_exception, expired_cache_exception, expired_ticket_or_is_incorrect_exception, \
+    cache_exception
 from db.orm.fingerprints_orm import create_fingerprint, get_fingerprints_by_id_client, get_main_fingerprint_of_client
 from db.orm.functions_orm import full_database_exceptions, multiple_attempts
 from db.orm.minutiae_orm import insert_list_of_minutiae
@@ -55,7 +56,7 @@ async def register_fingerprint(
         console = ErrorMessage()
         console.show_message(result, web=True)
 
-    # If result is a fingerprint object we save the images and the characteristic data into the DB
+    # If result is a fingerprint object, we save the images and the characteristic data into the DB
     if isinstance(result, Fingerprint):
         url_sample, was_successful = create_bucket_and_save_samples_from_fingerprint(
             gcs,
@@ -189,7 +190,10 @@ def preregister_fingerprint(
         f'PRE-{id_client}': secure_data,
         f'TKT-{id_client}': ticket
     }
-    batch_save(r, values_to_catching)
+    result = batch_save(r, values_to_catching)
+
+    if result.count(False) > 0:
+        raise cache_exception
 
     return ticket
 

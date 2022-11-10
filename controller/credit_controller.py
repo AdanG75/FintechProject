@@ -1,17 +1,25 @@
-from typing import List
+import json
+from typing import List, Tuple, Union
+import uuid
 
+from redis.client import Redis
 from sqlalchemy.orm import Session
 
 from controller.movement_controller import get_all_movements_of_credit
+from controller.user_controller import get_user_using_email, return_type_id_based_on_type_of_user, get_name_of_client, \
+    get_name_of_market
+from core.cache import batch_save
 from db.models.credits_db import DbCredit
 from db.orm.clients_orm import get_client_by_id_client
-from db.orm.credits_orm import get_credits_by_id_client, get_credits_by_id_market, get_credit_by_id_credit
-from db.orm.exceptions_orm import type_of_value_not_compatible
-from db.orm.markets_orm import get_market_by_id_market
-from db.orm.users_orm import get_user_by_id
-from schemas.credit_base import CreditDisplay
-from schemas.credit_complex import OwnerInner, CreditComplexProfile
+from db.orm.credits_orm import get_credits_by_id_client, get_credits_by_id_market, get_credit_by_id_credit, \
+    get_credit_by_id_market_and_id_client
+from db.orm.exceptions_orm import type_of_value_not_compatible, existing_credit_exception, \
+    type_of_user_not_compatible, not_values_sent_exception, cache_exception
+from schemas.credit_base import CreditDisplay, CreditBasicRequest, CreditRequest
+from schemas.credit_complex import OwnerInner, CreditComplexProfile, CreditComplexSummary, OwnersInner
+from schemas.type_credit import TypeCredit
 from schemas.type_user import TypeUser
+from secure.cipher_secure import cipher_data
 
 
 def get_credits(db: Session, type_user: str, id_type: str) -> List[DbCredit]:
@@ -43,16 +51,12 @@ async def get_owner_credit(db: Session, id_credit: int, type_user: str) -> Owner
     """
     if type_user == TypeUser.client.value:
         credit = get_credit_by_id_credit(db, id_credit)
-        market = get_market_by_id_market(db, credit.id_market)
-        user = get_user_by_id(db, market.id_user)
-        name_owner = user.name
-        type_owner = user.type_user
+        name_owner = await get_name_of_market(db, credit.id_market)
+        type_owner = TypeUser.market.value
 
     elif type_user == TypeUser.market.value or type_user == TypeUser.system.value:
         credit = get_credit_by_id_credit(db, id_credit)
-        client = get_client_by_id_client(db, credit.id_client)
-        user = get_user_by_id(db, client.id_user)
-        name_owner = f'{user.name} {client.last_name}'
+        name_owner = await get_name_of_client(db, credit.id_client)
         type_owner = TypeUser.client.value
 
     else:
@@ -62,6 +66,17 @@ async def get_owner_credit(db: Session, id_credit: int, type_user: str) -> Owner
         name_owner=name_owner,
         type_owner=type_owner
     )
+
+
+async def get_name_of_the_owners_of_credit(
+        db: Session,
+        id_client: str,
+        id_market: str
+) -> Tuple[str, str]:
+    client_name = await get_name_of_client(db, id_client)
+    market_name = await get_name_of_market(db, id_market)
+
+    return client_name, market_name
 
 
 def check_owner_credit(db: Session, id_credit: int, type_owner: str, id_owner: str) -> bool:
@@ -81,6 +96,15 @@ def check_owner_credit(db: Session, id_credit: int, type_owner: str, id_owner: s
     return False
 
 
+def check_client_have_credit_on_market(db: Session, id_client: str, id_market: str) -> bool:
+    credit = get_credit_by_id_market_and_id_client(db, id_market, id_client)
+
+    if credit is None:
+        return False
+    else:
+        return True
+
+
 async def get_credit_description(db: Session, id_credit: int, type_performer_user: str) -> CreditComplexProfile:
     movements_of_credit = await get_all_movements_of_credit(db, id_credit)
     owner_of__credit = await get_owner_credit(db, id_credit, type_performer_user)
@@ -93,3 +117,86 @@ async def get_credit_description(db: Session, id_credit: int, type_performer_use
         movements=movements_of_credit,
         owner=owner_of__credit
     )
+
+
+async def generate_pre_credit(
+        db: Session,
+        r: Redis,
+        pre_credit_order: CreditBasicRequest,
+        id_performer: int,
+        is_approved: bool
+) -> CreditComplexSummary:
+    if pre_credit_order.id_client is None:
+        if pre_credit_order.client_email is None:
+            raise not_values_sent_exception
+        else:
+            user = get_user_using_email(db, pre_credit_order.client_email)
+
+            if user.type_user == TypeUser.client.value:
+                id_client = return_type_id_based_on_type_of_user(db, user.id_user, 'client')
+            else:
+                raise type_of_user_not_compatible
+    else:
+        client = get_client_by_id_client(db, pre_credit_order.id_client)
+        id_client = client.id_client
+
+    if check_client_have_credit_on_market(db, id_client, pre_credit_order.id_market):
+        raise existing_credit_exception
+
+    client_name, market_name = await get_name_of_the_owners_of_credit(db, id_client, pre_credit_order.id_market)
+
+    pre_credit = CreditRequest(
+        id_client=id_client,
+        id_market=pre_credit_order.id_market,
+        id_account=None,
+        alias_credit=pre_credit_order.alias_credit,
+        type_credit=TypeCredit.local.value,
+        amount=pre_credit_order.amount,
+        is_approved=is_approved
+    )
+
+    ticket: str = uuid.uuid4().hex
+
+    # Save pre-credit, id_requester and id_performer into cache using ticket as reference
+    save_pre_credit_requester_and_performer_in_cache(r, ticket, pre_credit, id_client, id_performer)
+
+    owners = OwnersInner(
+        market_name=market_name,
+        client_name=client_name
+    )
+
+    return CreditComplexSummary(
+        credit=pre_credit,
+        owners=owners,
+        id_pre_credit=ticket
+    )
+
+
+def save_pre_credit_requester_and_performer_in_cache(
+        r: Redis,
+        ticket: str,
+        pre_credit: Union[dict, CreditRequest],
+        id_requester: str,
+        id_performer: int
+) -> bool:
+    if isinstance(pre_credit, dict):
+        pre_credit_str = json.dumps(pre_credit)
+    elif isinstance(pre_credit, CreditRequest):
+        pre_credit_str = pre_credit.json()
+    else:
+        raise type_of_value_not_compatible
+
+    # Cipher credit's data to secure it
+    secure_data = cipher_data(pre_credit_str)
+
+    values_to_catching = {
+        f'PRE-{ticket}': secure_data,
+        f'RQT-{ticket}': id_requester,
+        f'PFR-{ticket}': id_performer
+    }
+    result = batch_save(r, values_to_catching)
+
+    if result.count(False) > 0:
+        raise cache_exception
+
+    return True
