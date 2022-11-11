@@ -5,6 +5,8 @@ import uuid
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
+from controller.characteristic_point_controller import get_json_of_minutiae_list, get_json_of_core_points_list
+from controller.fingerprint_controller import describe_fingerprint_from_sample
 from controller.movement_controller import get_all_movements_of_credit
 from controller.user_controller import get_user_using_email, return_type_id_based_on_type_of_user, get_name_of_client, \
     get_name_of_market
@@ -15,8 +17,10 @@ from db.orm.credits_orm import get_credits_by_id_client, get_credits_by_id_marke
     get_credit_by_id_market_and_id_client
 from db.orm.exceptions_orm import type_of_value_not_compatible, existing_credit_exception, \
     type_of_user_not_compatible, not_values_sent_exception, cache_exception
+from fingerprint_process.description.fingerprint import Fingerprint
 from schemas.credit_base import CreditDisplay, CreditBasicRequest, CreditRequest
 from schemas.credit_complex import OwnerInner, CreditComplexProfile, CreditComplexSummary, OwnersInner
+from schemas.fingerprint_model import FingerprintB64
 from schemas.type_credit import TypeCredit
 from schemas.type_user import TypeUser
 from secure.cipher_secure import cipher_data
@@ -194,7 +198,40 @@ def save_pre_credit_requester_and_performer_in_cache(
         f'RQT-{ticket}': id_requester,
         f'PFR-{ticket}': id_performer
     }
-    result = batch_save(r, values_to_catching)
+    result = batch_save(r, values_to_catching, seconds=1800)
+
+    if result.count(False) > 0:
+        raise cache_exception
+
+    return True
+
+
+async def save_precredit_fingerprint(r: Redis, id_order: str, fingerprint_object: FingerprintB64) -> bool:
+    fingerprint: Fingerprint = await describe_fingerprint_from_sample(fingerprint_object.fingerprint)
+    minutiae_str = get_json_of_minutiae_list(fingerprint.get_minutiae_list())
+    core_points_str = get_json_of_core_points_list(fingerprint.get_core_point_list())
+
+    # Cipher minutiae_str and core_points_str
+    minutiae_secure = cipher_data(minutiae_str)
+    core_points_secure = cipher_data(core_points_str)
+
+    # Save cipher data into Redis
+    save_minutiae_and_core_points_secure_in_cache(r, minutiae_secure, core_points_secure, id_order)
+
+    return True
+
+
+def save_minutiae_and_core_points_secure_in_cache(
+        r: Redis,
+        minutiae_secure: str,
+        core_points_secure: str,
+        id_order: str
+) -> bool:
+    values_to_catching = {
+        f'MNT-{id_order}': minutiae_secure,
+        f'CRP-{id_order}': core_points_secure
+    }
+    result = batch_save(r, values_to_catching, seconds=1800)
 
     if result.count(False) > 0:
         raise cache_exception

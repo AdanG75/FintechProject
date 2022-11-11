@@ -16,3 +16,11 @@ class TypeCore(Enum):
 class TypeMinutia(Enum):
     bifurcation: str = 'b'
     end: str = 'e'
+
+
+class TypeChPoint(Enum):
+    bifurcation: str = 'b'
+    end: str = 'e'
+    delta: str = 'd'
+    loop: str = 'l'
+    whorl: str = 'w'

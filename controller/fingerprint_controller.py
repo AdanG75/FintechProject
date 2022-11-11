@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from google.cloud.storage.client import Client
 from redis.client import Redis
@@ -79,6 +79,28 @@ async def register_fingerprint(
         )
 
         return response
+    else:
+        raise uncreated_fingerprint_exception
+
+
+async def describe_fingerprint_from_sample(sample: Union[str, List[int]]) -> Fingerprint:
+    # Describe sample of fingerprint
+    result = get_description_fingerprint(
+        name_fingerprint='auth-fingerprint',
+        source='api',
+        data_fingerprint=sample,
+        mode='auth',
+        show_result=False,
+        save_result=False
+    )
+
+    # Check if there is an error
+    if isinstance(result, int):
+        console = ErrorMessage()
+        console.show_message(result, web=True)
+
+    if isinstance(result, Fingerprint):
+        return result
     else:
         raise uncreated_fingerprint_exception
 
@@ -190,7 +212,7 @@ def preregister_fingerprint(
         f'PRE-{id_client}': secure_data,
         f'TKT-{id_client}': ticket
     }
-    result = batch_save(r, values_to_catching)
+    result = batch_save(r, values_to_catching, seconds=1800)
 
     if result.count(False) > 0:
         raise cache_exception

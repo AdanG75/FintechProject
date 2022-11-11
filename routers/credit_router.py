@@ -6,14 +6,19 @@ from redis.client import Redis
 from sqlalchemy.orm import Session
 from starlette import status
 
-from controller.credit_controller import get_credits, check_owner_credit, get_credit_description, generate_pre_credit
+from controller.credit_controller import get_credits, check_owner_credit, get_credit_description, generate_pre_credit, \
+    save_precredit_fingerprint
+from controller.general_controller import check_performer_in_cache
 from controller.login_controller import get_current_token
 from controller.secure_controller import cipher_response_message, get_data_from_secure
 from core.cache import get_cache_client
 from db.database import get_db
-from db.orm.exceptions_orm import not_authorized_exception, validation_request_exception, type_of_user_not_compatible
+from db.orm.exceptions_orm import not_authorized_exception, validation_request_exception, type_of_user_not_compatible, \
+    not_longer_available_exception
+from schemas.basic_response import BasicResponse
 from schemas.credit_base import ListCreditsDisplay, CreditBasicRequest
 from schemas.credit_complex import CreditComplexProfile, CreditComplexSummary
+from schemas.fingerprint_model import FingerprintB64
 from schemas.secure_base import SecureBase
 from schemas.token_base import TokenSummary
 from schemas.type_user import TypeUser
@@ -108,6 +113,46 @@ async def create_credit_order(
 
     response = await generate_pre_credit(db, r, credit_request, current_token.id_user, is_approved)
 
+    if secure:
+        secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)
+        return secure_response
+
+    return response
+
+
+@router.post(
+    path='/credit/order/{id_order}/fingerprint',
+    response_model=Union[SecureBase, BasicResponse],
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def save_fingerprint_to_authorize_pre_credit(
+        id_order: str = Path(..., min_length=16, max_length=48),
+        request: Union[SecureBase, FingerprintB64] = Body(...),
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    is_performer = check_performer_in_cache(r, id_order, current_token.id_user)
+
+    if is_performer is False:
+        raise not_authorized_exception
+
+    if is_performer is None:
+        raise not_longer_available_exception
+
+    data_request = get_data_from_secure(request) if secure else request
+    try:
+        fingerprint_request = FingerprintB64.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
+
+    result = await save_precredit_fingerprint(r, id_order, fingerprint_request)
+
+    response = BasicResponse(
+        operation="Save pre-credit fingerprint",
+        successful=result
+    )
     if secure:
         secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)
         return secure_response

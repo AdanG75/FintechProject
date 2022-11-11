@@ -293,3 +293,8 @@ only_available_client_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="This operation is only available to clients"
 )
+
+not_longer_available_exception = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Operation expired. Please generate a new one"
+)

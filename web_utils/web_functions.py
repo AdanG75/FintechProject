@@ -1,6 +1,10 @@
+import json
 from datetime import datetime, timedelta
 from math import floor
 import random
+from typing import Union, List
+
+from pydantic import BaseModel
 
 from core.config import settings
 
@@ -29,3 +33,17 @@ def set_expiration_time(minutes: int = settings.get_expire_minutes()) -> datetim
     expiration_time = datetime.utcnow() + timedelta(minutes=minutes)
 
     return expiration_time
+
+
+def serialize_base_model_object_to_json_str(my_object: Union[List[BaseModel], BaseModel]) -> str:
+    if isinstance(my_object, list):
+        new_list = []
+        for element in my_object:
+            element_str = element.json()
+            new_list.append(element_str)
+
+        return json.dumps(new_list)
+    elif isinstance(my_object, BaseModel):
+        return my_object.json()
+    else:
+        raise TypeError
