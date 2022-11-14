@@ -222,3 +222,26 @@ async def send_recovery_code(
 
     return message_send
 
+
+async def send_new_credit_email(email_user, approved: bool, market_name: str, amount: Union[str, float]):
+    if approved:
+        approved_msg = 'ha sido aprovado'
+    else:
+        approved_msg = 'aún no ha sido aprovado'
+
+    amount_str = f'${float}' if isinstance(amount, float) else amount
+
+    message = f'''
+    Se ha creado un nuevo crédito en el establecimiento {market_name} el cual {approved_msg}.
+    
+    Mientras el saldo actual con el que cuente el crédito es de {amount_str}.
+    
+    Esperamos que pronto disfrute de este. Saludos.
+    
+    '''
+
+    message_subject = "Nuevo crédito"
+
+    message_send = send_email_from_system(email_user, message_subject, message)
+
+    return message_send

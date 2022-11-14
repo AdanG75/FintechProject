@@ -14,7 +14,7 @@ from core.cache import batch_save
 from db.models.credits_db import DbCredit
 from db.orm.clients_orm import get_client_by_id_client
 from db.orm.credits_orm import get_credits_by_id_client, get_credits_by_id_market, get_credit_by_id_credit, \
-    get_credit_by_id_market_and_id_client
+    get_credit_by_id_market_and_id_client, create_credit, approve_credit
 from db.orm.exceptions_orm import type_of_value_not_compatible, existing_credit_exception, \
     type_of_user_not_compatible, not_values_sent_exception, cache_exception
 from fingerprint_process.description.fingerprint import Fingerprint
@@ -23,7 +23,7 @@ from schemas.credit_complex import OwnerInner, CreditComplexProfile, CreditCompl
 from schemas.fingerprint_model import FingerprintB64
 from schemas.type_credit import TypeCredit
 from schemas.type_user import TypeUser
-from secure.cipher_secure import cipher_data
+from secure.cipher_secure import cipher_data, decipher_data
 
 
 def get_credits(db: Session, type_user: str, id_type: str) -> List[DbCredit]:
@@ -40,6 +40,18 @@ def get_credits(db: Session, type_user: str, id_type: str) -> List[DbCredit]:
         user_credits = []
 
     return user_credits
+
+
+async def new_credit(db: Session, request: CreditRequest, type_performer: str) -> CreditDisplay:
+    credit_db = create_credit(db, request, type_performer)
+
+    return CreditDisplay.from_orm(credit_db)
+
+
+async def approve_credit_market(db: Session, id_credit: int) -> CreditDisplay:
+    approved_credit = approve_credit(db, id_credit)
+
+    return CreditDisplay.from_orm(approved_credit)
 
 
 async def get_owner_credit(db: Session, id_credit: int, type_user: str) -> OwnerInner:
@@ -206,10 +218,31 @@ def save_pre_credit_requester_and_performer_in_cache(
     return True
 
 
+def get_pre_credit_request_from_cache(r: Redis, id_order: Union[str, int]) -> CreditRequest:
+    pre_credit_cache = r.get(f'PRE-{id_order}')
+    pre_credit_str = pre_credit_cache.decode('utf-8')
+    pre_credit_json = decipher_data(pre_credit_str)
+
+    return CreditRequest.parse_raw(pre_credit_json)
+
+
+async def delete_pre_credit_requester_and_performer_in_cache(r: Redis, identifier: Union[str, int]) -> bool:
+    if r.exists(f'PRE-{identifier}', f'RQT-{identifier}', f'PFR-{identifier}') > 0:
+        result = r.delete(f'PRE-{identifier}', f'RQT-{identifier}', f'PFR-{identifier}')
+
+        return result > 0
+
+    return True
+
+
 async def save_precredit_fingerprint(r: Redis, id_order: str, fingerprint_object: FingerprintB64) -> bool:
     fingerprint: Fingerprint = await describe_fingerprint_from_sample(fingerprint_object.fingerprint)
+
     minutiae_str = get_json_of_minutiae_list(fingerprint.get_minutiae_list())
+    # print(len(fingerprint.get_minutiae_list()))
+
     core_points_str = get_json_of_core_points_list(fingerprint.get_core_point_list())
+    # print(len(fingerprint.get_core_point_list()))
 
     # Cipher minutiae_str and core_points_str
     minutiae_secure = cipher_data(minutiae_str)

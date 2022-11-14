@@ -214,6 +214,11 @@ operation_need_a_precondition_exception = HTTPException(
     detail="To do this operation it is necessary have completed some conditions"
 )
 
+operation_need_authorization_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail='This operation needs a previous authorization'
+)
+
 not_identified_client_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="A client is required to make this movement"
@@ -292,6 +297,11 @@ wrong_public_pem_format_exception = HTTPException(
 only_available_client_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="This operation is only available to clients"
+)
+
+only_available_market_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="This operation is only available to markets"
 )
 
 not_longer_available_exception = HTTPException(

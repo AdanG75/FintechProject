@@ -1,6 +1,8 @@
 import json
 from typing import List, Union
 
+from db.models.cores_db import DbCores
+from db.models.minutiae_db import DbMinutiae
 from db.orm.exceptions_orm import type_not_found_exception
 from fingerprint_process.models.characteristic_point import CharacteristicPoint
 from fingerprint_process.models.core_point import CorePoint
@@ -100,6 +102,45 @@ def parse_CPBase_to_CorePoint(cp_schema: CPBase) -> CorePoint:
     )
 
 
+def parse_db_list_to_cp_list(db_list: Union[List[DbMinutiae], List[DbCores]], cp_type: str) -> list:
+    if cp_type.lower() == 'minutia':
+        minutiae_obj = []
+        for minutia_db in db_list:
+            minutia_obj = parse_minutia_db_to_minutia(minutia_db)
+            minutiae_obj.append(minutia_obj)
+
+        return minutiae_obj
+
+    elif cp_type.lower() == 'core':
+        cores_obj = []
+        for core_db in db_list:
+            core_obj = parse_core_point_db_to_core_point(core_db)
+            cores_obj.append(core_obj)
+
+        return cores_obj
+
+    else:
+        raise type_not_found_exception
+
+
+def parse_minutia_db_to_minutia(minutia_db: DbMinutiae) -> Minutiae:
+    return Minutiae(
+        posy=minutia_db.pos_y,
+        posx=minutia_db.pos_x,
+        angle=minutia_db.angle,
+        point_type=minutia_db.type_minutia
+    )
+
+
+def parse_core_point_db_to_core_point(core_point_db: DbCores) -> CorePoint:
+    return CorePoint(
+        posy=core_point_db.pos_y,
+        posx=core_point_db.pos_x,
+        angle=core_point_db.angle,
+        point_type=core_point_db.type_core
+    )
+
+
 def parse_dict_to_cp_point(element: dict, type_cp: str) -> Union[Minutiae, CorePoint]:
     """
     Parse a dict from CPBase to a Minutiae Object or a CorePoint Object
@@ -110,9 +151,10 @@ def parse_dict_to_cp_point(element: dict, type_cp: str) -> Union[Minutiae, CoreP
     :return: Union[Minutiae, CorePoint] Return a Minutiae or CorePoint Object based on type_cp
     """
     if type_cp.lower() == 'minutia':
-        return Minutiae(posy=element['pos_y'], posx=element['pos_x'], angle=element['angle'], point_type=['type_point'])
+        return Minutiae(posy=element['pos_y'], posx=element['pos_x'],
+                        angle=element['angle'], point_type=element['type_point'])
     elif type_cp.lower() == 'core':
         return CorePoint(posy=element['pos_y'], posx=element['pos_x'],
-                         angle=element['angle'], point_type=['type_point'])
+                         angle=element['angle'], point_type=element['type_point'])
     else:
         raise type_not_found_exception

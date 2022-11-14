@@ -3,7 +3,7 @@ from typing import Union
 from sqlalchemy.orm import Session
 
 from db.models.users_db import DbUser
-from db.orm.admins_orm import get_admin_by_id_user
+from db.orm.admins_orm import get_admin_by_id_user, get_admin_by_id_admin
 from db.orm.clients_orm import get_client_by_id_user, get_client_by_id_client
 from db.orm.exceptions_orm import option_not_found_exception, wrong_public_pem_format_exception
 from db.orm.markets_orm import get_market_by_id_user, get_market_by_id_market
@@ -104,6 +104,13 @@ def get_user_using_id_market(db: Session, id_market: str) -> DbUser:
     return user
 
 
+def get_user_using_id_admin(db: Session, id_admin: str) -> DbUser:
+    admin = get_admin_by_id_admin(db, id_admin)
+    user = get_user_by_id(db, admin.id_user)
+
+    return user
+
+
 async def get_name_of_client(db: Session, id_client: str) -> str:
     client = get_client_by_id_client(db, id_client)
     user = get_user_by_id(db, client.id_user)
@@ -115,3 +122,16 @@ async def get_name_of_market(db: Session, id_market: str) -> str:
     user = get_user_using_id_market(db, id_market)
 
     return user.name
+
+
+async def get_email_based_on_id_type(db: Session, id_type: str, user_type: str) -> str:
+    if user_type == TypeUser.client.value:
+        user = get_user_using_id_client(db, id_type)
+    elif user_type == TypeUser.market.value or user_type == TypeUser.system.value:
+        user = get_user_using_id_market(db, id_type)
+    elif user_type == TypeUser.admin.value:
+        user = get_user_using_id_admin(db, id_type)
+    else:
+        raise option_not_found_exception
+
+    return user.email

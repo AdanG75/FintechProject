@@ -34,7 +34,6 @@ def create_credit(
     existing_credit = get_credit_by_id_market_and_id_client(db, request.id_market, request.id_client, mode='all')
 
     if existing_credit is None:
-
         if request.type_credit.value == 'global':
             is_market_of_system(db, request.id_market)
 

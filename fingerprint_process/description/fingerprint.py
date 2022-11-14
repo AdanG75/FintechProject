@@ -329,11 +329,20 @@ class Fingerprint(ErrorMessage):
 
         print('\n*********************************************************************************************\n')
 
+    def get_name_of_fingerprint(self) -> str:
+        return self._name_fingerprint
+
     def get_core_point_list(self):
         return self._list_core_points
 
+    def set_core_points_list(self, core_points: List[CorePoint]):
+        self._list_core_points = core_points.copy()
+
     def get_minutiae_list(self):
         return self._list_minutias
+
+    def set_minutiae_list(self, minutiae: List[Minutiae]):
+        self._list_minutias = minutiae.copy()
 
     def get_raw_fingerprint_image(self):
         return self._raw_image

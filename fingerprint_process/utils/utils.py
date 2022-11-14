@@ -166,21 +166,28 @@ def get_description_fingerprint(
         return process_message
 
 
-def match_index_and_base_fingerprints(base_name: str, input_name: str, mode: str, source: str):
-    global base_fingerprint, index_fingerprint
+def match_index_and_base_fingerprints(
+        base_name: str,
+        input_name: str,
+        mode: str,
+        source: str,
+        base_fingerprint: Optional[Fingerprint] = None,
+        input_fingerprint: Optional[Fingerprint] = None
+):
 
     if source.lower() == 'sensor':
         base_fingerprint = get_description_fingerprint(name_fingerprint=base_name, source=source.lower())
-        index_fingerprint = get_description_fingerprint(name_fingerprint=input_name, source=source.lower())
+        input_fingerprint = get_description_fingerprint(name_fingerprint=input_name, source=source.lower())
     elif source.lower() == 'image':
         base_fingerprint = get_description_fingerprint(name_fingerprint=base_name, source=source.lower())
-        index_fingerprint = get_description_fingerprint(name_fingerprint=input_name, source=source.lower())
+        input_fingerprint = get_description_fingerprint(name_fingerprint=input_name, source=source.lower())
     elif source.lower() == 'api':
-        pass
+        if base_fingerprint is None or input_fingerprint is None:
+            return ErrorMessage.VOID_FINGERPRINT
     else:
         return ErrorMessage.NOT_OPTION_FOUND
 
-    return match(base_fingerprint, index_fingerprint, mode)
+    return match(base_fingerprint, input_fingerprint, mode)
 
 
 def save_fingerprint_into_json(

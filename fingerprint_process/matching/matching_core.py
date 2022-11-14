@@ -6,7 +6,7 @@ from fingerprint_process.utils.error_message import ErrorMessage
 
 
 class MatchingCore(ErrorMessage):
-    def __init__(self, distance_tolerance=1, minimum_cores=2,
+    def __init__(self, distance_tolerance=1, minimum_cores=1,
                  neighborhood_area=40) -> None:
         super().__init__()
         self._distance_tolerance = distance_tolerance
@@ -118,6 +118,7 @@ class MatchingCore(ErrorMessage):
                         count += 1
                         break
 
+            # print(count)
             if self.__are_match(count):
                 return self._MATCH_FINGERPRINT
 
