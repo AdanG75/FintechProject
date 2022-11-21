@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette import status
@@ -64,3 +64,38 @@ async def terms_of_service(
         {"request": request}
     )
 
+
+@router.get(
+    path='/successful-transaction',
+    status_code=status.HTTP_200_OK,
+    response_class=HTMLResponse
+)
+async def successful_transaction(
+        request: Request,
+        token: str = Query(None, min_length=8, max_length=25),
+        PayerID: str = Query(None, min_length=6, max_length=19)
+):
+    token = ' ' if token is None else token
+    PayerID = ' ' if PayerID is None else PayerID
+
+    return templates.TemplateResponse(
+        "successful_transaction.html",
+        {"request": request, "order": token, "payer_id": PayerID}
+    )
+
+
+@router.get(
+    path='/cancel-transaction',
+    status_code=status.HTTP_200_OK,
+    response_class=HTMLResponse
+)
+async def successful_transaction(
+        request: Request,
+        token: str = Query(None, min_length=8, max_length=25)
+):
+    token = ' ' if token is None else token
+
+    return templates.TemplateResponse(
+        "cancel_transaction.html",
+        {"request": request, "order": token}
+    )

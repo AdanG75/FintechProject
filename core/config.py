@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from core.secret_manager import access_secret_version
 
 
-BOUND_TEST_ENTRYPOINTS: bool = False
+BOUND_TEST_ENTRYPOINTS: bool = True
 
 
 class Settings(object):
@@ -292,3 +292,4 @@ def charge_settings() -> Settings:
 
 
 settings = Settings()
+ON_CLOUD = settings.is_on_cloud()

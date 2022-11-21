@@ -5,8 +5,8 @@ from routers import credit_router, fingerprint_router, home, market_router, move
     user_router
 from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_core, test_credit, \
     test_deposit, test_fingerprint, test_functions, test_login_attempt, test_market, test_minutia, test_movement, \
-    test_outstanding_payment, test_password_recovery, test_payment, test_session, test_transfer, test_user, \
-    test_withdraw
+    test_outstanding_payment, test_password_recovery, test_payment, test_paypal, test_session, test_transfer, \
+    test_user, test_withdraw
 
 
 def add_main_routers(r_app: FastAPI) -> None:
@@ -41,6 +41,7 @@ def add_test_routers(r_app: FastAPI) -> None:
         r_app.include_router(router=test_outstanding_payment.router)
         r_app.include_router(router=test_password_recovery.router)
         r_app.include_router(router=test_payment.router)
+        r_app.include_router(router=test_paypal.router)
         r_app.include_router(router=test_session.router)
         r_app.include_router(router=test_transfer.router)
         r_app.include_router(router=test_user.router)

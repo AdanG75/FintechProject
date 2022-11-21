@@ -308,3 +308,18 @@ not_longer_available_exception = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
     detail="Operation expired. Please generate a new one"
 )
+
+not_same_currency_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Currency must be the same for all purchase items."
+)
+
+first_approve_order_exception = HTTPException(
+    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    detail="You need to approve the order using the approve link within the create order response"
+)
+
+paypal_error_exception = HTTPException(
+    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    detail="PayPal is not available in this moment. Please try later."
+)
