@@ -9,8 +9,6 @@ import math
 from skimage.morphology import skeletonize as skelt
 
 
-# from matplotlib import pyplot as plt
-
 class PreprocessingFingerprint(object):
     def __init__(
             self,
