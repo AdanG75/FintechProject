@@ -35,7 +35,7 @@ class Fingerprint(ErrorMessage):
             register_cpthresh=0.3,
             register_rsthresh=0.15,
             number_minutiae_neighbordings=5,
-            min_minutiae=12
+            min_minutiae=21
     ):
         super().__init__()
         self._fingerprint_rows = fingerprint_rows
