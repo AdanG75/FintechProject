@@ -9,6 +9,7 @@ from db.orm.exceptions_orm import element_not_found_exception, NotFoundException
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.movements_orm import check_type_and_status_of_movement
 from schemas.deposit_base import DepositRequest
+from schemas.type_money import TypeMoney
 
 
 @multiple_attempts
@@ -19,9 +20,6 @@ def create_deposit(db: Session, request: DepositRequest, execute: str = 'now') -
     try:
         get_deposit_by_id_movement(db, request.id_movement)
     except NotFoundException:
-        if request.type_deposit.value == 'paypal' and request.paypal_id_order is None:
-            raise wrong_data_sent_exception
-
         deposit_uuid = uuid.uuid4().hex
         id_deposit = "DPT-" + deposit_uuid
 
@@ -123,8 +121,10 @@ def put_paypal_id_order(
         else:
             raise not_values_sent_exception
 
-    if deposit_object.paypal_id_order is None:
+    if deposit_object.type_deposit == TypeMoney.paypal.value and deposit_object.paypal_id_order is None:
         deposit_object.paypal_id_order = paypal_id_order
+    else:
+        raise wrong_data_sent_exception
 
     try:
         if execute == 'now':

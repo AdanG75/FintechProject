@@ -7,7 +7,7 @@ from db.models.movements_db import DbMovement
 from db.models.payments_db import DbPayment
 from db.orm.credits_orm import get_credit_by_id_credit
 from db.orm.exceptions_orm import wrong_data_sent_exception, NotFoundException, option_not_found_exception, \
-    not_unique_value, element_not_found_exception
+    not_unique_value, element_not_found_exception, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.movements_orm import check_type_and_status_of_movement, get_movement_by_id_movement
 from schemas.payment_base import PaymentRequest
@@ -22,9 +22,6 @@ def create_payment(db: Session, request: PaymentRequest, execute: str = 'now') -
     try:
         get_payment_by_id_movement(db, request.id_movement)
     except NotFoundException:
-        if request.type_payment.value == 'paypal' and request.paypal_id_order is None:
-            raise wrong_data_sent_exception
-
         payment_uuid = uuid.uuid4().hex
         id_payment = "PYM-" + payment_uuid
 
@@ -128,3 +125,41 @@ def get_payment_type(
         return TypeMoney.globalC
     else:
         raise option_not_found_exception
+
+
+@multiple_attempts
+@full_database_exceptions
+def put_paypal_id_order(
+        db: Session,
+        paypal_id_order: str,
+        id_payment: Optional[str] = None,
+        id_movement: Optional[int] = None,
+        payment_object: Optional[DbPayment] = None,
+        execute: str = 'now'
+) -> DbPayment:
+    if payment_object is None:
+        if id_movement is not None:
+            payment_object = get_payment_by_id_movement(db, id_movement)
+        elif id_payment is not None:
+            payment_object = get_payment_by_id_payment(db, id_payment)
+        else:
+            raise not_values_sent_exception
+
+    if payment_object.type_payment == TypeMoney.paypal.value and payment_object.paypal_id_order is None:
+        payment_object.paypal_id_order = paypal_id_order
+    else:
+        raise wrong_data_sent_exception
+
+    try:
+        if execute == 'now':
+            db.commit()
+        elif execute == 'wait':
+            pass
+        else:
+            raise option_not_found_exception
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
+
+    return payment_object

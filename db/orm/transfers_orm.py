@@ -23,10 +23,6 @@ def create_transfer(db: Session, request: TransferRequest, execute: str = 'now')
     try:
         get_transfer_by_id_movement(db, request.id_movement)
     except NotFoundException:
-        if request.paypal_id_order is None \
-                and (request.type_transfer.value == 'localL' or request.type_transfer.value == 'localG'):
-            raise wrong_data_sent_exception
-
         transfer_uuid = uuid.uuid4().hex
         id_transfer = "TRS-" + transfer_uuid
 
@@ -106,6 +102,45 @@ def get_transfers_by_id_destination_credit(db: Session, id_destination_credit: i
         raise element_not_found_exception
 
     return transfers
+
+
+@multiple_attempts
+@full_database_exceptions
+def put_paypal_id_order(
+        db: Session,
+        paypal_id_order: str,
+        id_transfer: Optional[str] = None,
+        id_movement: Optional[int] = None,
+        transfer_object: Optional[DbTransfer] = None,
+        execute: str = 'now'
+) -> DbTransfer:
+    if transfer_object is None:
+        if id_movement is not None:
+            transfer_object = get_transfer_by_id_movement(db, id_movement)
+        elif id_transfer is not None:
+            transfer_object = get_transfer_by_id_transfer(db, id_transfer)
+        else:
+            raise not_values_sent_exception
+
+    if transfer_object.paypal_id_order is None \
+            and (transfer_object.type_transfer.value == 'localL' or transfer_object.type_transfer.value == 'localG'):
+        transfer_object.paypal_id_order = paypal_id_order
+    else:
+        raise wrong_data_sent_exception
+
+    try:
+        if execute == 'now':
+            db.commit()
+        elif execute == 'wait':
+            pass
+        else:
+            raise option_not_found_exception
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
+
+    return transfer_object
 
 
 @multiple_attempts
