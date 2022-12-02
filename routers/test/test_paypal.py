@@ -1,14 +1,18 @@
 from typing import Union
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from starlette import status
 
+from controller.login_controller import get_current_token, check_type_user
 from core.paypal_service import create_paypal_access_token, create_paypal_order, create_order_object, \
     capture_paypal_order, parse_paypal_capture_to_base_response, parse_paypal_order_to_base_response, \
     MEXICAN_CURRENCY, get_paypal_amounts
+from db.orm.exceptions_orm import credentials_exception
 from schemas.basic_response import BasicResponse
 from schemas.paypal_base import ItemInner, UnitAmountInner, CreatePaypalOrderResponse, CapturePaypalOrderResponse, \
     CreatePaypalOrderMinimalResponse
+from schemas.token_base import TokenSummary
+from schemas.type_user import TypeUser
 
 router = APIRouter(
     prefix='/test/paypal',
@@ -30,8 +34,12 @@ async def create_order(
         amount: str = Query('0.00', regex=money_pattern),
         name: str = Query('Movement', min_length=1, max_length=79),
         description: str = Query('A simple transaction', min_length=2, max_length=499),
-        quantity: int = Query(1, gt=0)
+        quantity: int = Query(1, gt=0),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a=str(TypeUser.admin.value)):
+        raise credentials_exception
+
     paypal_client = await create_paypal_access_token(paypal_id_client, paypal_secret)
     paypal_item = ItemInner(
         name=name,
@@ -54,8 +62,12 @@ async def create_order(
 async def capture_order(
         paypal_id_client: str = Query(..., min_length=5, max_length=90),
         paypal_secret: str = Query(..., min_length=8, max_length=90),
-        id_order: str = Query(None, min_length=8, max_length=25)
+        id_order: str = Query(None, min_length=8, max_length=25),
+        current_token: TokenSummary = Depends(get_current_token)
 ):
+    if not check_type_user(current_token, is_a=str(TypeUser.admin.value)):
+        raise credentials_exception
+
     paypal_client = await create_paypal_access_token(paypal_id_client, paypal_secret)
 
     if id_order is None:
