@@ -28,7 +28,7 @@ class ErrorMessage(object):
         elif error_code == self._POOR_QUALITY:
             if web:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_418_IM_A_TEAPOT,
                     detail='Poor quality fingerprint'
                 )
             else:
@@ -36,7 +36,7 @@ class ErrorMessage(object):
         elif error_code == self._FEW_MINUTIAES:
             if web:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_418_IM_A_TEAPOT,
                     detail='Few minutiae have been finding'
                 )
             else:
@@ -44,7 +44,7 @@ class ErrorMessage(object):
         elif error_code == self._VOID_FINGERPRINT:
             if web:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_418_IM_A_TEAPOT,
                     detail='Fingerprint image is void'
                 )
             else:
@@ -52,7 +52,7 @@ class ErrorMessage(object):
         elif error_code == self._DONT_MATCH_FINGERPRINT:
             if web:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_418_IM_A_TEAPOT,
                     detail='Fingerprints do not match'
                 )
             else:
@@ -68,7 +68,7 @@ class ErrorMessage(object):
         elif error_code == self._WRONG_ANGLES:
             if web:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_418_IM_A_TEAPOT,
                     detail='Angles do not 180°'
                 )
             else:
@@ -84,7 +84,7 @@ class ErrorMessage(object):
         elif error_code == self._RECONSTRUCTION_FAILED:
             if web:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_418_IM_A_TEAPOT,
                     detail='Reconstruction fingerprint failed'
                 )
             else:

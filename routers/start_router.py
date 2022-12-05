@@ -108,7 +108,7 @@ async def preregister_fingerprint_of_client(
 
     is_good, data = await check_quality_of_fingerprints(fps_request.samples)
     if is_good:
-        ticket = preregister_fingerprint(id_client, data, fps_request, r)
+        ticket = preregister_fingerprint(id_client, data, fps_request, r, 'CLI')
     else:
         raise bad_quality_fingerprint_exception
 
@@ -120,7 +120,7 @@ async def preregister_fingerprint_of_client(
         if request.public_pem is None:
             return plain_response
 
-        item_save(r, f'PEM-{id_client}', request.public_pem)
+        item_save(r, f'PEM-CLI-{id_client}', request.public_pem)
         secure_response = cipher_response_message(plain_response, without_auth=True, user_pem=request.public_pem)
         return secure_response
 
@@ -149,7 +149,7 @@ async def register_fingerprint_of_client(
     except ValidationError:
         raise validation_request_exception
 
-    fingerprint_request = check_fingerprint_request(id_client, ticket_request.ticket, r)
+    fingerprint_request = check_fingerprint_request(id_client, ticket_request.ticket, r, 'CLI')
 
     fingerprint_response = await register_fingerprint(
         db=db,
@@ -160,7 +160,7 @@ async def register_fingerprint_of_client(
     )
 
     if secure:
-        public_pem = item_get(r, f'PEM-{id_client}')
+        public_pem = item_get(r, f'PEM-CLI-{id_client}')
         if public_pem is None:
             return BasicResponse(
                 operation="Register fingerprint",

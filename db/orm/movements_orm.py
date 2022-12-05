@@ -50,7 +50,7 @@ def make_movement(
         print(e)
         raise e
 
-    # TODO: We have to evaluate each type of movement in order to make the correct procedure
+    # We have to evaluate each type of movement in order to make the correct procedure
     return add_movement(db, request, execute)
 
 

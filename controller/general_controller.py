@@ -18,18 +18,21 @@ AUTH_WRONG: str = 'WR'
 def check_performer_in_cache(
         r: Redis,
         identifier: Union[str, int],
+        type_s: str,
         actual_performer: Union[str, int]
 ) -> Optional[bool]:
-    above_performer = r.get(f'PFR-{identifier}')
+    above_performer = r.get(f'PFR-{type_s}-{identifier}')
     if above_performer is None:
         return None
     else:
         return is_the_same(above_performer, actual_performer)
 
 
-def get_fingerprint_auth_data(r: Redis, identifier: Union[str, int]) -> Tuple[List[Minutiae], List[CorePoint]]:
-    mnt_cache = r.get(f'MNT-{identifier}')
-    crp_cache = r.get(f'CRP-{identifier}')
+def get_fingerprint_auth_data(
+        r: Redis, type_s: str, identifier: Union[str, int]
+) -> Tuple[List[Minutiae], List[CorePoint]]:
+    mnt_cache = r.get(f'MNT-{type_s}-{identifier}')
+    crp_cache = r.get(f'CRP-{type_s}-{identifier}')
 
     if mnt_cache is not None and crp_cache is not None:
         mnt_str = mnt_cache.decode('utf-8')
@@ -45,17 +48,17 @@ def get_fingerprint_auth_data(r: Redis, identifier: Union[str, int]) -> Tuple[Li
     return minutiae, core_points
 
 
-async def delete_fingerprint_auth_data(r: Redis, identifier: Union[str, int]) -> bool:
-    if r.exists(f'MNT-{identifier}', f'CRP-{identifier}') > 0:
-        result = r.delete(f'MNT-{identifier}', f'CRP-{identifier}')
+async def delete_fingerprint_auth_data(r: Redis, type_s: str, identifier: Union[str, int]) -> bool:
+    if r.exists(f'MNT-{type_s}-{identifier}', f'CRP-{type_s}-{identifier}') > 0:
+        result = r.delete(f'MNT-{type_s}-{identifier}', f'CRP-{type_s}-{identifier}')
 
         return result > 0
 
     return True
 
 
-def get_requester_from_cache(r: Redis, identifier: Union[str, int]) -> str:
-    requester = r.get(f'RQT-{identifier}')
+def get_requester_from_cache(r: Redis, type_s: str, identifier: Union[str, int]) -> str:
+    requester = r.get(f'RQT-{type_s}-{identifier}')
     if requester is None:
         raise not_longer_available_exception
 

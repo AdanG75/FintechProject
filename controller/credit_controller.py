@@ -174,7 +174,7 @@ async def generate_pre_credit(
     ticket: str = uuid.uuid4().hex
 
     # Save pre-credit, id_requester and id_performer into cache using ticket as reference
-    save_pre_credit_requester_and_performer_in_cache(r, ticket, pre_credit, id_client, id_performer)
+    save_pre_credit_requester_and_performer_in_cache(r, ticket, pre_credit, id_client, id_performer, 'CRT')
 
     owners = OwnersInner(
         market_name=market_name,
@@ -193,7 +193,8 @@ def save_pre_credit_requester_and_performer_in_cache(
         ticket: str,
         pre_credit: Union[dict, CreditRequest],
         id_requester: str,
-        id_performer: int
+        id_performer: int,
+        type_s: str
 ) -> bool:
     if isinstance(pre_credit, dict):
         pre_credit_str = json.dumps(pre_credit)
@@ -206,9 +207,9 @@ def save_pre_credit_requester_and_performer_in_cache(
     secure_data = cipher_data(pre_credit_str)
 
     values_to_catching = {
-        f'PRE-{ticket}': secure_data,
-        f'RQT-{ticket}': id_requester,
-        f'PFR-{ticket}': id_performer
+        f'PRE-{type_s}-{ticket}': secure_data,
+        f'RQT-{type_s}-{ticket}': id_requester,
+        f'PFR-{type_s}-{ticket}': id_performer
     }
     result = batch_save(r, values_to_catching, seconds=1800)
 
@@ -218,17 +219,21 @@ def save_pre_credit_requester_and_performer_in_cache(
     return True
 
 
-def get_pre_credit_request_from_cache(r: Redis, id_order: Union[str, int]) -> CreditRequest:
-    pre_credit_cache = r.get(f'PRE-{id_order}')
+def get_pre_credit_request_from_cache(r: Redis, id_order: Union[str, int], type_s: str = 'CRT') -> CreditRequest:
+    pre_credit_cache = r.get(f'PRE-{type_s}-{id_order}')
     pre_credit_str = pre_credit_cache.decode('utf-8')
     pre_credit_json = decipher_data(pre_credit_str)
 
     return CreditRequest.parse_raw(pre_credit_json)
 
 
-async def delete_pre_credit_requester_and_performer_in_cache(r: Redis, identifier: Union[str, int]) -> bool:
-    if r.exists(f'PRE-{identifier}', f'RQT-{identifier}', f'PFR-{identifier}') > 0:
-        result = r.delete(f'PRE-{identifier}', f'RQT-{identifier}', f'PFR-{identifier}')
+async def delete_pre_credit_requester_and_performer_in_cache(
+        r: Redis,
+        identifier: Union[str, int],
+        type_s: str = 'CRT'
+) -> bool:
+    if r.exists(f'PRE-{type_s}-{identifier}', f'RQT-{type_s}-{identifier}', f'PFR-{type_s}-{identifier}') > 0:
+        result = r.delete(f'PRE-{type_s}-{identifier}', f'RQT-{type_s}-{identifier}', f'PFR-{type_s}-{identifier}')
 
         return result > 0
 
@@ -249,7 +254,7 @@ async def save_precredit_fingerprint(r: Redis, id_order: str, fingerprint_object
     core_points_secure = cipher_data(core_points_str)
 
     # Save cipher data into Redis
-    save_minutiae_and_core_points_secure_in_cache(r, minutiae_secure, core_points_secure, id_order)
+    save_minutiae_and_core_points_secure_in_cache(r, minutiae_secure, core_points_secure, id_order, 'CRT')
 
     return True
 
@@ -258,11 +263,12 @@ def save_minutiae_and_core_points_secure_in_cache(
         r: Redis,
         minutiae_secure: str,
         core_points_secure: str,
-        id_order: str
+        id_order: str,
+        type_s: str
 ) -> bool:
     values_to_catching = {
-        f'MNT-{id_order}': minutiae_secure,
-        f'CRP-{id_order}': core_points_secure
+        f'MNT-{type_s}-{id_order}': minutiae_secure,
+        f'CRP-{type_s}-{id_order}': core_points_secure
     }
     result = batch_save(r, values_to_catching, seconds=1800)
 

@@ -199,7 +199,8 @@ def preregister_fingerprint(
         id_client: str,
         summary: list[dict],
         request: FingerprintFullRequest,
-        r: Redis
+        r: Redis,
+        type_s: str = 'CLI'
 ) -> str:
     register_model = FingerprintRegisterRequest(
         fingerprint_full_request=request,
@@ -213,8 +214,8 @@ def preregister_fingerprint(
 
     # Save both fingerprint's data and client's ticket into cache
     values_to_catching = {
-        f'PRE-{id_client}': secure_data,
-        f'TKT-{id_client}': ticket
+        f'PRE-{type_s}-{id_client}': secure_data,
+        f'TKT-{type_s}-{id_client}': ticket
     }
     result = batch_save(r, values_to_catching, seconds=1800)
 
@@ -227,12 +228,13 @@ def preregister_fingerprint(
 def check_fingerprint_request(
         id_client: str,
         ticket: str,
-        r: Redis
+        r: Redis,
+        type_s: str = 'CLI'
 ) -> FingerprintRegisterRequest:
-    cache_ticket = r.get(f'TKT-{id_client}')
+    cache_ticket = r.get(f'TKT-{type_s}-{id_client}')
     if cache_ticket is not None:
         if is_the_same(cache_ticket, ticket):
-            secure_data = r.get(f'PRE-{id_client}')
+            secure_data = r.get(f'PRE-{type_s}-{id_client}')
             if secure_data is None:
                 raise expired_cache_exception
 
@@ -281,7 +283,7 @@ async def validate_credit_by_fingerprints(
         return False
 
     # In this point the fingerprint was validated
-    await delete_fingerprint_auth_data(r, identifier)
+    await delete_fingerprint_auth_data(r, 'CRT', identifier)
 
     return True
 

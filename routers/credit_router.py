@@ -141,7 +141,7 @@ async def save_fingerprint_to_authorize_pre_credit(
         r: Redis = Depends(get_cache_client),
         current_token: TokenSummary = Depends(get_current_token)
 ):
-    is_performer = check_performer_in_cache(r, id_order, current_token.id_user)
+    is_performer = check_performer_in_cache(r, id_order, 'CRT', current_token.id_user)
 
     if is_performer is False:
         raise not_authorized_exception
@@ -180,7 +180,7 @@ async def validate_by_fingerprint(
         r: Redis = Depends(get_cache_client),
         current_token: TokenSummary = Depends(get_current_token)
 ):
-    is_performer = check_performer_in_cache(r, id_order, current_token.id_user)
+    is_performer = check_performer_in_cache(r, id_order, 'CRT', current_token.id_user)
 
     if is_performer is False:
         raise not_authorized_exception
@@ -188,10 +188,10 @@ async def validate_by_fingerprint(
     if is_performer is None:
         raise not_longer_available_exception
 
-    id_client = get_requester_from_cache(r, id_order)
+    id_client = get_requester_from_cache(r, 'CRT', id_order)
 
     # Get minutiae and core points from cache
-    minutiae, core_points = get_fingerprint_auth_data(r, id_order)
+    minutiae, core_points = get_fingerprint_auth_data(r, 'CRT', id_order)
 
     # Generate fingerprint object using minutiae and core points
     auth_fingerprint = await set_minutiae_and_core_points_to_a_fingerprint(minutiae, core_points)
@@ -238,7 +238,7 @@ async def create_credit(
         r: Redis = Depends(get_cache_client),
         current_token: TokenSummary = Depends(get_current_token)
 ):
-    is_performer = check_performer_in_cache(r, id_order, current_token.id_user)
+    is_performer = check_performer_in_cache(r, id_order, 'CRT', current_token.id_user)
 
     if is_performer is False:
         raise not_authorized_exception
@@ -250,7 +250,7 @@ async def create_credit(
         raise not_authorized_exception
 
     # Get credit request from cache
-    credit_request = get_pre_credit_request_from_cache(r, id_order)
+    credit_request = get_pre_credit_request_from_cache(r, id_order, 'CRT')
 
     # Create credit
     response = await new_credit(db, credit_request, current_token.type_user)
@@ -260,7 +260,7 @@ async def create_credit(
         notify = True
 
     if notify:
-        client_email = await get_email_based_on_id_type(db, response.id_client, TypeUser.client.value)
+        client_email = await get_email_based_on_id_type(db, response.id_client, str(TypeUser.client.value))
         market_name = await get_name_of_market(db, response.id_market)
         bt.add_task(
             send_new_credit_email,
@@ -275,6 +275,12 @@ async def create_credit(
         delete_pre_credit_requester_and_performer_in_cache,
         r=r,
         identifier=id_order
+    )
+    bt.add_task(
+        delete_auth_resul,
+        r=r,
+        identifier=id_order,
+        type_s='CRT'
     )
 
     # send response
@@ -297,7 +303,7 @@ async def delete_pre_credit(
         r: Redis = Depends(get_cache_client),
         current_token: TokenSummary = Depends(get_current_token)
 ):
-    is_performer = check_performer_in_cache(r, id_order, current_token.id_user)
+    is_performer = check_performer_in_cache(r, id_order, 'CRT', current_token.id_user)
 
     if is_performer is False:
         raise not_authorized_exception
@@ -305,8 +311,8 @@ async def delete_pre_credit(
     if is_performer is None:
         raise not_longer_available_exception
 
-    result = await delete_pre_credit_requester_and_performer_in_cache(r, id_order)
-    await delete_fingerprint_auth_data(r, id_order)
+    result = await delete_pre_credit_requester_and_performer_in_cache(r, id_order, 'CRT')
+    await delete_fingerprint_auth_data(r, 'CRT', id_order)
     await delete_auth_resul(r, id_order, 'CRT')
     response = BasicResponse(
         operation="Delete credit order",
