@@ -17,7 +17,7 @@ from controller import login_controller as c_login
 from controller.login_controller import get_current_token
 from controller.sign_up_controller import get_user_type, route_user_to_sign_up, check_quality_of_fingerprints
 from core.app_email import send_register_email, send_recovery_code
-from core.cache import get_cache_client, item_save, item_get
+from db.cache.cache import get_cache_client, item_save, item_get
 from core.config import settings
 from db.database import get_db
 from db.orm.exceptions_orm import bad_quality_fingerprint_exception, not_valid_operation_exception, \

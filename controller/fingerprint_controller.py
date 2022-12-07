@@ -8,7 +8,7 @@ from controller.bucket_controller import create_bucket_and_save_samples_from_fin
 from controller.characteristic_point_controller import parse_db_list_to_cp_list
 from controller.general_controller import delete_fingerprint_auth_data
 from controller.sign_up_controller import select_the_best_sample
-from core.cache import is_the_same, batch_save
+from db.cache.cache import is_the_same, batch_save
 from core.utils import generate_random_string
 from db.models.fingerprints_db import DbFingerprint
 from db.orm.clients_orm import get_client_by_id_client

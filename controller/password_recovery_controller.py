@@ -4,7 +4,7 @@ from typing import Optional
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
-from core.cache import batch_save, check_item_if_exist, item_get, item_save
+from db.cache.cache import batch_save, check_item_if_exist, item_get, item_save
 from core.logs import show_error_message
 from core.utils import generate_random_string
 from db.orm.exceptions_orm import NotFoundException, bad_email_exception, error_while_generating_code_exception, \

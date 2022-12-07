@@ -10,7 +10,7 @@ from starlette import status
 
 from controller.login_controller import get_current_token, check_type_user
 from core.app_email import send_email_from_system, send_register_email
-from core.cache import get_cache_client
+from db.cache.cache import get_cache_client
 from core.utils import get_current_utc_timestamp
 from db.database import get_db
 from db.orm.exceptions_orm import credentials_exception
@@ -259,4 +259,3 @@ async def get_value_from_cache(
         'created': created,
         'updated': updated
     }
-

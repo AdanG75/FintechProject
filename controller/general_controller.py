@@ -4,7 +4,7 @@ from redis import Redis
 
 from controller.characteristic_point_controller import from_json_get_minutiae_list_object, \
     from_json_get_core_point_list_object
-from core.cache import is_the_same, item_save, check_item_if_exist
+from db.cache.cache import is_the_same, item_save, check_item_if_exist
 from db.orm.exceptions_orm import not_longer_available_exception, operation_need_authorization_exception
 from fingerprint_process.models.core_point import CorePoint
 from fingerprint_process.models.minutia import Minutiae
