@@ -1,9 +1,11 @@
 from datetime import datetime
 from typing import Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
+from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement
+from schemas.type_transfer import TypeTransfer
 from schemas.type_user import TypeUser
 
 
@@ -43,3 +45,40 @@ class MovementDisplay(MovementBase):
 
     class Config:
         orm_mode = True
+
+
+class MovementTypeBase(BaseModel):
+    id_credit: Optional[int] = Field(..., gt=0)
+    type_movement: TypeMovement = Field(...)
+    amount: Union[str, float] = Field(..., gt=0, regex=money_pattern, min_length=1, max_length=25)
+    type_submov: TypeMoney = Field(...)
+
+
+class MovementTypeRequest(MovementTypeBase):
+    destination_credit: Optional[int] = Field(None, gt=0)
+    id_market: Optional[str] = Field(None, min_length=12, max_length=49)
+    depositor_name: Optional[str] = Field(None, min_length=2, max_length=149)
+    depositor_email: Optional[EmailStr] = Field(None)
+    type_transfer: Optional[TypeTransfer] = Field(None)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id_credit": 985,
+                "type_movement": "payment",
+                "amount": 99.99,
+                "type_submov": "paypal",
+                "destination_credit": None,
+                "id_market": "MKT-ad73029bc6cc436083b7ba3f9ad4a65e",
+                "depositor_name": None,
+                "depositor_email": None,
+                "type_transfer": None
+            }
+        }
+
+
+class UserDataMovement(BaseModel):
+    id_performer: int = Field(..., gt=0)
+    type_user: TypeUser = Field(...)
+    id_type_performer: str = Field(..., min_length=12, max_length=49)
+    id_requester: Optional[str] = Field(None, min_length=12, max_length=49)

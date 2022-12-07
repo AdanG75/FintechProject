@@ -7,20 +7,21 @@ from sqlalchemy.orm import Session
 
 from controller.characteristic_point_controller import get_json_of_minutiae_list, get_json_of_core_points_list
 from controller.fingerprint_controller import describe_fingerprint_from_sample
-from controller.movement_controller import get_all_movements_of_credit
 from controller.user_controller import get_user_using_email, return_type_id_based_on_type_of_user, get_name_of_client, \
     get_name_of_market
-from core.cache import batch_save
+from db.cache.cache import batch_save
+from core.utils import money_str_to_float
 from db.models.credits_db import DbCredit
 from db.orm.clients_orm import get_client_by_id_client
 from db.orm.credits_orm import get_credits_by_id_client, get_credits_by_id_market, get_credit_by_id_credit, \
     get_credit_by_id_market_and_id_client, create_credit, approve_credit
 from db.orm.exceptions_orm import type_of_value_not_compatible, existing_credit_exception, \
-    type_of_user_not_compatible, not_values_sent_exception, cache_exception
+    type_of_user_not_compatible, not_values_sent_exception, cache_exception, not_sufficient_funds_exception
 from fingerprint_process.description.fingerprint import Fingerprint
 from schemas.credit_base import CreditDisplay, CreditBasicRequest, CreditRequest
 from schemas.credit_complex import OwnerInner, CreditComplexProfile, CreditComplexSummary, OwnersInner
 from schemas.fingerprint_model import FingerprintB64
+from schemas.movement_complex import BasicExtraMovement
 from schemas.type_credit import TypeCredit
 from schemas.type_user import TypeUser
 from secure.cipher_secure import cipher_data, decipher_data
@@ -95,6 +96,20 @@ async def get_name_of_the_owners_of_credit(
     return client_name, market_name
 
 
+def get_id_of_owners_of_credit(db: Session, id_credit: int) -> Tuple[str, str]:
+    """
+    Return the id_client and id_market, in that order, as a tuple
+
+    :param db: (Session) An instance on the DB
+    :param id_credit: (int) ID of credit which we wish to know the owners' ID
+    :return: (Tuple[str, str]) The client's id and market's id, in that order, of owners of credit
+    """
+
+    credit = get_credit_by_id_credit(db, id_credit)
+
+    return credit.id_client, credit.id_market
+
+
 def check_owner_credit(db: Session, id_credit: int, type_owner: str, id_owner: str) -> bool:
     if type_owner == TypeUser.client.value:
         credit = get_credit_by_id_credit(db, id_credit)
@@ -112,6 +127,15 @@ def check_owner_credit(db: Session, id_credit: int, type_owner: str, id_owner: s
     return False
 
 
+def check_owners_of_credit(db: Session, id_credit: int, id_client: str, id_market: str) -> bool:
+    credit = get_credit_by_id_credit(db, id_credit)
+
+    if credit.id_market == id_market and credit.id_client == id_client:
+        return True
+    else:
+        return False
+
+
 def check_client_have_credit_on_market(db: Session, id_client: str, id_market: str) -> bool:
     credit = get_credit_by_id_market_and_id_client(db, id_market, id_client)
 
@@ -121,8 +145,24 @@ def check_client_have_credit_on_market(db: Session, id_client: str, id_market: s
         return True
 
 
-async def get_credit_description(db: Session, id_credit: int, type_performer_user: str) -> CreditComplexProfile:
-    movements_of_credit = await get_all_movements_of_credit(db, id_credit)
+def check_funds_of_credit(db: Session, id_credit: int, amount: Union[str, float]) -> bool:
+    amount_float = money_str_to_float(amount) if isinstance(amount, str) else amount
+    credit_obj = get_credit_by_id_credit(db, id_credit)
+    actual_amount_float = money_str_to_float(credit_obj.amount) \
+        if isinstance(credit_obj.amount, str) else credit_obj.amount
+
+    if amount_float > actual_amount_float:
+        raise not_sufficient_funds_exception
+
+    return True
+
+
+async def get_credit_description(
+        db: Session,
+        id_credit: int,
+        type_performer_user: str,
+        movements_of_credit: List[BasicExtraMovement]
+) -> CreditComplexProfile:
     owner_of__credit = await get_owner_credit(db, id_credit, type_performer_user)
 
     credit = get_credit_by_id_credit(db, id_credit)

@@ -1,22 +1,27 @@
-from typing import List
+from typing import List, Union
 
 from sqlalchemy.orm import Session
 
+from controller.withdraw_controller import create_withdraw_formatted
 from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
 from db.models.payments_db import DbPayment
 from db.models.transfers_db import DbTransfer
 from db.models.withdraws_db import DbWithdraw
 from db.orm.deposits_orm import get_deposits_by_id_destination_credit
-from db.orm.exceptions_orm import NotFoundException
+from db.orm.exceptions_orm import NotFoundException, wrong_data_sent_exception, option_not_found_exception, \
+    type_of_value_not_compatible
 from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_movement_by_id_movement, \
     get_movements_by_id_requester_and_type
 from db.orm.payments_orm import get_payment_by_id_movement, get_payments_by_id_market
 from db.orm.transfers_orm import get_transfer_by_id_movement, get_transfers_by_id_destination_credit
 from db.orm.withdraws_orm import get_withdraw_by_id_movement
-from schemas.movement_complex import BasicExtraMovement, ExtraMovement
+from schemas.movement_base import UserDataMovement, MovementTypeRequest
+from schemas.movement_complex import BasicExtraMovement, ExtraMovement, MovementExtraRequest
 from schemas.payment_base import PaymentComplexList
+from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement, NatureMovement
+from schemas.type_transfer import TypeTransfer
 
 
 async def get_all_movements_of_credit(db: Session, id_credit: int) -> List[BasicExtraMovement]:
@@ -55,7 +60,7 @@ async def get_payment_movements_of_credit(db: Session, id_credit: int) -> List[B
     movements: List[DbMovement] = get_movements_by_id_credit_and_type(
         db=db,
         id_credit=id_credit,
-        type_movement=TypeMovement.payment.value
+        type_movement=str(TypeMovement.payment.value)
     )
 
     if len(movements) > 0:
@@ -66,7 +71,7 @@ async def get_payment_movements_of_credit(db: Session, id_credit: int) -> List[B
             except NotFoundException:
                 pass
             else:
-                extra_information = pasrse_DbPayment_to_ExtraMovement(payment)
+                extra_information = parse_DbPayment_to_ExtraMovement(payment)
                 extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
                 extra_movements.append(extra_movement)
 
@@ -76,7 +81,7 @@ async def get_payment_movements_of_credit(db: Session, id_credit: int) -> List[B
 
 
 def get_payments_of_client(db: Session, id_client: str) -> PaymentComplexList:
-    movements = get_movements_by_id_requester_and_type(db, id_client, TypeMovement.payment.value)
+    movements = get_movements_by_id_requester_and_type(db, id_client, str(TypeMovement.payment.value))
 
     if len(movements) > 0:
         extra_movements = []
@@ -86,7 +91,7 @@ def get_payments_of_client(db: Session, id_client: str) -> PaymentComplexList:
             except NotFoundException:
                 pass
             else:
-                extra_information = pasrse_DbPayment_to_ExtraMovement(payment)
+                extra_information = parse_DbPayment_to_ExtraMovement(payment)
                 extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
                 extra_movements.append(extra_movement)
 
@@ -109,7 +114,7 @@ def get_payments_of_market(db: Session, id_market: str) -> PaymentComplexList:
             except NotFoundException:
                 pass
             else:
-                extra_information = pasrse_DbPayment_to_ExtraMovement(payment, NatureMovement.income.value)
+                extra_information = parse_DbPayment_to_ExtraMovement(payment, str(NatureMovement.income.value))
                 extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
                 extra_movements.append(extra_movement)
 
@@ -142,7 +147,7 @@ async def get_income_transfers_of_credit(db: Session, id_credit: int) -> List[Ba
             except NotFoundException:
                 pass
             else:
-                extra_information = pasrse_DbTransfer_to_ExtraMovement(transfer, NatureMovement.income.value)
+                extra_information = parse_DbTransfer_to_ExtraMovement(transfer, str(NatureMovement.income.value))
                 extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
                 extra_movements.append(extra_movement)
 
@@ -155,7 +160,7 @@ async def get_outgoings_transfers_of_credit(db: Session, id_credit: int) -> List
     movements: List[DbMovement] = get_movements_by_id_credit_and_type(
         db=db,
         id_credit=id_credit,
-        type_movement=TypeMovement.transfer.value
+        type_movement=str(TypeMovement.transfer.value)
     )
 
     if len(movements) > 0:
@@ -166,7 +171,7 @@ async def get_outgoings_transfers_of_credit(db: Session, id_credit: int) -> List
             except NotFoundException:
                 pass
             else:
-                extra_information = pasrse_DbTransfer_to_ExtraMovement(transfer, NatureMovement.outgoings.value)
+                extra_information = parse_DbTransfer_to_ExtraMovement(transfer, str(NatureMovement.outgoings.value))
                 extra_movement = parse_DbMovement_to_BasicExtraMovement(movement, extra_information)
                 extra_movements.append(extra_movement)
 
@@ -179,7 +184,7 @@ async def get_withdraw_movements_of_credit(db: Session, id_credit: int) -> List[
     movements: List[DbMovement] = get_movements_by_id_credit_and_type(
         db=db,
         id_credit=id_credit,
-        type_movement=TypeMovement.withdraw.value
+        type_movement=str(TypeMovement.withdraw.value)
     )
 
     if len(movements) > 0:
@@ -197,6 +202,108 @@ async def get_withdraw_movements_of_credit(db: Session, id_credit: int) -> List[
         return extra_movements
 
     return movements
+
+
+async def create_summary_of_movement(
+        db: Session,
+        request: MovementTypeRequest,
+        user_data: UserDataMovement,
+        type_movement: Union[str, TypeMovement]
+) -> MovementExtraRequest:
+    t_movement_obj = cast_str_to_movement_type(type_movement) if isinstance(type_movement, str) else type_movement
+
+    if t_movement_obj == TypeMovement.deposit:
+        pass
+    elif t_movement_obj == TypeMovement.payment:
+        pass
+    elif t_movement_obj == TypeMovement.transfer:
+        pass
+    elif t_movement_obj == TypeMovement.withdraw:
+        if validate_withdraw_data_types(request):
+            summary = await create_withdraw_formatted(db, request, user_data)
+
+    else:
+        raise option_not_found_exception
+
+    return summary
+
+
+def validate_withdraw_data_types(request: MovementTypeRequest) -> bool:
+    if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
+        raise type_of_value_not_compatible
+
+    if not check_type_of_money(request.type_submov, TypeMoney.cash):
+        raise type_of_value_not_compatible
+
+    return True
+
+
+def check_type_of_movement(
+        actual_type: Union[str, TypeMovement],
+        wished_type: Union[str, TypeMovement]
+) -> bool:
+    act_type_obj = cast_str_to_movement_type(actual_type) if isinstance(actual_type, str) else actual_type
+    whs_type_obj = cast_str_to_movement_type(wished_type) if isinstance(wished_type, str) else wished_type
+
+    if act_type_obj == whs_type_obj:
+        return True
+    else:
+        return False
+
+
+def check_type_of_money(
+        actual_money: Union[str, TypeMoney],
+        wished_money: Union[str, TypeMoney]
+) -> bool:
+    act_money_obj = cast_str_to_money_type(actual_money) if isinstance(actual_money, str) else actual_money
+    whs_money_obj = cast_str_to_money_type(wished_money) if isinstance(wished_money, str) else wished_money
+
+    if act_money_obj == whs_money_obj:
+        return True
+    else:
+        return False
+
+
+def check_type_of_transfer(
+        actual_transfer: Union[str, TypeTransfer],
+        wished_transfer: Union[str, TypeTransfer]
+) -> bool:
+    act_transfer_obj = cast_str_to_transfer_type(actual_transfer) \
+        if isinstance(actual_transfer, str) else actual_transfer
+    whs_transfer_obj = cast_str_to_transfer_type(wished_transfer) \
+        if isinstance(wished_transfer, str) else wished_transfer
+
+    if act_transfer_obj == whs_transfer_obj:
+        return True
+    else:
+        return False
+
+
+def cast_str_to_movement_type(movement_str: str) -> TypeMovement:
+    try:
+        movement_type = TypeMovement(movement_str)
+    except ValueError:
+        raise wrong_data_sent_exception
+
+    return movement_type
+
+
+def cast_str_to_money_type(money_str: str) -> TypeMoney:
+    try:
+        money_type = TypeMoney(money_str)
+    except ValueError:
+        raise wrong_data_sent_exception
+
+    return money_type
+
+
+def cast_str_to_transfer_type(transfer_str: str) -> TypeTransfer:
+    try:
+        transfer_type = TypeTransfer(transfer_str)
+    except ValueError:
+        raise wrong_data_sent_exception
+
+    return transfer_type
 
 
 def parse_DbMovement_to_BasicExtraMovement(
@@ -224,12 +331,13 @@ def parse_DbDeposit_to_ExtraMovement(deposit: DbDeposit) -> ExtraMovement:
         movement_nature=NatureMovement.income.value,
         type_submov=deposit.type_deposit,
         destination_credit=deposit.id_destination_credit,
+        depositor_name=deposit.depositor_name,
         id_market=None,
         paypal_order=deposit.paypal_id_order
     )
 
 
-def pasrse_DbPayment_to_ExtraMovement(
+def parse_DbPayment_to_ExtraMovement(
         payment: DbPayment,
         nature_movement: str = NatureMovement.outgoings.value
 ) -> ExtraMovement:
@@ -238,17 +346,19 @@ def pasrse_DbPayment_to_ExtraMovement(
         movement_nature=nature_movement,
         type_submov=payment.type_payment,
         destination_credit=None,
+        depositor_name=None,
         id_market=payment.id_market,
         paypal_order=payment.paypal_id_order
     )
 
 
-def pasrse_DbTransfer_to_ExtraMovement(transfer: DbTransfer, movement_nature: str) -> ExtraMovement:
+def parse_DbTransfer_to_ExtraMovement(transfer: DbTransfer, movement_nature: str) -> ExtraMovement:
     return ExtraMovement(
         id_detail=transfer.id_transfer,
         movement_nature=movement_nature,
         type_submov=transfer.type_transfer,
         destination_credit=transfer.id_destination_credit,
+        depositor_name=None,
         id_market=None,
         paypal_order=transfer.paypal_id_order
     )
@@ -260,6 +370,7 @@ def parse_DbWithdraw_to_ExtraMovement(withdraw: DbWithdraw) -> ExtraMovement:
         movement_nature=NatureMovement.outgoings.value,
         type_submov=withdraw.type_withdraw,
         destination_credit=None,
+        depositor_name=None,
         id_market=None,
         paypal_order=None
     )

@@ -174,6 +174,11 @@ not_void_credit_exception = HTTPException(
     detail="Credits with credit balance cannot be eliminated by the market"
 )
 
+not_sufficient_funds_exception = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail='Insufficient funds'
+)
+
 movement_in_process_exception = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
     detail="Movement in process, please wait until it has finished"
@@ -230,7 +235,7 @@ movement_already_linked_exception = HTTPException(
 )
 
 bad_quality_fingerprint_exception = HTTPException(
-    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+    status_code=status.HTTP_418_IM_A_TEAPOT,
     detail="All fingerprint samples are of low quality. Please capture new samples"
 )
 
