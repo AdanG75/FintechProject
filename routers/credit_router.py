@@ -16,10 +16,11 @@ from controller.general_controller import check_performer_in_cache, get_fingerpr
     get_requester_from_cache, add_attempt_cache, erase_attempt_cache, save_auth_result, check_auth_result, \
     delete_auth_resul, delete_fingerprint_auth_data
 from controller.login_controller import get_current_token
+from controller.movement_controller import get_all_movements_of_credit
 from controller.secure_controller import cipher_response_message, get_data_from_secure
 from controller.user_controller import get_email_based_on_id_type, get_name_of_market
 from core.app_email import send_new_credit_email
-from core.cache import get_cache_client
+from db.cache.cache import get_cache_client
 from db.database import get_db
 from db.orm.exceptions_orm import not_authorized_exception, validation_request_exception, type_of_user_not_compatible, \
     not_longer_available_exception, only_available_market_exception
@@ -50,7 +51,8 @@ async def get_description_of_credit(
     if not check_owner_credit(db, id_credit, current_token.type_user, current_token.id_type):
         raise not_authorized_exception
 
-    response = await get_credit_description(db, id_credit, current_token.type_user)
+    movements_of_credit = await get_all_movements_of_credit(db, id_credit)
+    response = await get_credit_description(db, id_credit, current_token.type_user, movements_of_credit)
 
     if secure:
         secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)

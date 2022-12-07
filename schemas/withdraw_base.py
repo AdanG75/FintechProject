@@ -24,4 +24,3 @@ class WithdrawDisplay(WithdrawBase):
 
     class Config:
         orm_mode = True
-
