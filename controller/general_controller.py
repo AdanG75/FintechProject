@@ -15,6 +15,29 @@ AUTH_OK: str = 'OK'
 AUTH_WRONG: str = 'WR'
 
 
+async def save_value_in_cache_with_formatted_name(
+        r: Redis,
+        subject: str,
+        type_s: str,
+        identifier: Union[str, int],
+        value: Union[int, float, str, bool, bytes],
+        seconds: int
+) -> bool:
+    if 1 > len(subject) or len(subject) > 9:
+        raise ValueError("Subject too long or too short")
+
+    if 1 > len(type_s) or len(type_s) > 9:
+        raise ValueError("Type movement too long or too short")
+
+    if isinstance(identifier, str):
+        if 3 > len(identifier) or len(identifier) > 50:
+            raise ValueError("Identifier too long or too short")
+
+    key = f'{subject}-{type_s}-{identifier}'
+
+    return item_save(r, key, value, seconds)
+
+
 def check_performer_in_cache(
         r: Redis,
         identifier: Union[str, int],
@@ -107,4 +130,3 @@ async def delete_auth_resul(r: Redis, identifier: Union[str, int], type_s: str) 
     result = r.delete(f'RST-{type_s}-{identifier}')
 
     return result > 0
-

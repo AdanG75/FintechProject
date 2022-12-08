@@ -14,8 +14,10 @@ from db.orm.exceptions_orm import email_or_password_are_wrong_exception, NotFoun
 from db.orm.login_attempts_orm import check_attempt, add_attempt, reset_login_attempt
 from db.orm.sessions_orm import start_session, get_session_by_id_session, finish_session
 from db.orm.users_orm import get_user_by_email
+from schemas.movement_base import UserDataMovement
 from schemas.session_base import SessionRequest
 from schemas.token_base import TokenBase, TokenSummary
+from schemas.type_user import TypeUser
 from secure.hash import Hash
 
 
@@ -114,3 +116,12 @@ def check_type_user(token_summary: TokenSummary, is_a: str) -> bool:
         return True
     else:
         return False
+
+
+def get_logged_user_to_make_movement(token_summary: TokenSummary) -> UserDataMovement:
+    return UserDataMovement(
+        id_performer=token_summary.id_user,
+        type_user=TypeUser(token_summary.type_user),
+        id_type_performer=token_summary.id_type,
+        id_requester=None
+    )

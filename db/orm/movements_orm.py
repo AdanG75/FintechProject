@@ -277,6 +277,42 @@ def finish_movement(
     return movement_object
 
 
+@multiple_attempts
+@full_database_exceptions
+def force_termination_movement(
+        db: Session,
+        id_movement: Optional[int] = None,
+        movement_object: Optional[DbMovement] = None,
+        execute: str = 'now'
+) -> bool:
+    if movement_object is None:
+        if id_movement is not None:
+            movement_object = get_movement_by_id_movement(db, id_movement)
+        else:
+            return False
+
+    if movement_object.successful is not None:
+        return False
+    else:
+        movement_object.in_process = False
+        movement_object.successful = False
+
+        try:
+            if execute == 'now':
+                db.commit()
+                db.refresh(movement_object)
+            elif execute == 'wait':
+                pass
+            else:
+                raise option_not_found_exception
+        except Exception as e:
+            db.rollback()
+            print(e)
+            raise e
+
+        return True
+
+
 def check_type_and_status_of_movement(db: Session, id_movement: int, type_movement: str) -> None:
     try:
         movement = get_movement_by_id_movement(db, id_movement)

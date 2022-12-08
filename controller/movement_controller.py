@@ -1,8 +1,8 @@
-from typing import List, Union
+from typing import List, Union, Optional
 
 from sqlalchemy.orm import Session
 
-from controller.withdraw_controller import create_withdraw_formatted
+from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement
 from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
 from db.models.payments_db import DbPayment
@@ -10,9 +10,9 @@ from db.models.transfers_db import DbTransfer
 from db.models.withdraws_db import DbWithdraw
 from db.orm.deposits_orm import get_deposits_by_id_destination_credit
 from db.orm.exceptions_orm import NotFoundException, wrong_data_sent_exception, option_not_found_exception, \
-    type_of_value_not_compatible
+    type_of_value_not_compatible, unexpected_error_exception, compile_exception
 from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_movement_by_id_movement, \
-    get_movements_by_id_requester_and_type
+    get_movements_by_id_requester_and_type, force_termination_movement
 from db.orm.payments_orm import get_payment_by_id_movement, get_payments_by_id_market
 from db.orm.transfers_orm import get_transfer_by_id_movement, get_transfers_by_id_destination_credit
 from db.orm.withdraws_orm import get_withdraw_by_id_movement
@@ -221,19 +221,54 @@ async def create_summary_of_movement(
     elif t_movement_obj == TypeMovement.withdraw:
         if validate_withdraw_data_types(request):
             summary = await create_withdraw_formatted(db, request, user_data)
-
+        else:
+            raise unexpected_error_exception
     else:
         raise option_not_found_exception
 
     return summary
 
 
-def validate_withdraw_data_types(request: MovementTypeRequest) -> bool:
-    if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
-        raise type_of_value_not_compatible
+async def make_movement_based_on_type(
+        db: Session,
+        request: MovementExtraRequest,
+        data_user: UserDataMovement,
+        type_movement: Union[str, TypeMovement]
+) -> BasicExtraMovement:
+    t_movement_obj = cast_str_to_movement_type(type_movement) if isinstance(type_movement, str) else type_movement
 
-    if not check_type_of_money(request.type_submov, TypeMoney.cash):
-        raise type_of_value_not_compatible
+    if t_movement_obj == TypeMovement.deposit:
+        pass
+    elif t_movement_obj == TypeMovement.payment:
+        pass
+    elif t_movement_obj == TypeMovement.transfer:
+        pass
+    elif t_movement_obj == TypeMovement.withdraw:
+        if validate_withdraw_data_types(request):
+            movement = await create_withdraw_movement(db, request, data_user)
+        else:
+            raise unexpected_error_exception
+    else:
+        raise option_not_found_exception
+
+    return movement
+
+
+def validate_withdraw_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
+    if isinstance(request, MovementTypeRequest):
+        if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
+            raise type_of_value_not_compatible
+
+        if not check_type_of_money(request.type_submov, TypeMoney.cash):
+            raise type_of_value_not_compatible
+    elif isinstance(request, MovementExtraRequest):
+        if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
+            raise type_of_value_not_compatible
+
+        if not check_type_of_money(request.extra.type_submov, TypeMoney.cash):
+            raise type_of_value_not_compatible
+    else:
+        return False
 
     return True
 
@@ -304,6 +339,21 @@ def cast_str_to_transfer_type(transfer_str: str) -> TypeTransfer:
         raise wrong_data_sent_exception
 
     return transfer_type
+
+
+def finish_movement_unsuccessfully(
+        db: Session,
+        id_movement: Optional[int] = None,
+        movement_object: Optional[DbMovement] = None
+) -> bool:
+    if movement_object is None:
+        if id_movement is not None:
+            movement_object = get_movement_by_id_movement(db, id_movement)
+        else:
+            raise compile_exception
+
+    result = force_termination_movement(db, movement_object=movement_object, execute='now')
+    return result
 
 
 def parse_DbMovement_to_BasicExtraMovement(

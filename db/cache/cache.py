@@ -38,7 +38,7 @@ def batch_save(r: Redis, values: dict, seconds: int = CACHE_TIME) -> List[bool]:
 def item_save(
         r: Redis,
         r_key: str,
-        r_value: Union[float, int, str, bytes],
+        r_value: Union[float, int, str, bytes, bool],
         seconds: int = CACHE_TIME
 ) -> bool:
     return r.setex(r_key, time=seconds, value=r_value)

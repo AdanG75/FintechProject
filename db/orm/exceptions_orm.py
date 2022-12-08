@@ -44,6 +44,11 @@ credentials_exception = HTTPException(
     headers={"WWW-Authenticate": "Bearer"}
 )
 
+unexpected_error_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="An unexpected error occurred while precessing the request"
+)
+
 email_exception = HTTPException(
     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
     detail="Email is too large, maximum length: 79 characters or it is null"
