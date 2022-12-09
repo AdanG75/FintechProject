@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 from google.cloud.storage.client import Client
 from redis.client import Redis
@@ -107,6 +107,12 @@ async def describe_fingerprint_from_sample(sample: Union[str, List[int]]) -> Fin
         return result
     else:
         raise uncreated_fingerprint_exception
+
+
+async def get_minutiae_and_core_points_from_sample(sample: Union[str, List[int]]) -> Tuple[list, list]:
+    fingerprint: Fingerprint = await describe_fingerprint_from_sample(sample)
+
+    return fingerprint.get_minutiae_list(), fingerprint.get_core_point_list()
 
 
 @multiple_attempts

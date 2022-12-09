@@ -1,7 +1,11 @@
 from typing import List, Union, Optional
 
+from redis.client import Redis
 from sqlalchemy.orm import Session
 
+from controller.characteristic_point_controller import save_minutiae_and_core_points_secure_in_cache
+from controller.fingerprint_controller import get_minutiae_and_core_points_from_sample
+from controller.secure_controller import cipher_minutiae_and_core_points
 from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement
 from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
@@ -16,6 +20,7 @@ from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_moveme
 from db.orm.payments_orm import get_payment_by_id_movement, get_payments_by_id_market
 from db.orm.transfers_orm import get_transfer_by_id_movement, get_transfers_by_id_destination_credit
 from db.orm.withdraws_orm import get_withdraw_by_id_movement
+from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import UserDataMovement, MovementTypeRequest
 from schemas.movement_complex import BasicExtraMovement, ExtraMovement, MovementExtraRequest
 from schemas.payment_base import PaymentComplexList
@@ -312,6 +317,18 @@ def check_type_of_transfer(
         return True
     else:
         return False
+
+
+async def save_movement_fingerprint(r: Redis, id_movement: int, fingerprint_object: FingerprintB64) -> bool:
+    minutiae, c_points = await get_minutiae_and_core_points_from_sample(fingerprint_object.fingerprint)
+
+    # Cipher minutiae and core points
+    minutiae_secure, core_points_secure = await cipher_minutiae_and_core_points(minutiae, c_points)
+
+    # Save cipher data into Redis
+    save_minutiae_and_core_points_secure_in_cache(r, minutiae_secure, core_points_secure, id_movement, 'MOV')
+
+    return True
 
 
 def cast_str_to_movement_type(movement_str: str) -> TypeMovement:

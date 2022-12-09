@@ -1,14 +1,17 @@
-from typing import Union, Optional
+from typing import Union, Optional, List, Tuple
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from controller.characteristic_point_controller import get_json_of_minutiae_list, get_json_of_core_points_list
 from core.utils import iter_object_to_become_serializable
 from db.orm.exceptions_orm import type_of_value_not_compatible, bad_cipher_data_exception, not_values_sent_exception, \
     wrong_public_pem_format_exception
 from db.orm.users_orm import get_public_key_pem
+from fingerprint_process.models.core_point import CorePoint
+from fingerprint_process.models.minutia import Minutiae
 from schemas.secure_base import SecureBase
-from secure.cipher_secure import unpack_and_decrypt_data, decrypt_data, pack_and_encrypt_data
+from secure.cipher_secure import unpack_and_decrypt_data, decrypt_data, pack_and_encrypt_data, cipher_data
 
 
 def get_data_from_secure(request: SecureBase) -> dict:
@@ -80,3 +83,17 @@ def cipher_response_message(
     secure_base_response = SecureBase.parse_obj(packed_response)
 
     return secure_base_response
+
+
+async def cipher_minutiae_and_core_points(minutiae: List[Minutiae], c_points: List[CorePoint]) -> Tuple[str, str]:
+    minutiae_str = get_json_of_minutiae_list(minutiae)
+    # print(len(fingerprint.get_minutiae_list()))
+
+    core_points_str = get_json_of_core_points_list(c_points)
+    # print(len(fingerprint.get_core_point_list()))
+
+    # Cipher minutiae_str and core_points_str
+    minutiae_secure = cipher_data(minutiae_str)
+    core_points_secure = cipher_data(core_points_str)
+
+    return minutiae_secure, core_points_secure

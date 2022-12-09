@@ -1,9 +1,12 @@
 import json
 from typing import List, Union
 
+from redis.client import Redis
+
+from db.cache.cache import batch_save
 from db.models.cores_db import DbCores
 from db.models.minutiae_db import DbMinutiae
-from db.orm.exceptions_orm import type_not_found_exception
+from db.orm.exceptions_orm import type_not_found_exception, cache_exception
 from fingerprint_process.models.characteristic_point import CharacteristicPoint
 from fingerprint_process.models.core_point import CorePoint
 from fingerprint_process.models.minutia import Minutiae
@@ -60,6 +63,25 @@ def from_json_get_cp_list(json_str: str, cp_type: str) -> list:
         return cps
 
     return []
+
+
+def save_minutiae_and_core_points_secure_in_cache(
+        r: Redis,
+        minutiae_secure: str,
+        core_points_secure: str,
+        identifier: Union[str, int],
+        type_s: str
+) -> bool:
+    values_to_catching = {
+        f'MNT-{type_s}-{identifier}': minutiae_secure,
+        f'CRP-{type_s}-{identifier}': core_points_secure
+    }
+    result = batch_save(r, values_to_catching, seconds=1800)
+
+    if result.count(False) > 0:
+        raise cache_exception
+
+    return True
 
 
 def parse_cp_object_list_to_cp_basic_list(characteristics_points: List[CharacteristicPoint]) -> List[CPBase]:

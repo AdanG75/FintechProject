@@ -7,16 +7,18 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.credit_controller import get_id_of_owners_of_credit
-from controller.general_controller import save_value_in_cache_with_formatted_name
+from controller.general_controller import save_value_in_cache_with_formatted_name, check_performer_in_cache
 from controller.login_controller import get_current_token, get_logged_user_to_make_movement
 from controller.movement_controller import get_payments_of_client, get_payments_of_market, create_summary_of_movement, \
-    make_movement_based_on_type, finish_movement_unsuccessfully
+    make_movement_based_on_type, finish_movement_unsuccessfully, save_movement_fingerprint
 from controller.secure_controller import cipher_response_message, get_data_from_secure
 from core.logs import show_error_message
 from db.cache.cache import get_cache_client
 from db.database import get_db
 from db.orm.exceptions_orm import not_authorized_exception, type_of_value_not_compatible, \
-    validation_request_exception, cache_exception, compile_exception
+    validation_request_exception, cache_exception, compile_exception, not_longer_available_exception
+from schemas.basic_response import BasicResponse
+from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import MovementTypeRequest
 from schemas.movement_complex import MovementExtraRequest, BasicExtraMovement
 from schemas.payment_base import PaymentComplexList
@@ -117,6 +119,47 @@ async def make_movement(
         finish_movement_unsuccessfully(db, id_movement=response.id_movement)
         raise cache_exception
 
+    if secure:
+        secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)
+        return secure_response
+
+    return response
+
+
+@router.post(
+    path='/movement/{id_movement}/auth/fingerprint',
+    response_model=Union[SecureBase, BasicResponse],
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def save_fingerprint_to_authorize_movement(
+        id_movement: int = Path(..., gt=0),
+        request: Union[SecureBase, FingerprintB64] = Body(...),
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    is_performer = check_performer_in_cache(r, id_movement, 'MOV', current_token.id_user)
+
+    if is_performer is False:
+        raise not_authorized_exception
+
+    if is_performer is None:
+        finish_movement_unsuccessfully(db, id_movement=id_movement)
+        raise not_longer_available_exception
+
+    data_request = get_data_from_secure(request) if secure else request
+    try:
+        fingerprint_request = FingerprintB64.parse_obj(data_request) if isinstance(data_request, dict) else data_request
+    except ValidationError:
+        raise validation_request_exception
+
+    result = await save_movement_fingerprint(r, id_movement, fingerprint_request)
+
+    response = BasicResponse(
+        operation="Save movement fingerprint",
+        successful=result
+    )
     if secure:
         secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)
         return secure_response
