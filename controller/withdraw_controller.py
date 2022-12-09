@@ -1,16 +1,20 @@
 from typing import Union, Tuple
 
+from redis.client import Redis
 from sqlalchemy.orm import Session
 
 from controller.credit_controller import check_funds_of_credit, check_owners_of_credit
+from controller.general_controller import save_type_auth_movement_cache
 from db.models.movements_db import DbMovement
 from db.models.withdraws_db import DbWithdraw
 from db.orm.exceptions_orm import not_sufficient_funds_exception, not_authorized_exception, not_values_sent_exception, \
-    unexpected_error_exception
+    unexpected_error_exception, type_of_value_not_compatible
 from db.orm.movements_orm import make_movement
 from db.orm.withdraws_orm import create_withdraw
 from schemas.movement_base import UserDataMovement, MovementTypeRequest, MovementRequest
 from schemas.movement_complex import ExtraMovementRequest, MovementExtraRequest, ExtraMovement, BasicExtraMovement
+from schemas.type_auth_movement import TypeAuthMovement
+from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement, NatureMovement
 from schemas.type_user import TypeUser
 from schemas.withdraw_base import WithdrawRequest
@@ -81,6 +85,18 @@ def check_valid_withdraw(
         raise not_sufficient_funds_exception
 
     return True
+
+
+async def save_type_auth_withdraw_in_cache(
+        r: Redis,
+        id_movement: int,
+        type_money: TypeMoney,
+        performer_data: UserDataMovement
+) -> bool:
+    if type_money == TypeMoney.cash and performer_data.type_user == TypeUser.market:
+        return await save_type_auth_movement_cache(r, id_movement, str(TypeAuthMovement.local.value), 3600)
+    else:
+        raise type_of_value_not_compatible
 
 
 def get_movement_and_withdraw_request_from_movement_extra_request(

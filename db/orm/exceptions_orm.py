@@ -114,6 +114,13 @@ type_of_value_not_compatible = HTTPException(
     detail="Unsupportable data type or not compatible with the operation"
 )
 
+
+type_of_authorization_not_compatible_exception = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="The type of authorization requested not is valid to this transaction"
+)
+
+
 type_of_user_not_compatible = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="Unsupportable user type. It is not compatible with the operation"

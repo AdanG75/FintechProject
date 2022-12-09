@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from controller.characteristic_point_controller import save_minutiae_and_core_points_secure_in_cache
 from controller.fingerprint_controller import get_minutiae_and_core_points_from_sample
 from controller.secure_controller import cipher_minutiae_and_core_points
-from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement
+from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement, \
+    save_type_auth_withdraw_in_cache
 from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
 from db.models.payments_db import DbPayment
@@ -276,6 +277,38 @@ def validate_withdraw_data_types(request: Union[MovementTypeRequest, MovementExt
         return False
 
     return True
+
+
+async def save_type_authentication_in_cache(
+        r: Redis,
+        id_movement: int,
+        type_movement: Union[str, TypeMovement],
+        type_sub_movement: Union[str, TypeMoney, TypeTransfer],
+        performer_data: UserDataMovement
+) -> bool:
+    act_type_mov = cast_str_to_movement_type(type_movement) if isinstance(type_movement, str) else type_movement
+    if act_type_mov == TypeMovement.transfer:
+        act_ts_movement = cast_str_to_transfer_type(type_sub_movement) \
+            if isinstance(type_sub_movement, str) else type_sub_movement
+    else:
+        act_ts_movement = cast_str_to_money_type(type_sub_movement) \
+            if isinstance(type_sub_movement, str) else type_sub_movement
+
+    if act_type_mov == TypeMovement.withdraw:
+        result = await save_type_auth_withdraw_in_cache(r, id_movement, act_ts_movement, performer_data)
+    elif act_type_mov == TypeMovement.deposit:
+        # result = await save_type_auth_deposit_in_cache(r, id_movement, act_ts_movement, performer_data)
+        pass
+    elif act_type_mov == TypeMovement.payment:
+        # result = await save_type_auth_payment_in_cache(r, id_movement, act_ts_movement, performer_data)
+        pass
+    elif act_type_mov == TypeMovement.transfer:
+        # result = await save_type_auth_transfer_in_cache(r, id_movement, act_ts_movement, performer_data)
+        pass
+    else:
+        raise option_not_found_exception
+
+    return result
 
 
 def check_type_of_movement(

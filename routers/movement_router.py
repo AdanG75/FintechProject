@@ -7,16 +7,19 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from controller.credit_controller import get_id_of_owners_of_credit
-from controller.general_controller import save_value_in_cache_with_formatted_name, check_performer_in_cache
+from controller.general_controller import check_performer_in_cache, save_performer_in_cache, \
+    get_type_auth_movement_cache
 from controller.login_controller import get_current_token, get_logged_user_to_make_movement
 from controller.movement_controller import get_payments_of_client, get_payments_of_market, create_summary_of_movement, \
-    make_movement_based_on_type, finish_movement_unsuccessfully, save_movement_fingerprint
+    make_movement_based_on_type, finish_movement_unsuccessfully, save_movement_fingerprint, \
+    save_type_authentication_in_cache
 from controller.secure_controller import cipher_response_message, get_data_from_secure
 from core.logs import show_error_message
 from db.cache.cache import get_cache_client
 from db.database import get_db
 from db.orm.exceptions_orm import not_authorized_exception, type_of_value_not_compatible, \
-    validation_request_exception, cache_exception, compile_exception, not_longer_available_exception
+    validation_request_exception, cache_exception, compile_exception, not_longer_available_exception, \
+    type_of_authorization_not_compatible_exception
 from schemas.basic_response import BasicResponse
 from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import MovementTypeRequest
@@ -24,6 +27,7 @@ from schemas.movement_complex import MovementExtraRequest, BasicExtraMovement
 from schemas.payment_base import PaymentComplexList
 from schemas.secure_base import SecureBase
 from schemas.token_base import TokenSummary
+from schemas.type_auth_movement import TypeAuthMovement
 from schemas.type_movement import TypeMovement
 from schemas.type_user import TypeUser
 
@@ -105,17 +109,26 @@ async def make_movement(
 
     response = await make_movement_based_on_type(db, request, data_user, type_movement)
 
-    # Save performer if a response is created
+    # Save type_of authorization and performer if a response is created
     try:
-        cache_result = await save_value_in_cache_with_formatted_name(
-            r, 'PFR', 'MOV', response.id_movement, current_token.id_user, 3600
+        auth_type_result = await save_type_authentication_in_cache(
+            r=r,
+            id_movement=response.id_movement,
+            type_movement=response.type_movement,
+            type_sub_movement=response.extra.type_submov,
+            performer_data=data_user
         )
-    except ValueError as e:
+        cache_result = await save_performer_in_cache(r, 'MOV', response.id_movement, current_token.id_user, 3600)
+    except ValueError as ve:
+        show_error_message(ve)
+        finish_movement_unsuccessfully(db, id_movement=response.id_movement)
+        raise compile_exception
+    except Exception as e:
         show_error_message(e)
         finish_movement_unsuccessfully(db, id_movement=response.id_movement)
         raise compile_exception
 
-    if not cache_result:
+    if not cache_result or not auth_type_result:
         finish_movement_unsuccessfully(db, id_movement=response.id_movement)
         raise cache_exception
 
@@ -140,6 +153,7 @@ async def save_fingerprint_to_authorize_movement(
         current_token: TokenSummary = Depends(get_current_token)
 ):
     is_performer = check_performer_in_cache(r, id_movement, 'MOV', current_token.id_user)
+    type_auth = get_type_auth_movement_cache(r, id_movement)
 
     if is_performer is False:
         raise not_authorized_exception
@@ -147,6 +161,9 @@ async def save_fingerprint_to_authorize_movement(
     if is_performer is None:
         finish_movement_unsuccessfully(db, id_movement=id_movement)
         raise not_longer_available_exception
+
+    if not (await type_auth == TypeAuthMovement.local.value or type_auth == TypeAuthMovement.localPaypal.value):
+        raise type_of_authorization_not_compatible_exception
 
     data_request = get_data_from_secure(request) if secure else request
     try:
@@ -165,6 +182,9 @@ async def save_fingerprint_to_authorize_movement(
         return secure_response
 
     return response
+
+
+# TODO Match router movement
 
 
 @router.get(

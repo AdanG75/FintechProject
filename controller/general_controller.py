@@ -4,8 +4,10 @@ from redis import Redis
 
 from controller.characteristic_point_controller import from_json_get_minutiae_list_object, \
     from_json_get_core_point_list_object
+from core.logs import show_error_message
 from db.cache.cache import is_the_same, item_save, check_item_if_exist
-from db.orm.exceptions_orm import not_longer_available_exception, operation_need_authorization_exception
+from db.orm.exceptions_orm import not_longer_available_exception, operation_need_authorization_exception, \
+    cache_exception
 from fingerprint_process.models.core_point import CorePoint
 from fingerprint_process.models.minutia import Minutiae
 from secure.cipher_secure import decipher_data
@@ -38,6 +40,44 @@ async def save_value_in_cache_with_formatted_name(
     return item_save(r, key, value, seconds)
 
 
+async def delete_values_in_cache(
+        r: Redis,
+        subject: str,
+        type_s: str,
+        identifier: Union[str, int]
+) -> bool:
+    if r.exists(f'{subject}-{type_s}-{identifier}') > 0:
+        try:
+            result = r.delete(f'{subject}-{type_s}-{identifier}')
+        except Exception as e:
+            show_error_message(e)
+            raise cache_exception
+
+        return result > 0
+
+    return True
+
+
+async def save_performer_in_cache(
+        r: Redis,
+        type_s: str,
+        identifier: Union[str, int],
+        value: Union[int, float, str, bool, bytes],
+        seconds: int = 3600
+) -> bool:
+    return await save_value_in_cache_with_formatted_name(r, 'PFR', type_s, identifier, value, seconds)
+
+
+async def save_requester_in_cache(
+        r: Redis,
+        type_s: str,
+        identifier: Union[str, int],
+        value: Union[int, float, str, bool, bytes],
+        seconds: int = 3600
+) -> bool:
+    return await save_value_in_cache_with_formatted_name(r, 'RQT', type_s, identifier, value, seconds)
+
+
 def check_performer_in_cache(
         r: Redis,
         identifier: Union[str, int],
@@ -49,6 +89,22 @@ def check_performer_in_cache(
         return None
     else:
         return is_the_same(above_performer, actual_performer)
+
+
+def get_requester_from_cache(r: Redis, type_s: str, identifier: Union[str, int]) -> str:
+    requester = r.get(f'RQT-{type_s}-{identifier}')
+    if requester is None:
+        raise not_longer_available_exception
+
+    return requester.decode('utf-8')
+
+
+async def delete_performer_in_cache(r: Redis, type_s: str, identifier: Union[str, int]) -> bool:
+    return await delete_values_in_cache(r, 'PFR', type_s, identifier)
+
+
+async def delete_requester_in_cache(r: Redis, type_s: str, identifier: Union[str, int]) -> bool:
+    return await delete_values_in_cache(r, 'RQT', type_s, identifier)
 
 
 def get_fingerprint_auth_data(
@@ -78,14 +134,6 @@ async def delete_fingerprint_auth_data(r: Redis, type_s: str, identifier: Union[
         return result > 0
 
     return True
-
-
-def get_requester_from_cache(r: Redis, type_s: str, identifier: Union[str, int]) -> str:
-    requester = r.get(f'RQT-{type_s}-{identifier}')
-    if requester is None:
-        raise not_longer_available_exception
-
-    return requester.decode('utf-8')
 
 
 def add_attempt_cache(r: Redis, identifier: Union[str, int], type_s: str) -> bool:
@@ -130,3 +178,27 @@ async def delete_auth_resul(r: Redis, identifier: Union[str, int], type_s: str) 
     result = r.delete(f'RST-{type_s}-{identifier}')
 
     return result > 0
+
+
+async def save_type_auth_movement_cache(r: Redis, identifier: int, type_auth: str, seconds: int = 3600) -> bool:
+    return await save_value_in_cache_with_formatted_name(r, 'TAU', 'MOV', identifier, type_auth, seconds)
+
+
+async def get_type_auth_movement_cache(r: Redis, identifier: int) -> str:
+    requester = r.get(f'TAU-MOV-{identifier}')
+    if requester is None:
+        raise not_longer_available_exception
+
+    return requester.decode('utf-8')
+
+
+async def check_type_auth_movement_cache(r: Redis, identifier: int, wished_type: str) -> Optional[bool]:
+    auth_type = r.get(f'TAU-MOV-{identifier}')
+    if auth_type is None:
+        return None
+    else:
+        return is_the_same(auth_type, wished_type)
+
+
+async def delete_type_auth_movement_cache(r: Redis, identifier: int) -> bool:
+    return await delete_values_in_cache(r, 'TAU', 'MOV', identifier)
