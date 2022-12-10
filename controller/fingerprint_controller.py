@@ -267,10 +267,11 @@ def check_if_user_have_fingerprint_registered(db: Session, type_user: str, id_ty
     return True
 
 
-async def validate_credit_by_fingerprints(
+async def validate_operation_by_fingerprints(
         auth_fingerprint: Fingerprint,
         client_fingerprint: Fingerprint,
         identifier: Union[str, int],
+        type_s: str,
         r: Redis
 ) -> bool:
     result = match_index_and_base_fingerprints(
@@ -281,6 +282,8 @@ async def validate_credit_by_fingerprints(
         base_fingerprint=client_fingerprint,
         input_fingerprint=auth_fingerprint
     )
+    # In this point the fingerprint has been used
+    r_delete_cp = delete_fingerprint_auth_data(r, type_s, identifier)
 
     if result is True:
         return False
@@ -288,10 +291,7 @@ async def validate_credit_by_fingerprints(
     if result != auth_fingerprint.MATCH_FINGERPRINT:
         return False
 
-    # In this point the fingerprint was validated
-    await delete_fingerprint_auth_data(r, 'CRT', identifier)
-
-    return True
+    return True and await r_delete_cp
 
 
 async def set_minutiae_and_core_points_to_a_fingerprint(

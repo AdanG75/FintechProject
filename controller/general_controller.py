@@ -202,3 +202,11 @@ async def check_type_auth_movement_cache(r: Redis, identifier: int, wished_type:
 
 async def delete_type_auth_movement_cache(r: Redis, identifier: int) -> bool:
     return await delete_values_in_cache(r, 'TAU', 'MOV', identifier)
+
+
+async def check_auth_movement_result(r: Redis, subject: str, identifier: Union[str, int], type_s: str) -> bool:
+    check_auth = check_item_if_exist(r, f'{subject}-{type_s}-{identifier}', AUTH_OK)
+    if check_auth is None:
+        raise operation_need_authorization_exception
+
+    return check_auth

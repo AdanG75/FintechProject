@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from controller.characteristic_point_controller import save_minutiae_and_core_points_secure_in_cache
 from controller.fingerprint_controller import get_minutiae_and_core_points_from_sample
+from controller.general_controller import save_value_in_cache_with_formatted_name, AUTH_OK, delete_values_in_cache, \
+    check_auth_movement_result
 from controller.secure_controller import cipher_minutiae_and_core_points
 from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement, \
     save_type_auth_withdraw_in_cache
@@ -25,9 +27,22 @@ from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import UserDataMovement, MovementTypeRequest
 from schemas.movement_complex import BasicExtraMovement, ExtraMovement, MovementExtraRequest
 from schemas.payment_base import PaymentComplexList
+from schemas.type_auth_movement import TypeAuthFrom
 from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement, NatureMovement
 from schemas.type_transfer import TypeTransfer
+
+
+async def get_movement_using_its_id(db: Session, id_movement: int) -> DbMovement:
+    movement_db = get_movement_by_id_movement(db, id_movement)
+
+    return movement_db
+
+
+async def get_id_requester_from_movement(db: Session, id_movement: int) -> Optional[str]:
+    movement_db = await get_movement_using_its_id(db, id_movement)
+
+    return movement_db.id_requester
 
 
 async def get_all_movements_of_credit(db: Session, id_credit: int) -> List[BasicExtraMovement]:
@@ -364,6 +379,49 @@ async def save_movement_fingerprint(r: Redis, id_movement: int, fingerprint_obje
     return True
 
 
+async def save_authentication_movement_result_in_cache(
+        r: Redis,
+        id_movement: int,
+        auth_from: [str, TypeAuthFrom]
+) -> bool:
+    subject = get_auth_subject_based_on_from(auth_from)
+
+    return await save_value_in_cache_with_formatted_name(r, subject, 'MOV', id_movement, AUTH_OK, 3600)
+
+
+async def check_authentication_movement_result_in_cache(
+        r: Redis,
+        id_movement: int,
+        auth_from: [str, TypeMovement]
+) -> bool:
+    subject = get_auth_subject_based_on_from(auth_from)
+
+    return await check_auth_movement_result(r, subject, id_movement, 'MOV')
+
+
+async def delete_authentication_movement_result_in_cache(
+        r: Redis,
+        id_movement: int,
+        auth_from: [str, TypeMovement]
+) -> bool:
+    subject = get_auth_subject_based_on_from(auth_from)
+
+    return await delete_values_in_cache(r, subject, 'MOV', id_movement)
+
+
+def get_auth_subject_based_on_from(auth_from: [str, TypeMovement]) -> str:
+    af_object = cast_str_to_auth_from_type(auth_from) if isinstance(auth_from, str) else auth_from
+
+    if af_object == TypeAuthFrom.fingerprint:
+        subject = 'F-AUTH'
+    elif af_object == TypeAuthFrom.paypal:
+        subject = 'P-AUTH'
+    else:
+        raise option_not_found_exception
+
+    return subject
+
+
 def cast_str_to_movement_type(movement_str: str) -> TypeMovement:
     try:
         movement_type = TypeMovement(movement_str)
@@ -389,6 +447,15 @@ def cast_str_to_transfer_type(transfer_str: str) -> TypeTransfer:
         raise wrong_data_sent_exception
 
     return transfer_type
+
+
+def cast_str_to_auth_from_type(auth_from: str) -> TypeAuthFrom:
+    try:
+        auth_from_type = TypeAuthFrom(auth_from.lower())
+    except ValueError:
+        raise wrong_data_sent_exception
+
+    return auth_from_type
 
 
 def finish_movement_unsuccessfully(

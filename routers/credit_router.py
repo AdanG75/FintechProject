@@ -11,7 +11,7 @@ from controller.credit_controller import get_credits, check_owner_credit, get_cr
     save_precredit_fingerprint, get_pre_credit_request_from_cache, new_credit, \
     delete_pre_credit_requester_and_performer_in_cache, approve_credit_market
 from controller.fingerprint_controller import set_minutiae_and_core_points_to_a_fingerprint, get_client_fingerprint, \
-    validate_credit_by_fingerprints
+    validate_operation_by_fingerprints
 from controller.general_controller import check_performer_in_cache, get_fingerprint_auth_data, \
     get_requester_from_cache, add_attempt_cache, erase_attempt_cache, save_auth_result, check_auth_result, \
     delete_auth_resul, delete_fingerprint_auth_data
@@ -202,7 +202,7 @@ async def validate_by_fingerprint(
     client_fingerprint = await get_client_fingerprint(db, id_client)
 
     # Auth credit using fingerprints
-    result = await validate_credit_by_fingerprints(auth_fingerprint, client_fingerprint, id_order, r)
+    result = await validate_operation_by_fingerprints(auth_fingerprint, client_fingerprint, id_order, 'CRT', r)
     if not result:
         try:
             add_attempt_cache(r, id_order, 'CRT')
