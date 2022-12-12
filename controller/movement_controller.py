@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta
 from typing import List, Union, Optional
 
+from fastapi import HTTPException
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
@@ -9,7 +11,7 @@ from controller.general_controller import save_value_in_cache_with_formatted_nam
     check_auth_movement_result
 from controller.secure_controller import cipher_minutiae_and_core_points
 from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement, \
-    save_type_auth_withdraw_in_cache
+    save_type_auth_withdraw_in_cache, get_type_of_required_authorization_to_withdraw, execute_withdraw
 from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
 from db.models.payments_db import DbPayment
@@ -17,7 +19,8 @@ from db.models.transfers_db import DbTransfer
 from db.models.withdraws_db import DbWithdraw
 from db.orm.deposits_orm import get_deposits_by_id_destination_credit
 from db.orm.exceptions_orm import NotFoundException, wrong_data_sent_exception, option_not_found_exception, \
-    type_of_value_not_compatible, unexpected_error_exception, compile_exception
+    type_of_value_not_compatible, unexpected_error_exception, compile_exception, cache_exception, \
+    operation_need_authorization_exception
 from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_movement_by_id_movement, \
     get_movements_by_id_requester_and_type, force_termination_movement
 from db.orm.payments_orm import get_payment_by_id_movement, get_payments_by_id_market
@@ -27,7 +30,7 @@ from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import UserDataMovement, MovementTypeRequest
 from schemas.movement_complex import BasicExtraMovement, ExtraMovement, MovementExtraRequest
 from schemas.payment_base import PaymentComplexList
-from schemas.type_auth_movement import TypeAuthFrom
+from schemas.type_auth_movement import TypeAuthFrom, TypeAuthMovement
 from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement, NatureMovement
 from schemas.type_transfer import TypeTransfer
@@ -43,6 +46,13 @@ async def get_id_requester_from_movement(db: Session, id_movement: int) -> Optio
     movement_db = await get_movement_using_its_id(db, id_movement)
 
     return movement_db.id_requester
+
+
+async def check_if_time_of_movement_is_valid(movement: DbMovement, minutes: int = 60) -> bool:
+    if movement.created_time + timedelta(minutes=minutes) >= datetime.utcnow():
+        return True
+    else:
+        return False
 
 
 async def get_all_movements_of_credit(db: Session, id_credit: int) -> List[BasicExtraMovement]:
@@ -326,6 +336,31 @@ async def save_type_authentication_in_cache(
     return result
 
 
+async def execute_movement_from_controller(db: Session, r: Redis, id_movement: int) -> BasicExtraMovement:
+    movement_db: DbMovement = await get_movement_using_its_id(db, id_movement)
+
+    if movement_db.type_movement == TypeMovement.deposit.value:
+        # execute_deposit()
+        pass
+    elif movement_db.type_movement == TypeMovement.payment.value:
+        # execute_payment()
+        pass
+    elif movement_db.type_movement == TypeMovement.transfer.value:
+        # execute_transfer
+        pass
+    elif movement_db.type_movement == TypeMovement.withdraw.value:
+        type_auth = get_type_of_required_authorization_to_withdraw(movement_db)
+        if await is_movement_authorized(r, id_movement, type_auth):
+            movement = execute_withdraw(db, movement_db, r)
+            await delete_authorized_data_based_on_type_auth(r, id_movement, type_auth)
+        else:
+            raise operation_need_authorization_exception
+    else:
+        raise option_not_found_exception
+
+    return await movement
+
+
 def check_type_of_movement(
         actual_type: Union[str, TypeMovement],
         wished_type: Union[str, TypeMovement]
@@ -379,10 +414,48 @@ async def save_movement_fingerprint(r: Redis, id_movement: int, fingerprint_obje
     return True
 
 
+async def is_movement_authorized(r: Redis, id_movement: int, type_auth: TypeAuthMovement) -> bool:
+    authorizes = []
+    if type_auth == TypeAuthMovement.local:
+        result = check_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.fingerprint)
+        authorizes.append(await result)
+    elif type_auth == TypeAuthMovement.paypal:
+        result = check_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.paypal)
+        authorizes.append(await result)
+    elif type_auth == TypeAuthMovement.localPaypal:
+        result1 = check_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.fingerprint)
+        result2 = check_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.paypal)
+        authorizes.append(await result1)
+        authorizes.append(await result2)
+    else:
+        raise option_not_found_exception
+
+    return not authorizes.count(False) > 0
+
+
+async def delete_authorized_data_based_on_type_auth(r: Redis, id_movement: int, type_auth: TypeAuthMovement) -> bool:
+    authorizes = []
+    if type_auth == TypeAuthMovement.local:
+        result = delete_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.fingerprint)
+        authorizes.append(await result)
+    elif type_auth == TypeAuthMovement.paypal:
+        result = delete_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.paypal)
+        authorizes.append(await result)
+    elif type_auth == TypeAuthMovement.localPaypal:
+        result1 = delete_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.fingerprint)
+        result2 = delete_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.paypal)
+        authorizes.append(await result1)
+        authorizes.append(await result2)
+    else:
+        raise option_not_found_exception
+
+    return not authorizes.count(False) > 0
+
+
 async def save_authentication_movement_result_in_cache(
         r: Redis,
         id_movement: int,
-        auth_from: [str, TypeAuthFrom]
+        auth_from: Union[str, TypeAuthFrom]
 ) -> bool:
     subject = get_auth_subject_based_on_from(auth_from)
 
@@ -392,24 +465,31 @@ async def save_authentication_movement_result_in_cache(
 async def check_authentication_movement_result_in_cache(
         r: Redis,
         id_movement: int,
-        auth_from: [str, TypeMovement]
+        auth_from: Union[str, TypeAuthFrom]
 ) -> bool:
     subject = get_auth_subject_based_on_from(auth_from)
 
-    return await check_auth_movement_result(r, subject, id_movement, 'MOV')
+    try:
+        result = await check_auth_movement_result(r, subject, id_movement, 'MOV')
+    except HTTPException:
+        result = False
+    except Exception:
+        raise cache_exception
+
+    return result
 
 
 async def delete_authentication_movement_result_in_cache(
         r: Redis,
         id_movement: int,
-        auth_from: [str, TypeMovement]
+        auth_from: Union[str, TypeAuthFrom]
 ) -> bool:
     subject = get_auth_subject_based_on_from(auth_from)
 
     return await delete_values_in_cache(r, subject, 'MOV', id_movement)
 
 
-def get_auth_subject_based_on_from(auth_from: [str, TypeMovement]) -> str:
+def get_auth_subject_based_on_from(auth_from: Union[str, TypeAuthFrom]) -> str:
     af_object = cast_str_to_auth_from_type(auth_from) if isinstance(auth_from, str) else auth_from
 
     if af_object == TypeAuthFrom.fingerprint:

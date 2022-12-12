@@ -12,18 +12,21 @@ from controller.fingerprint_controller import set_minutiae_and_core_points_to_a_
     validate_operation_by_fingerprints
 from controller.general_controller import check_performer_in_cache, save_performer_in_cache, \
     get_type_auth_movement_cache, get_fingerprint_auth_data, add_attempt_cache, delete_performer_in_cache, \
-    erase_attempt_cache
+    erase_attempt_cache, delete_type_auth_movement_cache, delete_full_data_movement_cache, check_if_is_movement_finnish
 from controller.login_controller import get_current_token, get_logged_user_to_make_movement
 from controller.movement_controller import get_payments_of_client, get_payments_of_market, create_summary_of_movement, \
     make_movement_based_on_type, finish_movement_unsuccessfully, save_movement_fingerprint, \
-    save_type_authentication_in_cache, get_id_requester_from_movement, save_authentication_movement_result_in_cache
+    save_type_authentication_in_cache, get_id_requester_from_movement, save_authentication_movement_result_in_cache, \
+    get_movement_using_its_id, check_if_time_of_movement_is_valid, execute_movement_from_controller
 from controller.secure_controller import cipher_response_message, get_data_from_secure
+from controller.user_controller import get_email_based_on_id_type
+from core.app_email import send_new_movement_email, send_cancel_movement_email
 from core.logs import show_error_message
 from db.cache.cache import get_cache_client
 from db.database import get_db
 from db.orm.exceptions_orm import not_authorized_exception, type_of_value_not_compatible, \
     validation_request_exception, cache_exception, compile_exception, not_longer_available_exception, \
-    type_of_authorization_not_compatible_exception
+    type_of_authorization_not_compatible_exception, movement_finish_exception
 from schemas.basic_response import BasicResponse
 from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import MovementTypeRequest
@@ -163,8 +166,7 @@ async def save_fingerprint_to_authorize_movement(
         raise not_authorized_exception
 
     if is_performer is None:
-        finish_movement_unsuccessfully(db, id_movement=id_movement)
-        raise not_longer_available_exception
+        await check_valid_movement_and_performer(db, r, id_movement, current_token.id_user, minutes=60)
 
     r_auth_type = await type_auth
     if not (r_auth_type == TypeAuthMovement.local.value or r_auth_type == TypeAuthMovement.localPaypal.value):
@@ -210,8 +212,7 @@ async def authorize_movement_using_fingerprint(
         raise not_authorized_exception
 
     if is_performer is None:
-        finish_movement_unsuccessfully(db, id_movement=id_movement)
-        raise not_longer_available_exception
+        await check_valid_movement_and_performer(db, r, id_movement, current_token.id_user, minutes=60)
 
     r_auth_type = await type_auth
     if not (r_auth_type == TypeAuthMovement.local.value or r_auth_type == TypeAuthMovement.localPaypal.value):
@@ -277,6 +278,119 @@ async def authorize_movement_using_fingerprint(
     return response
 
 
+@router.patch(
+    path='/movement/{id_movement}/exec',
+    response_model=Union[SecureBase, BasicExtraMovement],
+    status_code=status.HTTP_200_OK
+)
+async def execute_movement(
+        bt: BackgroundTasks,
+        id_movement: int = Path(..., gt=0),
+        secure: bool = Query(True),
+        notify: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    is_performer = check_performer_in_cache(r, id_movement, 'MOV', current_token.id_user)
+
+    if is_performer is False:
+        raise not_authorized_exception
+
+    if is_performer is None:
+        await check_valid_movement_and_performer(db, r, id_movement, current_token.id_user, minutes=60)
+
+    try:
+        response = await execute_movement_from_controller(db, r, id_movement)
+    except Exception as e:
+        if await check_if_is_movement_finnish(r, id_movement):
+            await delete_full_data_movement_cache(r, id_movement)
+
+        raise e
+
+    if notify:
+        client_email = await get_email_based_on_id_type(db, response.id_requester, str(TypeUser.client.value))
+        bt.add_task(
+            send_new_movement_email,
+            email_user=client_email,
+            type_movement=str(response.type_movement.value),
+            amount=response.amount,
+            movement_date=response.created_time,
+            origin_credit=response.id_credit,
+            id_market=response.extra.id_market,
+            destination_credit=response.extra.destination_credit
+        )
+
+    # Delete performer and auth_type saved in cache
+    bt.add_task(
+        delete_performer_in_cache,
+        r=r,
+        type_s='MOV',
+        identifier=id_movement
+    )
+    bt.add_task(
+        delete_type_auth_movement_cache,
+        r=r,
+        identifier=id_movement
+    )
+
+    if secure:
+        secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)
+        return secure_response
+
+    return response
+
+
+@router.delete(
+    path='/movement/{id_movement}',
+    response_model=Union[SecureBase, BasicResponse],
+    status_code=status.HTTP_200_OK
+)
+async def cancel_movement(
+        bt: BackgroundTasks,
+        id_movement: int = Path(..., gt=0),
+        secure: bool = Query(True),
+        notify: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    is_performer = check_performer_in_cache(r, id_movement, 'MOV', current_token.id_user)
+
+    if is_performer is False:
+        raise not_authorized_exception
+
+    if is_performer is None:
+        await check_valid_movement_and_performer(db, r, id_movement, current_token.id_user, minutes=60)
+
+    result = finish_movement_unsuccessfully(db, id_movement=id_movement)
+
+    bt.add_task(
+        delete_full_data_movement_cache,
+        r=r,
+        identifier=id_movement
+    )
+
+    if notify:
+        id_client = await get_id_requester_from_movement(db, id_movement)
+        client_email = await get_email_based_on_id_type(db, id_client, str(TypeUser.client.value))
+        bt.add_task(
+            send_cancel_movement_email,
+            email_user=client_email,
+            id_movement=id_movement
+        )
+
+    response = BasicResponse(
+        operation="Cancel movement",
+        successful=result
+    )
+    if secure:
+        secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=response)
+        return secure_response
+
+    return response
+
+
 @router.get(
     path='/movement/user/{id_user}/payments',
     response_model=Union[SecureBase, PaymentComplexList],
@@ -303,3 +417,28 @@ async def get_payments_of_user(
         return secure_response
 
     return response
+
+
+async def check_valid_movement_and_performer(
+        db: Session,
+        r: Redis,
+        id_movement: int,
+        id_performer: int,
+        minutes: int = 60
+) -> None:
+    movement = await get_movement_using_its_id(db, id_movement)
+    if movement.id_performer != id_performer:
+        raise not_authorized_exception
+
+    if movement.successful is not None:
+        raise movement_finish_exception
+
+    if await check_if_time_of_movement_is_valid(movement, minutes=minutes):
+        try:
+            await save_performer_in_cache(r, 'MOV', id_movement, id_performer, 3600)
+        except Exception as e:
+            show_error_message(e)
+            raise cache_exception
+    else:
+        finish_movement_unsuccessfully(db, movement_object=movement)
+        raise not_longer_available_exception

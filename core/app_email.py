@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 from email.message import EmailMessage
 from typing import Optional, Union
 
@@ -223,7 +224,7 @@ async def send_recovery_code(
     return message_send
 
 
-async def send_new_credit_email(email_user, approved: bool, market_name: str, amount: Union[str, float]):
+async def send_new_credit_email(email_user: str, approved: bool, market_name: str, amount: Union[str, float]):
     if approved:
         approved_msg = 'ha sido aprovado'
     else:
@@ -241,6 +242,42 @@ async def send_new_credit_email(email_user, approved: bool, market_name: str, am
     '''
 
     message_subject = "Nuevo crédito"
+
+    message_send = send_email_from_system(email_user, message_subject, message)
+
+    return message_send
+
+
+async def send_new_movement_email(
+        email_user: str,
+        type_movement: str,
+        amount: Union[str, float],
+        movement_date: datetime,
+        origin_credit: Optional[int] = None,
+        id_market: Optional[str] = None,
+        destination_credit: Optional[int] = None
+) -> Optional[dict]:
+    amount_str = f'${float}' if isinstance(amount, float) else amount
+    c_o_str = str(origin_credit) if origin_credit is not None else 'No Aplica'
+    id_m_str = str(id_market) if id_market is not None else 'No Aplica'
+    d_o_str = str(destination_credit) if destination_credit is not None else 'No Aplica'
+
+    message = f'\nUsted ha realizado un {type_movement} con el monto de {amount_str}.\n\n' \
+              f'Detalles:\n\tCrédito origen: {c_o_str}\n\tEstablecimiento: {id_m_str}\n\tCrédito destino: {d_o_str}' \
+              f'\n\tFecha:{movement_date}\n\n Fintech75 le agradece su preferencia.'
+
+    message_subject = "Nuevo movimiento realizado"
+
+    message_send = send_email_from_system(email_user, message_subject, message)
+
+    return message_send
+
+
+async def send_cancel_movement_email(email_user: str, id_movement: int) -> Optional[dict]:
+    message = f'\nSe a CANCELADO el movimiento con ID: {id_movement}.\n\nEsperamos que pronto vuelva a disfrutar' \
+              f'de la experiencia de Fintech75.\n\nSaludos :)'
+
+    message_subject = "Movimiento cancelado"
 
     message_send = send_email_from_system(email_user, message_subject, message)
 

@@ -1,5 +1,5 @@
 import json
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 import uuid
 
 from redis.client import Redis
@@ -145,9 +145,20 @@ def check_client_have_credit_on_market(db: Session, id_client: str, id_market: s
         return True
 
 
-def check_funds_of_credit(db: Session, id_credit: int, amount: Union[str, float]) -> bool:
+def check_funds_of_credit(
+        db: Session,
+        amount: Union[str, float],
+        id_credit: Optional[int] = None,
+        credit_obj: Optional[DbCredit] = None
+) -> bool:
+    if credit_obj is None:
+        if id_credit is not None:
+            credit_obj = get_credit_by_id_credit(db, id_credit)
+        else:
+            raise not_values_sent_exception
+
     amount_float = money_str_to_float(amount) if isinstance(amount, str) else amount
-    credit_obj = get_credit_by_id_credit(db, id_credit)
+
     actual_amount_float = money_str_to_float(credit_obj.amount) \
         if isinstance(credit_obj.amount, str) else credit_obj.amount
 

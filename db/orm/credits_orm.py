@@ -10,7 +10,7 @@ from db.orm.accounts_orm import get_main_account_of_user, get_account_by_id
 from db.orm.clients_orm import get_client_by_id_client
 from db.orm.exceptions_orm import element_not_found_exception, option_not_found_exception, \
     existing_credit_exception, not_void_credit_exception, account_does_not_belong_to_market_exception, \
-    global_credit_exception, movement_in_process_exception, NotFoundException
+    global_credit_exception, movement_in_process_exception, NotFoundException, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.markets_orm import get_market_by_id_market
 from schemas.basic_response import BasicResponse
@@ -278,14 +278,24 @@ def change_account_of_credit(
 
 @multiple_attempts
 @full_database_exceptions
-def do_amount_movement(db: Session, id_credit: int, amount: float, execute: str = 'now') -> DbCredit:
-    updated_credit = get_credit_by_id_credit(db, id_credit)
+def do_amount_movement(
+        db: Session,
+        amount: float,
+        id_credit: Optional[int] = None,
+        credit_object: Optional[DbCredit] = None,
+        execute: str = 'now',
+) -> DbCredit:
+    if credit_object is None:
+        if id_credit is not None:
+            credit_object = get_credit_by_id_credit(db, id_credit)
+        else:
+            raise not_values_sent_exception
 
-    if updated_credit.in_process:
+    if credit_object.in_process:
         raise movement_in_process_exception
 
-    updated_credit.past_amount = updated_credit.amount
-    updated_credit.amount = amount
+    credit_object.past_amount = credit_object.amount
+    credit_object.amount = amount
 
     try:
         if execute == 'now':
@@ -299,13 +309,22 @@ def do_amount_movement(db: Session, id_credit: int, amount: float, execute: str 
         print(e)
         raise e
 
-    return updated_credit
+    return credit_object
 
 
 @multiple_attempts
 @full_database_exceptions
-def cancel_amount_movement(db: Session, id_credit: int, execute: str = 'now') -> DbCredit:
-    credit = get_credit_by_id_credit(db, id_credit)
+def cancel_amount_movement(
+        db: Session,
+        id_credit: Optional[int] = None,
+        credit: Optional[DbCredit] = None,
+        execute: str = 'now'
+) -> DbCredit:
+    if credit is None:
+        if id_credit is not None:
+            credit = get_credit_by_id_credit(db, id_credit)
+        else:
+            raise not_values_sent_exception
 
     if credit.in_process:
         credit.amount = credit.past_amount
@@ -359,7 +378,10 @@ def start_credit_in_process(
 ) -> DbCredit:
 
     if credit_object is None:
-        credit_object = get_credit_by_id_credit(db, id_credit)
+        if id_credit is not None:
+            credit_object = get_credit_by_id_credit(db, id_credit)
+        else:
+            raise not_values_sent_exception
 
     credit_object.in_process = True
 
@@ -386,9 +408,11 @@ def finish_credit_in_process(
         credit_object: Optional[DbCredit] = None,
         execute: str = 'now'
 ) -> DbCredit:
-
     if credit_object is None:
-        credit_object = get_credit_by_id_credit(db, id_credit)
+        if id_credit is not None:
+            credit_object = get_credit_by_id_credit(db, id_credit)
+        else:
+            raise not_values_sent_exception
 
     credit_object.in_process = False
 

@@ -35,7 +35,7 @@ async def create_credit(
         raise credentials_exception
 
     if type_performer is not None:
-        response = credits_orm.create_credit(db, request, type_performer.value)
+        response = credits_orm.create_credit(db, request, str(type_performer.value))
     else:
         response = credits_orm.create_credit(db, request, 'client')
 
@@ -124,7 +124,7 @@ async def delete_credit(
     if type_performer is None:
         response = credits_orm.delete_credit(db=db, id_credit=id_credit, type_performer='market')
     else:
-        response = credits_orm.delete_credit(db=db, id_credit=id_credit, type_performer=type_performer.value)
+        response = credits_orm.delete_credit(db=db, id_credit=id_credit, type_performer=str(type_performer.value))
 
     return response
 
@@ -143,7 +143,7 @@ async def start_credit_movement(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    credit = credits_orm.start_credit_in_process(db, id_credit, execute='wait')
+    credit = credits_orm.start_credit_in_process(db, id_credit=id_credit, execute='wait')
     if money_str_to_float(str(credit.amount)) < amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -152,7 +152,7 @@ async def start_credit_movement(
     else:
         new_amount = money_str_to_float(str(credit.amount)) - amount
 
-    response = credits_orm.do_amount_movement(db, id_credit, new_amount)
+    response = credits_orm.do_amount_movement(db, id_credit=id_credit, amount=new_amount)
 
     return response
 
@@ -170,7 +170,7 @@ async def cancel_credit_movement(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = credits_orm.cancel_amount_movement(db, id_credit)
+    response = credits_orm.cancel_amount_movement(db, id_credit=id_credit)
 
     return response
 
@@ -188,7 +188,7 @@ async def finish_credit_movement(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = credits_orm.finish_credit_in_process(db, id_credit)
+    response = credits_orm.finish_credit_in_process(db, id_credit=id_credit)
 
     return response
 

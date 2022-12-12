@@ -4,13 +4,16 @@ from redis.client import Redis
 from sqlalchemy.orm import Session
 
 from controller.credit_controller import check_funds_of_credit, check_owners_of_credit
-from controller.general_controller import save_type_auth_movement_cache
+from controller.general_controller import save_type_auth_movement_cache, save_finish_movement_cache
+from core.utils import money_str_to_float
 from db.models.movements_db import DbMovement
 from db.models.withdraws_db import DbWithdraw
+from db.orm.credits_orm import get_credit_by_id_credit, do_amount_movement, start_credit_in_process, \
+    finish_credit_in_process
 from db.orm.exceptions_orm import not_sufficient_funds_exception, not_authorized_exception, not_values_sent_exception, \
     unexpected_error_exception, type_of_value_not_compatible
-from db.orm.movements_orm import make_movement
-from db.orm.withdraws_orm import create_withdraw
+from db.orm.movements_orm import make_movement, authorized_movement, finish_movement
+from db.orm.withdraws_orm import create_withdraw, get_withdraw_by_id_movement
 from schemas.movement_base import UserDataMovement, MovementTypeRequest, MovementRequest
 from schemas.movement_complex import ExtraMovementRequest, MovementExtraRequest, ExtraMovement, BasicExtraMovement
 from schemas.type_auth_movement import TypeAuthMovement
@@ -81,7 +84,7 @@ def check_valid_withdraw(
         if request.id_performer != data_user.id_performer:
             raise not_authorized_exception
 
-    if not check_funds_of_credit(db, request.id_credit, request.amount):
+    if not check_funds_of_credit(db, id_credit=request.id_credit, amount=request.amount):
         raise not_sufficient_funds_exception
 
     return True
@@ -142,6 +145,60 @@ def make_withdraw_movement(
         raise e
 
     return movement_db, withdraw_db
+
+
+async def execute_withdraw(db: Session, movement: DbMovement, r: Redis) -> BasicExtraMovement:
+    amount_float = money_str_to_float(movement.amount) if isinstance(movement.amount, str) else movement.amount
+
+    credit_db = get_credit_by_id_credit(db, movement.id_credit)
+    if not check_funds_of_credit(db, credit_obj=credit_db, amount=amount_float):
+        raise not_sufficient_funds_exception
+
+    current_credit = money_str_to_float(credit_db.amount) if isinstance(credit_db.amount, str) else credit_db.amount
+    new_amount = current_credit - amount_float
+
+    # Check again funds to be sure about the successful realization of the transaction
+    try:
+        movement = authorized_movement(db, movement_object=movement, execute='wait')
+        if not check_funds_of_credit(db, credit_obj=credit_db, amount=amount_float):
+            raise not_sufficient_funds_exception
+
+        credit = do_amount_movement(db, new_amount, credit_object=credit_db, execute='wait')
+        credit = start_credit_in_process(db, credit_object=credit, execute='wait')
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        finish_credit_in_process(db, credit_object=credit_db, execute='wait')
+        finish_movement(db, was_successful=False, movement_object=movement, execute='wait')
+        db.commit()
+        await save_finish_movement_cache(r, movement.id_movement)
+        raise e
+
+    # if we arrive here it's because all process was OK, so we can finnish the movement
+    try:
+        finish_credit_in_process(db, credit_object=credit, execute='wait')
+        movement = finish_movement(db, was_successful=True, movement_object=movement, execute='wait')
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        finish_credit_in_process(db, credit_object=credit_db, execute='wait')
+        finish_movement(db, was_successful=False, movement_object=movement, execute='wait')
+        db.commit()
+        raise e
+    finally:
+        await save_finish_movement_cache(r, movement.id_movement)
+
+    # Return a BasicExtraMovement object
+    withdraw = get_withdraw_by_id_movement(db, movement.id_movement)
+
+    return create_extra_movement_response_from_db_models(movement, withdraw)
+
+
+def get_type_of_required_authorization_to_withdraw(movement: DbMovement) -> TypeAuthMovement:
+    if movement.type_movement == TypeMovement.withdraw.value:
+        return TypeAuthMovement.local
+
+    raise type_of_value_not_compatible
 
 
 def create_extra_movement_response_from_db_models(

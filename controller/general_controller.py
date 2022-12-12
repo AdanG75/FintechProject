@@ -35,6 +35,8 @@ async def save_value_in_cache_with_formatted_name(
         if 3 > len(identifier) or len(identifier) > 50:
             raise ValueError("Identifier too long or too short")
 
+    value = str(value) if isinstance(value, bool) else value
+
     key = f'{subject}-{type_s}-{identifier}'
 
     return item_save(r, key, value, seconds)
@@ -210,3 +212,29 @@ async def check_auth_movement_result(r: Redis, subject: str, identifier: Union[s
         raise operation_need_authorization_exception
 
     return check_auth
+
+
+async def delete_full_data_movement_cache(r: Redis, identifier: int) -> bool:
+    if r.exists(f'PFR-MOV-{identifier}', f'MNT-MOV-{identifier}', f'CRP-MOV-{identifier}',
+                f'ATM-MOV-{identifier}', f'TAU-MOV-{identifier}', f'F-AUTH-MOV-{identifier}',
+                f'P-AUTH-MOV-{identifier}') > 0:
+
+        result = r.delete(f'PFR-MOV-{identifier}', f'MNT-MOV-{identifier}', f'CRP-MOV-{identifier}',
+                          f'ATM-MOV-{identifier}', f'TAU-MOV-{identifier}', f'F-AUTH-MOV-{identifier}',
+                          f'P-AUTH-MOV-{identifier}')
+
+        return result > 0
+
+    return True
+
+
+async def save_finish_movement_cache(r: Redis, identifier: int) -> bool:
+    return await save_value_in_cache_with_formatted_name(r, 'FNS', 'MOV', identifier, True, 3600)
+
+
+async def check_if_is_movement_finnish(r: Redis, identifier: int) -> bool:
+    movement_finnish = r.get(f'FNS-MOV-{identifier}')
+    if movement_finnish is None:
+        return False
+    else:
+        return is_the_same(movement_finnish, True)
