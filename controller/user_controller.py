@@ -124,6 +124,12 @@ async def get_name_of_market(db: Session, id_market: str) -> str:
     return user.name
 
 
+async def get_email_of_user(db: Session, id_user: int) -> str:
+    user = get_user_by_id(db, id_user)
+
+    return user.email
+
+
 async def get_email_based_on_id_type(db: Session, id_type: str, user_type: str) -> str:
     if user_type == TypeUser.client.value:
         user = get_user_using_id_client(db, id_type)

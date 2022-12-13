@@ -27,6 +27,10 @@ from schemas.type_user import TypeUser
 from secure.cipher_secure import cipher_data, decipher_data
 
 
+def get_credit_using_its_id(db: Session, id_credit: int) -> DbCredit:
+    return get_credit_by_id_credit(db, id_credit)
+
+
 def get_credits(db: Session, type_user: str, id_type: str) -> List[DbCredit]:
     if type_user == TypeUser.client.value:
         user_credits = get_credits_by_id_client(db, id_type)

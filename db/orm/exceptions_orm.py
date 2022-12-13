@@ -340,3 +340,8 @@ paypal_error_exception = HTTPException(
     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
     detail="PayPal is not available in this moment. Please try later."
 )
+
+minimum_amount_exception = HTTPException(
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    detail='Minimum transaction amount must be reached'
+)

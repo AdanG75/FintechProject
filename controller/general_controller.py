@@ -238,3 +238,19 @@ async def check_if_is_movement_finnish(r: Redis, identifier: int) -> bool:
         return False
     else:
         return is_the_same(movement_finnish, True)
+
+
+async def save_paypal_money_cache(r: Redis, identifier: int, amount: Union[int, float, str]) -> bool:
+    return await save_value_in_cache_with_formatted_name(r, 'P-MNY', 'MOV', identifier, amount, 3600)
+
+
+async def get_paypal_money_cache(r: Redis, identifier: int) -> Optional[float]:
+    paypal_amount = r.get(f'P-MNY-MOV-{identifier}')
+    if paypal_amount is None:
+        return None
+
+    return float(paypal_amount)
+
+
+async def delete_paypal_money_cache(r: Redis, identifier: int) -> bool:
+    return await delete_values_in_cache(r, 'P-MNY', 'MOV', identifier)

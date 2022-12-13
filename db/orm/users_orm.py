@@ -69,7 +69,7 @@ def create_user(db: Session, request: UserRequest, execute: str = 'now') -> DbUs
 
 
 @full_database_exceptions
-def get_user_by_id(db: Session, id_user, mode: str = 'active') -> DbUser:
+def get_user_by_id(db: Session, id_user: int, mode: str = 'active') -> DbUser:
 
     try:
         if mode == 'active':
