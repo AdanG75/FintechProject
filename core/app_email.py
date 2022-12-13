@@ -264,7 +264,7 @@ async def send_new_movement_email(
 
     message = f'\nUsted ha realizado un {type_movement} con el monto de {amount_str}.\n\n' \
               f'Detalles:\n\tCrédito origen: {c_o_str}\n\tEstablecimiento: {id_m_str}\n\tCrédito destino: {d_o_str}' \
-              f'\n\tFecha:{movement_date}\n\n Fintech75 le agradece su preferencia.'
+              f'\n\tFecha:{movement_date} (UTC)\n\n Fintech75 le agradece su preferencia.'
 
     message_subject = "Nuevo movimiento realizado"
 
@@ -275,7 +275,7 @@ async def send_new_movement_email(
 
 async def send_cancel_movement_email(email_user: str, id_movement: int) -> Optional[dict]:
     message = f'\nSe a CANCELADO el movimiento con ID: {id_movement}.\n\nEsperamos que pronto vuelva a disfrutar' \
-              f'de la experiencia de Fintech75.\n\nSaludos :)'
+              f' de la experiencia de Fintech75.\n\nSaludos :)'
 
     message_subject = "Movimiento cancelado"
 

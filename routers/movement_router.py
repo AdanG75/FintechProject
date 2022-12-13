@@ -17,9 +17,9 @@ from controller.login_controller import get_current_token, get_logged_user_to_ma
 from controller.movement_controller import get_payments_of_client, get_payments_of_market, create_summary_of_movement, \
     make_movement_based_on_type, finish_movement_unsuccessfully, save_movement_fingerprint, \
     save_type_authentication_in_cache, get_id_requester_from_movement, save_authentication_movement_result_in_cache, \
-    get_movement_using_its_id, check_if_time_of_movement_is_valid, execute_movement_from_controller
+    get_movement_using_its_id, check_if_time_of_movement_is_valid, execute_movement_from_controller, \
+    get_email_of_requester_movement
 from controller.secure_controller import cipher_response_message, get_data_from_secure
-from controller.user_controller import get_email_based_on_id_type
 from core.app_email import send_new_movement_email, send_cancel_movement_email
 from core.logs import show_error_message
 from db.cache.cache import get_cache_client
@@ -309,7 +309,7 @@ async def execute_movement(
         raise e
 
     if notify:
-        client_email = await get_email_based_on_id_type(db, response.id_requester, str(TypeUser.client.value))
+        client_email = await get_email_of_requester_movement(db, id_movement)
         bt.add_task(
             send_new_movement_email,
             email_user=client_email,
@@ -372,8 +372,7 @@ async def cancel_movement(
     )
 
     if notify:
-        id_client = await get_id_requester_from_movement(db, id_movement)
-        client_email = await get_email_based_on_id_type(db, id_client, str(TypeUser.client.value))
+        client_email = await get_email_of_requester_movement(db, id_movement)
         bt.add_task(
             send_cancel_movement_email,
             email_user=client_email,

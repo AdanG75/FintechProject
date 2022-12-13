@@ -6,10 +6,13 @@ from redis.client import Redis
 from sqlalchemy.orm import Session
 
 from controller.characteristic_point_controller import save_minutiae_and_core_points_secure_in_cache
+from controller.deposit_controller import create_deposit_formatted, create_deposit_movement, \
+    save_type_auth_deposit_in_cache, get_type_of_required_authorization_to_deposit, execute_deposit
 from controller.fingerprint_controller import get_minutiae_and_core_points_from_sample
 from controller.general_controller import save_value_in_cache_with_formatted_name, AUTH_OK, delete_values_in_cache, \
-    check_auth_movement_result
+    check_auth_movement_result, get_type_auth_movement_cache
 from controller.secure_controller import cipher_minutiae_and_core_points
+from controller.user_controller import get_email_based_on_id_type
 from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement, \
     save_type_auth_withdraw_in_cache, get_type_of_required_authorization_to_withdraw, execute_withdraw
 from db.models.deposits_db import DbDeposit
@@ -17,10 +20,10 @@ from db.models.movements_db import DbMovement
 from db.models.payments_db import DbPayment
 from db.models.transfers_db import DbTransfer
 from db.models.withdraws_db import DbWithdraw
-from db.orm.deposits_orm import get_deposits_by_id_destination_credit
+from db.orm.deposits_orm import get_deposits_by_id_destination_credit, get_deposit_by_id_movement
 from db.orm.exceptions_orm import NotFoundException, wrong_data_sent_exception, option_not_found_exception, \
     type_of_value_not_compatible, unexpected_error_exception, compile_exception, cache_exception, \
-    operation_need_authorization_exception
+    operation_need_authorization_exception, not_values_sent_exception
 from db.orm.movements_orm import get_movements_by_id_credit_and_type, get_movement_by_id_movement, \
     get_movements_by_id_requester_and_type, force_termination_movement
 from db.orm.payments_orm import get_payment_by_id_movement, get_payments_by_id_market
@@ -34,6 +37,7 @@ from schemas.type_auth_movement import TypeAuthFrom, TypeAuthMovement
 from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement, NatureMovement
 from schemas.type_transfer import TypeTransfer
+from schemas.type_user import TypeUser
 
 
 async def get_movement_using_its_id(db: Session, id_movement: int) -> DbMovement:
@@ -244,7 +248,10 @@ async def create_summary_of_movement(
     t_movement_obj = cast_str_to_movement_type(type_movement) if isinstance(type_movement, str) else type_movement
 
     if t_movement_obj == TypeMovement.deposit:
-        pass
+        if validate_deposit_data_types(request):
+            summary = await create_deposit_formatted(db, request, user_data)
+        else:
+            raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.payment:
         pass
     elif t_movement_obj == TypeMovement.transfer:
@@ -269,7 +276,10 @@ async def make_movement_based_on_type(
     t_movement_obj = cast_str_to_movement_type(type_movement) if isinstance(type_movement, str) else type_movement
 
     if t_movement_obj == TypeMovement.deposit:
-        pass
+        if validate_deposit_data_types(request):
+            movement = await create_deposit_movement(db, request, data_user)
+        else:
+            raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.payment:
         pass
     elif t_movement_obj == TypeMovement.transfer:
@@ -285,17 +295,44 @@ async def make_movement_based_on_type(
     return movement
 
 
-def validate_withdraw_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
+def validate_deposit_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
+    request.id_credit = None
+
+    if not check_type_of_movement(request.type_movement, TypeMovement.deposit):
+        raise type_of_value_not_compatible
+
     if isinstance(request, MovementTypeRequest):
-        if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
+        if not (check_type_of_money(request.type_submov, TypeMoney.cash) or
+                check_type_of_money(request.type_submov, TypeMoney.paypal)):
             raise type_of_value_not_compatible
 
+        if request.destination_credit is None or request.depositor_name is None or request.depositor_email is None:
+            raise not_values_sent_exception
+
+    elif isinstance(request, MovementExtraRequest):
+        if not (check_type_of_money(request.extra.type_submov, TypeMoney.cash) or
+                check_type_of_money(request.extra.type_submov, TypeMoney.paypal)):
+            raise type_of_value_not_compatible
+
+        request.extra.paypal_order = None
+        if (request.extra.destination_credit is None or request.extra.depositor_name is None or
+                request.extra.depositor_email is None):
+            raise not_values_sent_exception
+    else:
+        return False
+
+    return True
+
+
+def validate_withdraw_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
+    if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
+        raise type_of_value_not_compatible
+
+    if isinstance(request, MovementTypeRequest):
         if not check_type_of_money(request.type_submov, TypeMoney.cash):
             raise type_of_value_not_compatible
-    elif isinstance(request, MovementExtraRequest):
-        if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
-            raise type_of_value_not_compatible
 
+    elif isinstance(request, MovementExtraRequest):
         if not check_type_of_money(request.extra.type_submov, TypeMoney.cash):
             raise type_of_value_not_compatible
     else:
@@ -321,9 +358,15 @@ async def save_type_authentication_in_cache(
 
     if act_type_mov == TypeMovement.withdraw:
         result = await save_type_auth_withdraw_in_cache(r, id_movement, act_ts_movement, performer_data)
+
     elif act_type_mov == TypeMovement.deposit:
-        # result = await save_type_auth_deposit_in_cache(r, id_movement, act_ts_movement, performer_data)
-        pass
+        result = await save_type_auth_deposit_in_cache(r, id_movement, act_ts_movement, performer_data)
+        if result:
+            deposit_type_auth = await get_type_auth_movement_cache(r, id_movement)
+            if deposit_type_auth == TypeAuthMovement.without.value:
+                saved = await save_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.without)
+                result = result and saved
+
     elif act_type_mov == TypeMovement.payment:
         # result = await save_type_auth_payment_in_cache(r, id_movement, act_ts_movement, performer_data)
         pass
@@ -340,8 +383,14 @@ async def execute_movement_from_controller(db: Session, r: Redis, id_movement: i
     movement_db: DbMovement = await get_movement_using_its_id(db, id_movement)
 
     if movement_db.type_movement == TypeMovement.deposit.value:
-        # execute_deposit()
-        pass
+        type_auth = get_type_of_required_authorization_to_deposit(db, movement_db)
+        if await is_movement_authorized(r, id_movement, type_auth):
+            from_paypal = (type_auth == TypeAuthMovement.paypal)
+            movement = execute_deposit(db, movement_db, r, from_paypal)
+            await delete_authorized_data_based_on_type_auth(r, id_movement, type_auth)
+        else:
+            raise operation_need_authorization_exception
+
     elif movement_db.type_movement == TypeMovement.payment.value:
         # execute_payment()
         pass
@@ -355,6 +404,7 @@ async def execute_movement_from_controller(db: Session, r: Redis, id_movement: i
             await delete_authorized_data_based_on_type_auth(r, id_movement, type_auth)
         else:
             raise operation_need_authorization_exception
+
     else:
         raise option_not_found_exception
 
@@ -427,6 +477,9 @@ async def is_movement_authorized(r: Redis, id_movement: int, type_auth: TypeAuth
         result2 = check_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.paypal)
         authorizes.append(await result1)
         authorizes.append(await result2)
+    elif type_auth == TypeAuthMovement.without:
+        result = check_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.without)
+        authorizes.append(await result)
     else:
         raise option_not_found_exception
 
@@ -446,6 +499,9 @@ async def delete_authorized_data_based_on_type_auth(r: Redis, id_movement: int, 
         result2 = delete_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.paypal)
         authorizes.append(await result1)
         authorizes.append(await result2)
+    elif type_auth == TypeAuthMovement.without:
+        result = delete_authentication_movement_result_in_cache(r, id_movement, TypeAuthFrom.without)
+        authorizes.append(await result)
     else:
         raise option_not_found_exception
 
@@ -496,6 +552,8 @@ def get_auth_subject_based_on_from(auth_from: Union[str, TypeAuthFrom]) -> str:
         subject = 'F-AUTH'
     elif af_object == TypeAuthFrom.paypal:
         subject = 'P-AUTH'
+    elif af_object == TypeAuthFrom.without:
+        subject = 'W-AUTH'
     else:
         raise option_not_found_exception
 
@@ -551,6 +609,16 @@ def finish_movement_unsuccessfully(
 
     result = force_termination_movement(db, movement_object=movement_object, execute='now')
     return result
+
+
+async def get_email_of_requester_movement(db: Session, id_movement: int) -> str:
+    movement = get_movement_by_id_movement(db, id_movement)
+
+    if movement.type_movement == TypeMovement.deposit.value:
+        deposit_db = get_deposit_by_id_movement(db, id_movement)
+        return deposit_db.depositor_email
+
+    return await get_email_based_on_id_type(db, movement.id_requester, str(TypeUser.client.value))
 
 
 def parse_DbMovement_to_BasicExtraMovement(
