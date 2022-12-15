@@ -47,7 +47,7 @@ async def create_paypal_order(
         if isinstance(ioe, HttpError):
             msg_error = f'{ioe.status_code}-{ioe.message}'
             if ON_CLOUD:
-                write_data_log(msg_error, LogSeverity.ALERT.value)
+                write_data_log(msg_error, str(LogSeverity.ALERT.value))
             else:
                 print(msg_error)
 
@@ -74,7 +74,7 @@ async def capture_paypal_order(paypal_client: PayPalHttpClient, id_order: str) -
 
             msg_error = f'{ioe.status_code}-{ioe.message}'
             if ON_CLOUD:
-                write_data_log(msg_error, LogSeverity.ALERT.value)
+                write_data_log(msg_error, str(LogSeverity.ALERT.value))
             else:
                 print(msg_error)
 

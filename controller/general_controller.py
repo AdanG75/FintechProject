@@ -217,11 +217,13 @@ async def check_auth_movement_result(r: Redis, subject: str, identifier: Union[s
 async def delete_full_data_movement_cache(r: Redis, identifier: int) -> bool:
     if r.exists(f'PFR-MOV-{identifier}', f'MNT-MOV-{identifier}', f'CRP-MOV-{identifier}',
                 f'ATM-MOV-{identifier}', f'TAU-MOV-{identifier}', f'F-AUTH-MOV-{identifier}',
-                f'P-AUTH-MOV-{identifier}') > 0:
+                f'P-AUTH-MOV-{identifier}', f'W-AUTH-MOV-{identifier}', f'P-MNY-MOV-{identifier}',
+                f'P-ORD-MOV-{identifier}') > 0:
 
         result = r.delete(f'PFR-MOV-{identifier}', f'MNT-MOV-{identifier}', f'CRP-MOV-{identifier}',
                           f'ATM-MOV-{identifier}', f'TAU-MOV-{identifier}', f'F-AUTH-MOV-{identifier}',
-                          f'P-AUTH-MOV-{identifier}')
+                          f'P-AUTH-MOV-{identifier}', f'W-AUTH-MOV-{identifier}', f'P-MNY-MOV-{identifier}',
+                          f'P-ORD-MOV-{identifier}')
 
         return result > 0
 
@@ -254,3 +256,19 @@ async def get_paypal_money_cache(r: Redis, identifier: int) -> Optional[float]:
 
 async def delete_paypal_money_cache(r: Redis, identifier: int) -> bool:
     return await delete_values_in_cache(r, 'P-MNY', 'MOV', identifier)
+
+
+async def save_paypal_order_cache(r: Redis, identifier: int, order_str: str) -> bool:
+    return await save_value_in_cache_with_formatted_name(r, 'P-ORD', 'MOV', identifier, order_str, 3600)
+
+
+async def get_paypal_order_cache(r: Redis, identifier: int) -> Optional[str]:
+    paypal_order = r.get(f'P-ORD-MOV-{identifier}')
+    if paypal_order is None:
+        return None
+
+    return paypal_order.decode('utf-8')
+
+
+async def delete_paypal_order_cache(r: Redis, identifier: int) -> bool:
+    return await delete_values_in_cache(r, 'P-ORD', 'MOV', identifier)

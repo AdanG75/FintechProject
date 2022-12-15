@@ -19,6 +19,8 @@ from controller.movement_controller import get_payments_of_client, get_payments_
     save_type_authentication_in_cache, get_id_requester_from_movement, save_authentication_movement_result_in_cache, \
     get_movement_using_its_id, check_if_time_of_movement_is_valid, execute_movement_from_controller, \
     get_email_of_requester_movement
+from controller.paypal_controller import get_paypal_order_object_from_cache, generate_paypal_order, \
+    save_paypal_order_in_cache
 from controller.secure_controller import cipher_response_message, get_data_from_secure
 from core.app_email import send_new_movement_email, send_cancel_movement_email
 from core.logs import show_error_message
@@ -32,6 +34,7 @@ from schemas.fingerprint_model import FingerprintB64
 from schemas.movement_base import MovementTypeRequest
 from schemas.movement_complex import MovementExtraRequest, BasicExtraMovement
 from schemas.payment_base import PaymentComplexList
+from schemas.paypal_base import CreatePaypalOrderResponse, CreatePaypalOrderMinimalResponse
 from schemas.secure_base import SecureBase
 from schemas.token_base import TokenSummary
 from schemas.type_auth_movement import TypeAuthMovement, TypeAuthFrom
@@ -276,6 +279,44 @@ async def authorize_movement_using_fingerprint(
         return secure_response
 
     return response
+
+
+@router.put(
+    path='/movement/{id_movement}/auth/paypal',
+    response_model=Union[SecureBase, CreatePaypalOrderResponse, CreatePaypalOrderMinimalResponse],
+    status_code=status.HTTP_201_CREATED
+)
+async def get_paypal_order(
+        id_movement: int = Path(..., gt=0),
+        secure: bool = Query(True),
+        db: Session = Depends(get_db),
+        r: Redis = Depends(get_cache_client),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    is_performer = check_performer_in_cache(r, id_movement, 'MOV', current_token.id_user)
+    type_auth = get_type_auth_movement_cache(r, id_movement)
+    p_order = get_paypal_order_object_from_cache(r, id_movement)
+
+    if is_performer is False:
+        raise not_authorized_exception
+
+    if is_performer is None:
+        await check_valid_movement_and_performer(db, r, id_movement, current_token.id_user, minutes=60)
+
+    r_auth_type = await type_auth
+    if not (r_auth_type == TypeAuthMovement.paypal.value or r_auth_type == TypeAuthMovement.localPaypal.value):
+        raise type_of_authorization_not_compatible_exception
+
+    paypal_order = await p_order
+    if paypal_order is None:
+        paypal_order = await generate_paypal_order(db, id_movement)
+        await save_paypal_order_in_cache(r, id_movement, paypal_order)
+
+    if secure:
+        secure_response = cipher_response_message(db=db, id_user=current_token.id_user, response=paypal_order)
+        return secure_response
+
+    return paypal_order
 
 
 @router.patch(

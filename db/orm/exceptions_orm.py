@@ -126,6 +126,11 @@ type_of_user_not_compatible = HTTPException(
     detail="Unsupportable user type. It is not compatible with the operation"
 )
 
+type_of_movement_not_compatible_exception = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="Type of movement it is not supported by this type of transaction"
+)
+
 validation_request_exception = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail="Error to validate data. Please check the allowed schemas in this entry point"
