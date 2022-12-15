@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from controller.credit_controller import get_credit_using_its_id
 from controller.general_controller import save_type_auth_movement_cache, get_paypal_money_cache, \
-    save_finish_movement_cache
+    save_finish_movement_cache, delete_paypal_money_cache
+from controller.paypal_controller import calculate_net_amount_based_on_movement_amount
 from controller.user_controller import get_name_of_client, get_email_of_user
 from core.utils import money_str_to_float
 from db.models.credits_db import DbCredit
@@ -13,7 +14,7 @@ from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
 from db.orm.credits_orm import get_credit_by_id_credit, do_amount_movement, start_credit_in_process, \
     finish_credit_in_process
-from db.orm.deposits_orm import create_deposit, get_deposit_by_id_movement
+from db.orm.deposits_orm import create_deposit, get_deposit_by_id_movement, put_paypal_id_order
 from db.orm.exceptions_orm import type_of_user_not_compatible, not_authorized_exception, not_values_sent_exception, \
     type_of_value_not_compatible, unexpected_error_exception, minimum_amount_exception
 from db.orm.movements_orm import make_movement, authorized_movement, finish_movement
@@ -128,6 +129,12 @@ def get_type_of_required_authorization_to_deposit(db: Session, movement: DbMovem
         raise type_of_value_not_compatible
 
 
+def save_paypal_id_order_into_deposit(db: Session, id_movement: int, paypal_id_order: str) -> bool:
+    deposit = put_paypal_id_order(db, paypal_id_order, id_movement=id_movement)
+
+    return deposit.paypal_id_order is not None
+
+
 async def execute_deposit(db: Session, movement: DbMovement, r: Redis, from_paypal: bool) -> BasicExtraMovement:
     if from_paypal:
         amount = await get_paypal_money_cache(r, movement.id_movement)
@@ -136,9 +143,7 @@ async def execute_deposit(db: Session, movement: DbMovement, r: Redis, from_payp
 
     # Amount can be None if money saved in cache was deleted. In that case we need to calculate the net amount
     if amount is None:
-        # Move to paypal controller
-        amount = money_str_to_float(movement.amount) if isinstance(movement.amount, str) else movement.amount
-        amount = (amount * 0.95) - 4
+        amount = calculate_net_amount_based_on_movement_amount(movement.amount)
 
     deposit_db = get_deposit_by_id_movement(db, movement.id_movement)
     credit_db = get_credit_by_id_credit(db, deposit_db.id_destination_credit)
@@ -171,6 +176,7 @@ async def execute_deposit(db: Session, movement: DbMovement, r: Redis, from_payp
         raise e
     finally:
         await save_finish_movement_cache(r, movement.id_movement)
+        await delete_paypal_money_cache(r, movement.id_movement)
 
     return create_extra_movement_response_from_db_models(movement, deposit_db)
 

@@ -528,8 +528,8 @@ async def check_authentication_movement_result_in_cache(
     try:
         result = await check_auth_movement_result(r, subject, id_movement, 'MOV')
     except HTTPException:
-        result = False
-    except Exception:
+        return False
+    except Exception as e:
         raise cache_exception
 
     return result

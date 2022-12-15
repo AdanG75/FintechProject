@@ -206,6 +206,11 @@ movement_finish_exception = HTTPException(
     detail="The movement process have been finished"
 )
 
+movement_already_authorized_exception = HTTPException(
+    status_code=status.HTTP_423_LOCKED,
+    detail="Movement has already authorized by this method"
+)
+
 movement_not_authorized_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Movement must first be authorized"

@@ -62,7 +62,7 @@ def check_item_if_exist(
 ) -> Optional[bool]:
 
     r_value = r.get(r_key)
-    if value is not None:
+    if r_value is not None:
         return is_the_same(r_value, value)
 
     return None
