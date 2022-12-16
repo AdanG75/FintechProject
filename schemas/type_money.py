@@ -7,3 +7,4 @@ class TypeMoney(Enum):
     cash = 'cash'
     card = 'card'
     globalC = 'global'
+    credit = 'credit'

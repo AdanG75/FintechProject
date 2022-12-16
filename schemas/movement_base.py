@@ -28,7 +28,7 @@ class MovementRequest(MovementBase):
             "example": {
                 "id_credit": 985,
                 "id_performer": 452,
-                "id_requester": "CLI-41fd52b6-ecd6-436c-9dfb-0e3ed95e5775",
+                "id_requester": "CLI-41fd52b6ecd6436c9dfb0e3ed95e5775",
                 "type_movement": "payment",
                 "amount": 99.99,
                 "type_user": "market"
