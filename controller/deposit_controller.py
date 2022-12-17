@@ -163,6 +163,9 @@ async def execute_deposit(db: Session, movement: DbMovement, r: Redis, from_payp
         await save_finish_movement_cache(r, movement.id_movement)
         raise e
 
+    db.refresh(credit)
+    db.refresh(movement)
+
     # if we arrive here it's because all process was OK, so we can finnish the movement
     try:
         finish_credit_in_process(db, credit_object=credit, execute='wait')

@@ -160,6 +160,7 @@ async def execute_withdraw(db: Session, movement: DbMovement, r: Redis) -> Basic
     # Check again funds to be sure about the successful realization of the transaction
     try:
         movement = authorized_movement(db, movement_object=movement, execute='wait')
+        db.refresh(credit_db)
         if not check_funds_of_credit(db, credit_obj=credit_db, amount=amount_float):
             raise not_sufficient_funds_exception
 
@@ -173,6 +174,9 @@ async def execute_withdraw(db: Session, movement: DbMovement, r: Redis) -> Basic
         db.commit()
         await save_finish_movement_cache(r, movement.id_movement)
         raise e
+
+    db.refresh(credit)
+    db.refresh(movement)
 
     # if we arrive here it's because all process was OK, so we can finnish the movement
     try:

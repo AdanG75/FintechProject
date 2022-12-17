@@ -8,7 +8,6 @@ from starlette import status
 from starlette.background import BackgroundTasks
 
 from controller.credit_controller import get_id_of_owners_of_credit
-from controller.deposit_controller import save_paypal_id_order_into_deposit
 from controller.fingerprint_controller import set_minutiae_and_core_points_to_a_fingerprint, get_client_fingerprint, \
     validate_operation_by_fingerprints
 from controller.general_controller import check_performer_in_cache, save_performer_in_cache, \
@@ -19,7 +18,7 @@ from controller.movement_controller import get_payments_of_client, get_payments_
     make_movement_based_on_type, finish_movement_unsuccessfully, save_movement_fingerprint, \
     save_type_authentication_in_cache, get_id_requester_from_movement, save_authentication_movement_result_in_cache, \
     get_movement_using_its_id, check_if_time_of_movement_is_valid, execute_movement_from_controller, \
-    get_email_of_requester_movement, check_authentication_movement_result_in_cache
+    get_email_of_requester_movement, check_authentication_movement_result_in_cache, save_paypal_order_into_sub_movement
 from controller.paypal_controller import get_paypal_order_object_from_cache, generate_paypal_order, \
     save_paypal_order_in_cache, capture_paypal_order_from_movement, delete_paypal_order_in_cache
 from controller.secure_controller import cipher_response_message, get_data_from_secure
@@ -95,7 +94,7 @@ async def get_movement_summary(
 async def make_movement(
         type_movement: TypeMovement = Path(...),
         request: Union[SecureBase, MovementExtraRequest] = Body(...),
-        secure: bool = Query(False),
+        secure: bool = Query(True),
         db: Session = Depends(get_db),
         r: Redis = Depends(get_cache_client),
         current_token: TokenSummary = Depends(get_current_token)
@@ -361,8 +360,7 @@ async def capture_paypal_order(
         raise operation_need_authorization_exception
 
     response = await capture_paypal_order_from_movement(db, r, id_movement, paypal_order.id)
-    # This function must be into movement controller to route to the correct sub-movement object
-    save_paypal_id_order_into_deposit(db, id_movement, paypal_order.id)
+    save_paypal_order_into_sub_movement(db, id_movement, paypal_order.id)
 
     bt.add_task(
         save_authentication_movement_result_in_cache, r=r, id_movement=id_movement, auth_from=TypeAuthFrom.paypal

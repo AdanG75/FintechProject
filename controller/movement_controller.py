@@ -7,10 +7,14 @@ from sqlalchemy.orm import Session
 
 from controller.characteristic_point_controller import save_minutiae_and_core_points_secure_in_cache
 from controller.deposit_controller import create_deposit_formatted, create_deposit_movement, \
-    save_type_auth_deposit_in_cache, get_type_of_required_authorization_to_deposit, execute_deposit
+    save_type_auth_deposit_in_cache, get_type_of_required_authorization_to_deposit, execute_deposit, \
+    save_paypal_id_order_into_deposit
 from controller.fingerprint_controller import get_minutiae_and_core_points_from_sample
 from controller.general_controller import save_value_in_cache_with_formatted_name, AUTH_OK, delete_values_in_cache, \
     check_auth_movement_result, get_type_auth_movement_cache
+from controller.payment_controller import create_payment_formatted, create_payment_movement, \
+    save_type_auth_payment_in_cache, get_type_of_required_authorization_to_payment, execute_payment, \
+    save_paypal_id_order_into_payment
 from controller.secure_controller import cipher_minutiae_and_core_points
 from controller.user_controller import get_email_based_on_id_type
 from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement, \
@@ -253,7 +257,10 @@ async def create_summary_of_movement(
         else:
             raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.payment:
-        pass
+        if validate_payment_data_types(request):
+            summary = await create_payment_formatted(db, request, user_data)
+        else:
+            raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.transfer:
         pass
     elif t_movement_obj == TypeMovement.withdraw:
@@ -281,7 +288,10 @@ async def make_movement_based_on_type(
         else:
             raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.payment:
-        pass
+        if validate_payment_data_types(request):
+            movement = await create_payment_movement(db, request, data_user)
+        else:
+            raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.transfer:
         pass
     elif t_movement_obj == TypeMovement.withdraw:
@@ -320,6 +330,40 @@ def validate_deposit_data_types(request: Union[MovementTypeRequest, MovementExtr
             raise not_values_sent_exception
     else:
         return False
+
+    return True
+
+
+def validate_payment_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
+    if not check_type_of_movement(request.type_movement, TypeMovement.payment):
+        raise type_of_value_not_compatible
+
+    if isinstance(request, MovementTypeRequest):
+        sub_movement = request.type_submov
+        id_market = request.id_market
+    elif isinstance(request, MovementExtraRequest):
+        sub_movement = request.extra.type_submov
+        id_market = request.extra.id_market
+        request.extra.paypal_order = None
+    else:
+        return False
+
+    if check_type_of_money(sub_movement, TypeMoney.credit) or check_type_of_money(sub_movement, TypeMoney.local) \
+            or check_type_of_money(sub_movement, TypeMoney.globalC):
+        if request.id_credit is None:
+            raise not_values_sent_exception
+
+    elif check_type_of_money(sub_movement, TypeMoney.paypal):
+        request.id_credit = None
+
+    elif check_type_of_money(sub_movement, TypeMoney.cash) or check_type_of_money(sub_movement, TypeMoney.card):
+        raise type_of_value_not_compatible
+
+    else:
+        raise type_of_value_not_compatible
+
+    if id_market is None:
+        raise not_values_sent_exception
 
     return True
 
@@ -368,8 +412,8 @@ async def save_type_authentication_in_cache(
                 result = result and saved
 
     elif act_type_mov == TypeMovement.payment:
-        # result = await save_type_auth_payment_in_cache(r, id_movement, act_ts_movement, performer_data)
-        pass
+        result = await save_type_auth_payment_in_cache(r, id_movement, act_ts_movement, performer_data)
+
     elif act_type_mov == TypeMovement.transfer:
         # result = await save_type_auth_transfer_in_cache(r, id_movement, act_ts_movement, performer_data)
         pass
@@ -392,8 +436,14 @@ async def execute_movement_from_controller(db: Session, r: Redis, id_movement: i
             raise operation_need_authorization_exception
 
     elif movement_db.type_movement == TypeMovement.payment.value:
-        # execute_payment()
-        pass
+        type_auth = get_type_of_required_authorization_to_payment(db, movement_db)
+        if await is_movement_authorized(r, id_movement, type_auth):
+            from_paypal = (type_auth == TypeAuthMovement.paypal)
+            movement = execute_payment(db, movement_db, r, from_paypal)
+            await delete_authorized_data_based_on_type_auth(r, id_movement, type_auth)
+        else:
+            raise operation_need_authorization_exception
+
     elif movement_db.type_movement == TypeMovement.transfer.value:
         # execute_transfer
         pass
@@ -409,6 +459,19 @@ async def execute_movement_from_controller(db: Session, r: Redis, id_movement: i
         raise option_not_found_exception
 
     return await movement
+
+
+def save_paypal_order_into_sub_movement(db: Session, id_movement: int, paypal_order: str) -> bool:
+    movement_db = get_movement_by_id_movement(db, id_movement)
+
+    if movement_db.type_movement == TypeMovement.deposit.value:
+        return save_paypal_id_order_into_deposit(db, id_movement, paypal_order)
+    elif movement_db.type_movement == TypeMovement.payment.value:
+        return save_paypal_id_order_into_payment(db, id_movement, paypal_order)
+    elif movement_db.type_movement == TypeMovement.transfer.value:
+        pass
+    else:
+        raise type_of_value_not_compatible
 
 
 def check_type_of_movement(
@@ -529,7 +592,7 @@ async def check_authentication_movement_result_in_cache(
         result = await check_auth_movement_result(r, subject, id_movement, 'MOV')
     except HTTPException:
         return False
-    except Exception as e:
+    except Exception:
         raise cache_exception
 
     return result
