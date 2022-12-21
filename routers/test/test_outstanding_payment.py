@@ -121,7 +121,7 @@ async def add_amount_to_outstanding_payment(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = outstanding_payments_orm.add_amount(db, id_outstanding, amount)
+    response = outstanding_payments_orm.add_amount(db, id_outstanding=id_outstanding, amount=amount)
 
     return response
 

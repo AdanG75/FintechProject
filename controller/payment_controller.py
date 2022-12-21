@@ -16,6 +16,7 @@ from db.orm.exceptions_orm import type_of_value_not_compatible, not_authorized_e
     minimum_amount_exception, not_sufficient_funds_exception, unexpected_error_exception
 from db.orm.markets_orm import get_market_by_id_market
 from db.orm.movements_orm import make_movement, authorized_movement, finish_movement
+from db.orm.outstanding_payments_orm import add_amount, get_outstanding_payment_by_id_market
 from db.orm.payments_orm import create_payment, get_payment_by_id_movement, put_paypal_id_order
 from schemas.movement_base import UserDataMovement, MovementTypeRequest, MovementRequest
 from schemas.movement_complex import MovementExtraRequest, ExtraMovementRequest, BasicExtraMovement, ExtraMovement
@@ -270,6 +271,12 @@ async def execute_payment_using_credit(db: Session, movement: DbMovement, r: Red
     try:
         finish_credit_in_process(db, credit_object=credit, execute='wait')
         movement = finish_movement(db, was_successful=True, movement_object=movement, execute='wait')
+
+        if credit.type_credit == TypeCredit.globalC.value:
+            payment_db = get_payment_by_id_movement(db, movement.id_movement)
+            outstanding_payment = get_outstanding_payment_by_id_market(db, payment_db.id_market)
+            add_amount(db, amount=amount_float, outstanding_payment=outstanding_payment, execute='wait')
+
         db.commit()
     except Exception as e:
         db.rollback()

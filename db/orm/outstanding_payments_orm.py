@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ from core.utils import money_str_to_float
 from db.models.outstanding_payments_db import DbOutstandingPayment
 from db.orm.exceptions_orm import wrong_data_sent_exception, NotFoundException, option_not_found_exception, \
     not_unique_value, element_not_found_exception, movement_in_process_exception, \
-    operation_need_a_precondition_exception
+    operation_need_a_precondition_exception, not_values_sent_exception
 from db.orm.functions_orm import multiple_attempts, full_database_exceptions
 from db.orm.markets_orm import get_market_by_id_market
 from schemas.basic_response import BasicResponse
@@ -193,8 +193,18 @@ def update_outstanding_payment(
 
 @multiple_attempts
 @full_database_exceptions
-def add_amount(db: Session, id_outstanding: int, amount: float) -> DbOutstandingPayment:
-    outstanding_payment = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
+def add_amount(
+        db: Session,
+        amount: float,
+        id_outstanding: Optional[int] = None,
+        outstanding_payment: Optional[DbOutstandingPayment] = None,
+        execute: str = 'now'
+) -> DbOutstandingPayment:
+    if outstanding_payment is None:
+        if id_outstanding is not None:
+            outstanding_payment = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
+        else:
+            raise not_values_sent_exception
 
     if not outstanding_payment.in_process:
         outstanding_payment.amount = money_str_to_float(str(outstanding_payment.amount)) + amount
@@ -202,8 +212,13 @@ def add_amount(db: Session, id_outstanding: int, amount: float) -> DbOutstanding
         raise movement_in_process_exception
 
     try:
-        db.commit()
-        db.refresh(outstanding_payment)
+        if execute == 'now':
+            db.commit()
+            db.refresh(outstanding_payment)
+        elif execute == 'wait':
+            pass
+        else:
+            raise option_not_found_exception
     except Exception as e:
         db.rollback()
         print(e)
@@ -214,7 +229,7 @@ def add_amount(db: Session, id_outstanding: int, amount: float) -> DbOutstanding
 
 @multiple_attempts
 @full_database_exceptions
-def start_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPayment:
+def start_cash_closing(db: Session, id_outstanding: int, execute: str = 'now') -> DbOutstandingPayment:
     outstanding_payment = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
 
     if not outstanding_payment.in_process:
@@ -225,8 +240,13 @@ def start_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPayment
         raise movement_in_process_exception
 
     try:
-        db.commit()
-        db.refresh(outstanding_payment)
+        if execute == 'now':
+            db.commit()
+            db.refresh(outstanding_payment)
+        elif execute == 'wait':
+            pass
+        else:
+            raise option_not_found_exception
     except Exception as e:
         db.rollback()
         print(e)
@@ -237,7 +257,7 @@ def start_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPayment
 
 @multiple_attempts
 @full_database_exceptions
-def cancel_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPayment:
+def cancel_cash_closing(db: Session, id_outstanding: int, execute: str = 'now') -> DbOutstandingPayment:
     outstanding_payment = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
 
     if outstanding_payment.in_process:
@@ -247,8 +267,13 @@ def cancel_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPaymen
         return outstanding_payment
 
     try:
-        db.commit()
-        db.refresh(outstanding_payment)
+        if execute == 'now':
+            db.commit()
+            db.refresh(outstanding_payment)
+        elif execute == 'wait':
+            pass
+        else:
+            raise option_not_found_exception
     except Exception as e:
         db.rollback()
         print(e)
@@ -259,7 +284,7 @@ def cancel_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPaymen
 
 @multiple_attempts
 @full_database_exceptions
-def finish_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPayment:
+def finish_cash_closing(db: Session, id_outstanding: int, execute: str = 'now') -> DbOutstandingPayment:
     outstanding_payment = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
 
     if outstanding_payment.in_process:
@@ -269,8 +294,13 @@ def finish_cash_closing(db: Session, id_outstanding: int) -> DbOutstandingPaymen
         return outstanding_payment
 
     try:
-        db.commit()
-        db.refresh(outstanding_payment)
+        if execute == 'now':
+            db.commit()
+            db.refresh(outstanding_payment)
+        elif execute == 'wait':
+            pass
+        else:
+            raise option_not_found_exception
     except Exception as e:
         db.rollback()
         print(e)
