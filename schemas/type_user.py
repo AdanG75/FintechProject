@@ -6,4 +6,3 @@ class TypeUser(Enum):
     market = 'market'
     system = 'system'
     admin = 'admin'
-

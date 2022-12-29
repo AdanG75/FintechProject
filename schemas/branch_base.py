@@ -64,4 +64,3 @@ class BranchDisplay(BranchBase):
 
     class Config:
         orm_mode = True
-

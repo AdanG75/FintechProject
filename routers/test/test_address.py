@@ -182,6 +182,6 @@ async def delete_addresses_of_owner(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = addresses_orm.delete_addresses_by_id_owner(db, id_owner, type_owner.value)
+    response = addresses_orm.delete_addresses_by_id_owner(db, id_owner, str(type_owner.value))
 
     return response

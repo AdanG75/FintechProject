@@ -145,7 +145,7 @@ async def get_users_by_type(
         raise credentials_exception
 
     try:
-        users: List[DbUser] = users_orm.get_users_by_type(db, type_user.value)
+        users: List[DbUser] = users_orm.get_users_by_type(db, str(type_user.value))
     except NotFoundException:
         users = []
 

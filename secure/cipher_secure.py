@@ -150,11 +150,3 @@ def is_pem_correct_formatted(pem: str) -> bool:
         return False
 
     return True
-
-
-
-
-
-
-
-

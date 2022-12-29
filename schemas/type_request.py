@@ -6,6 +6,3 @@ class RequestType(Enum):
     reload: str = "reload"
     alias: str = "alias"
     update: str = "update"
-
-
-
