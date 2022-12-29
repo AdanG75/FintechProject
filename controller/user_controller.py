@@ -7,10 +7,12 @@ from db.orm.admins_orm import get_admin_by_id_user, get_admin_by_id_admin
 from db.orm.clients_orm import get_client_by_id_user, get_client_by_id_client
 from db.orm.exceptions_orm import option_not_found_exception, wrong_public_pem_format_exception
 from db.orm.markets_orm import get_market_by_id_user, get_market_by_id_market
+from db.orm.outstanding_payments_orm import get_outstanding_payment_by_id_market
 from db.orm.users_orm import get_public_key_pem, set_public_key, get_user_by_id, get_user_by_email
 from schemas.admin_complex import AdminFullDisplay
 from schemas.client_complex import ClientProfileDisplay
 from schemas.market_complex import MarketProfileDisplay
+from schemas.outstanding_base import OutstandingPaymentDisplay
 from schemas.type_user import TypeUser
 from schemas.user_base import UserBasicDisplay
 from secure.cipher_secure import is_pem_correct_formatted
@@ -67,9 +69,11 @@ def get_profile_of_user(
     elif type_user == TypeUser.market.value:
         user_data = get_user_by_id(db, id_user)
         market_data = get_market_by_id_user(db, id_user)
+        outstanding_data = get_outstanding_payment_by_id_market(db, market_data.id_market)
         user_profile = MarketProfileDisplay(
             user=user_data,
-            market=market_data
+            market=market_data,
+            outstanding_payment=OutstandingPaymentDisplay.from_orm(outstanding_data)
         )
 
     elif type_user == TypeUser.client.value:

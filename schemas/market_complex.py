@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -6,6 +6,7 @@ from schemas.account_base import AccountRequest, AccountDisplay
 from schemas.address_base import AddressRequest, AddressDisplay
 from schemas.branch_base import BranchRequest, BranchDisplay
 from schemas.market_base import MarketRequest, MarketDisplay, MarketBasicDisplay, MarketComplexDisplay
+from schemas.outstanding_base import OutstandingPaymentDisplay
 from schemas.user_base import UserRequest, UserBasicDisplay, UserBase, UserDisplay
 
 
@@ -80,6 +81,7 @@ class MarketFullDisplay(BaseModel):
 class MarketProfileDisplay(BaseModel):
     user: UserDisplay = Field(...)
     market: MarketComplexDisplay = Field(...)
+    outstanding_payment: Optional[OutstandingPaymentDisplay] = Field(None)
 
     class Config:
         orm_mode = True
