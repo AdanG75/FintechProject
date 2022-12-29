@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -32,3 +32,7 @@ class OutstandingPaymentDisplay(OutstandingPaymentBase):
 
     class Config:
         orm_mode = True
+
+
+class ListOPDisplay(BaseModel):
+    outstanding_payments: List[OutstandingPaymentDisplay] = Field(...)

@@ -15,14 +15,16 @@ from db.models.accounts_db import DbAccount
 from db.models.credits_db import DbCredit
 from db.models.deposits_db import DbDeposit
 from db.models.movements_db import DbMovement
+from db.models.outstanding_payments_db import DbOutstandingPayment
 from db.models.payments_db import DbPayment
 from db.models.transfers_db import DbTransfer
 from db.orm.accounts_orm import get_account_by_id
 from db.orm.credits_orm import get_credit_by_id_credit, get_main_id_account_of_market
 from db.orm.deposits_orm import get_deposit_by_id_movement
 from db.orm.exceptions_orm import type_of_movement_not_compatible_exception, type_of_value_not_compatible, \
-    not_values_sent_exception
+    not_values_sent_exception, minimum_amount_exception
 from db.orm.movements_orm import get_movement_by_id_movement
+from db.orm.outstanding_payments_orm import get_outstanding_payment_by_id_outstanding
 from db.orm.payments_orm import get_payment_by_id_movement
 from db.orm.transfers_orm import get_transfer_by_id_movement
 from schemas.paypal_base import CreatePaypalOrderResponse, CreatePaypalOrderMinimalResponse, ItemInner, \
@@ -45,6 +47,22 @@ async def get_paypal_client_based_on_movement(
         movement=movement,
         id_movement=id_movement
     )
+    return await create_paypal_access_token(paypal_id_client, paypal_secret)
+
+
+async def get_paypal_client_based_on_outstanding(
+        db: Session,
+        id_outstanding: Optional[int] = None,
+        outstanding_db: Optional[DbOutstandingPayment] = None
+) -> PayPalHttpClient:
+    if outstanding_db is None:
+        if id_outstanding is not None:
+            outstanding_db = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
+        else:
+            raise not_values_sent_exception
+
+    paypal_id_client, paypal_secret = get_paypal_id_and_paypay_secret(db, outstanding_db)
+
     return await create_paypal_access_token(paypal_id_client, paypal_secret)
 
 
@@ -85,6 +103,36 @@ async def generate_paypal_order(
     return await response
 
 
+async def generate_paypal_order_from_outstanding(
+        db: Session,
+        id_outstanding: int
+) -> Union[CreatePaypalOrderResponse, CreatePaypalOrderMinimalResponse]:
+    outstanding_db: DbOutstandingPayment = get_outstanding_payment_by_id_outstanding(db, id_outstanding)
+    paypal_client = get_paypal_client_based_on_outstanding(db, outstanding_db=outstanding_db)
+
+    amount_order = get_amount_in_paypal_format(outstanding_db.amount)
+    if money_str_to_float(amount_order) < MINIMUM_PAYPAL_AMOUNT:
+        raise minimum_amount_exception
+
+    paypal_item = ItemInner(
+        name='OUTSTANDING PAYMENT',
+        description=outstanding_db.id_market,
+        quantity=BASE_QUANTITY,
+        unit_amount=UnitAmountInner(currency_code=MEXICAN_CURRENCY, value=amount_order)
+    )
+
+    request = await create_order_object(
+        items=[paypal_item],
+        s_url='outstanding-payment/successful-outstanding',
+        c_url='outstanding-payment/cancel-outstanding'
+    )
+
+    order_response = await create_paypal_order(await paypal_client, request)
+    response = parse_paypal_order_to_base_response(order_response)
+
+    return await response
+
+
 async def capture_paypal_order_from_movement(
         db: Session,
         r: Redis,
@@ -100,6 +148,21 @@ async def capture_paypal_order_from_movement(
     await save_paypal_money_cache(r, id_movement, paypal_net_amount)
 
     return await response
+
+
+async def capture_paypal_order_from_outstanding(
+        db: Session,
+        id_outstanding: int,
+        id_order: str
+) -> Tuple[CapturePaypalOrderResponse, str]:
+    paypal_client = get_paypal_client_based_on_outstanding(db, id_outstanding=id_outstanding)
+    capture_response = await capture_paypal_order(await paypal_client, id_order)
+    response = parse_paypal_capture_to_base_response(capture_response)
+
+    paypal_amounts = get_paypal_amounts(capture_response)
+    paypal_net_amount = get_amount_in_paypal_format(paypal_amounts.net_amount.value)
+
+    return await response, paypal_net_amount
 
 
 def get_sub_type_object_of_movement(
@@ -120,12 +183,12 @@ def get_sub_type_object_of_movement(
 
 def get_paypal_id_and_paypay_secret(
         db: Session,
-        sub_movement: Union[DbDeposit, DbPayment, DbTransfer]
+        sub_movement: Union[DbDeposit, DbPayment, DbTransfer, DbOutstandingPayment]
 ) -> Tuple[str, str]:
     if isinstance(sub_movement, DbDeposit):
         credit: DbCredit = get_credit_by_id_credit(db, sub_movement.id_destination_credit)
         account: DbAccount = get_account_by_id(db, credit.id_account)
-    elif isinstance(sub_movement, DbPayment):
+    elif isinstance(sub_movement, DbPayment) or isinstance(sub_movement, DbOutstandingPayment):
         id_account_market = get_main_id_account_of_market(db, sub_movement.id_market)
         account: DbAccount = get_account_by_id(db, id_account_market)
     elif isinstance(sub_movement, DbTransfer):

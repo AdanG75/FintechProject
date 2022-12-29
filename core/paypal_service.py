@@ -83,7 +83,11 @@ async def capture_paypal_order(paypal_client: PayPalHttpClient, id_order: str) -
     return response
 
 
-async def create_order_object(items: List[ItemInner]) -> PaypalComplexOrderRequest:
+async def create_order_object(
+        items: List[ItemInner],
+        s_url: str = 'successful-transaction',
+        c_url: str = 'cancel-transaction'
+) -> PaypalComplexOrderRequest:
     base_currency: str = ''
     total: float = 0.0
 
@@ -116,8 +120,8 @@ async def create_order_object(items: List[ItemInner]) -> PaypalComplexOrderReque
 
     base_url = get_paypal_base_url()
     paypal_context = UrlInner(
-        return_url=base_url + 'successful-transaction',
-        cancel_url=base_url + 'cancel-transaction'
+        return_url=base_url + s_url,
+        cancel_url=base_url + c_url
     )
     order_request = PaypalComplexOrderRequest(
         intent=PAYPAL_CAPTURE_ORDER,

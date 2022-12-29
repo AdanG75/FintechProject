@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+    <h3> The outstanding payment was canceled</h3>
+    <p></p>
+    <p>The transaction with id order: <strong>{{order}}</strong> and id: <strong>{{id_outstanding}}</strong> was canceled.</p>
+    <p>While the current amount of outstanding payment is: {{amount}}.</p>
+    <p></p>
+    <p>Please return to <a href="/">home</a>.</p>
+
+{% endblock %}

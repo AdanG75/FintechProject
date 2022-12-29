@@ -282,3 +282,25 @@ async def send_cancel_movement_email(email_user: str, id_movement: int) -> Optio
     message_send = send_email_from_system(email_user, message_subject, message)
 
     return message_send
+
+
+async def send_outstanding_payment_email(
+        email_user: str,
+        paypal_order: str,
+        deposit_amount: Union[str, float, int],
+        net_amount: Union[str, float, int],
+        currency: str,
+        cash_closing: str
+) -> Optional[dict]:
+    message = f'\n Se ha realizado el PAGO PENDIENTE por ${deposit_amount} ({currency}), ' \
+              f'de los cuales te llegarán ${net_amount} ({currency}) ' \
+              f'debido a las comisiones que cobra PayPal en la realización de transacciones.' \
+              f'\nSiendo la fecha de corte de caja: {cash_closing} (UTC).\n' \
+              f'Mientras que la orden generada por PayPal es: {paypal_order}\n' \
+              f'\nGracias por utilizar Fintech75, que tenga un excelente día :)'
+
+    message_subject = "Pago pendiante realizado"
+
+    message_send = send_email_from_system(email_user, message_subject, message)
+
+    return message_send

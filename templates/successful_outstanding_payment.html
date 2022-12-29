@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+    <h3> The outstanding payment was successfully completed</h3>
+    <p></p>
+    <p>This is the transaction information which can be checked in your PayPal account:</p>
+    <p><strong>ID order:</strong> {{order}}</p>
+    <p><strong>Payer ID:</strong> {{payer_id}}</p>
+    <p><strong>Amount deposited:</strong> {{deposit_amount}} ({{currency}})</p>
+    <p><strong>Net amount received:</strong> {{net_amount}} ({{currency}})</p>
+    <p><strong>Date of cash closing:</strong> {{cash_closing}} (UTC)</p>
+    <p><br>Thanks for use Fintech75 :)<br> <br>Please close this window or return to <a href="/">home</a>.</p>
+
+{% endblock %}

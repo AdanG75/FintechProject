@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
 from core.config import BOUND_TEST_ENTRYPOINTS
-from routers import credit_router, fingerprint_router, home, market_router, movement_router, start_router, static, \
-    user_router
+from routers import credit_router, fingerprint_router, home, market_router, movement_router, outstanding_router, \
+    start_router, static, user_router
 from routers.test import test_account, test_address, test_admin, test_branch, test_client, test_core, test_credit, \
     test_deposit, test_fingerprint, test_functions, test_login_attempt, test_market, test_minutia, test_movement, \
     test_outstanding_payment, test_password_recovery, test_payment, test_paypal, test_session, test_transfer, \
@@ -16,6 +16,7 @@ def add_main_routers(r_app: FastAPI) -> None:
     r_app.include_router(router=home.router)
     r_app.include_router(router=market_router.router)
     r_app.include_router(router=movement_router.router)
+    r_app.include_router(router=outstanding_router.router)
     r_app.include_router(router=start_router.router)
     r_app.include_router(router=static.router)
     r_app.include_router(router=user_router.router)
