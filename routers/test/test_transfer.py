@@ -30,13 +30,13 @@ async def create_transfer(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    request.type_transfer = trasnfers_orm.get_type_of_transfer(
+    request.type_transfer = transfers_orm.get_type_of_transfer(
         db=db,
         id_destination_credit=request.id_destination_credit,
         id_movement=request.id_movement
     )
 
-    response = trasnfers_orm.create_transfer(db, request)
+    response = transfers_orm.create_transfer(db, request)
 
     return response
 
@@ -54,7 +54,7 @@ async def get_transfer(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = trasnfers_orm.get_transfer_by_id_transfer(db, id_transfer)
+    response = transfers_orm.get_transfer_by_id_transfer(db, id_transfer)
 
     return response
 
@@ -72,7 +72,7 @@ async def get_transfer_by_id_movement(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = trasnfers_orm.get_transfer_by_id_movement(db, id_movement)
+    response = transfers_orm.get_transfer_by_id_movement(db, id_movement)
 
     return response
 
@@ -90,6 +90,6 @@ async def get_transfers_by_id_credit(
     if not check_type_user(current_token, is_a='admin'):
         raise credentials_exception
 
-    response = trasnfers_orm.get_transfers_by_id_destination_credit(db, id_credit)
+    response = transfers_orm.get_transfers_by_id_destination_credit(db, id_credit)
 
     return response

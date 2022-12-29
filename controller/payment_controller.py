@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from controller.credit_controller import check_funds_of_credit
 from controller.general_controller import save_type_auth_movement_cache, save_finish_movement_cache
+from controller.paypal_controller import MINIMUM_PAYPAL_AMOUNT
 from core.utils import money_str_to_float
 from db.models.credits_db import DbCredit
 from db.models.markets_db import DbMarket
@@ -26,8 +27,6 @@ from schemas.type_credit import TypeCredit
 from schemas.type_money import TypeMoney
 from schemas.type_movement import TypeMovement, NatureMovement
 from schemas.type_user import TypeUser
-
-MINIMUM_PAYPAL_AMOUNT: int = 5
 
 
 async def create_payment_formatted(

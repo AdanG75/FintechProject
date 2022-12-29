@@ -231,6 +231,16 @@ global_credit_exception = HTTPException(
     detail="Only system can create global credits"
 )
 
+system_credit_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Only the system can own global credits"
+)
+
+circular_transaction_exception = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="Circular transactions are not allowed"
+)
+
 compile_exception = HTTPException(
     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     detail="A compile error occurred during execution of the process"
@@ -354,4 +364,9 @@ paypal_error_exception = HTTPException(
 minimum_amount_exception = HTTPException(
     status_code=status.HTTP_418_IM_A_TEAPOT,
     detail='Minimum transaction amount must be reached'
+)
+
+not_implemented_exception = HTTPException(
+    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    detail="Operation has not yet implemented"
 )

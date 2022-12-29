@@ -123,7 +123,7 @@ def put_paypal_id_order(
             raise not_values_sent_exception
 
     if transfer_object.paypal_id_order is None \
-            and (transfer_object.type_transfer.value == 'localL' or transfer_object.type_transfer.value == 'localG'):
+            and (transfer_object.type_transfer == 'localL' or transfer_object.type_transfer == 'localG'):
         transfer_object.paypal_id_order = paypal_id_order
     else:
         raise wrong_data_sent_exception
@@ -148,16 +148,22 @@ def put_paypal_id_order(
 def get_type_of_transfer(
         db: Session,
         id_destination_credit: int,
+        id_origin_credit: Optional[int] = None,
         id_movement: Optional[int] = None,
         movement_object: Optional[DbMovement] = None
 ) -> TypeTransfer:
-    if movement_object is None:
-        if id_movement is not None:
-            movement_object = get_movement_by_id_movement(db, id_movement)
-        else:
-            raise not_values_sent_exception
+    if id_origin_credit is None:
+        if movement_object is None:
+            if id_movement is not None:
+                movement_object = get_movement_by_id_movement(db, id_movement)
+            else:
+                raise not_values_sent_exception
 
-    origin_credit = get_credit_by_id_credit(db, movement_object.id_credit)
+        origin_credit = get_credit_by_id_credit(db, movement_object.id_credit)
+
+    else:
+        origin_credit = get_credit_by_id_credit(db, id_origin_credit)
+
     destination_credit = get_credit_by_id_credit(db, id_destination_credit)
 
     return __return_transfer_type(origin_credit, destination_credit)

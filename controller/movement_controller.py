@@ -16,6 +16,9 @@ from controller.payment_controller import create_payment_formatted, create_payme
     save_type_auth_payment_in_cache, get_type_of_required_authorization_to_payment, execute_payment, \
     save_paypal_id_order_into_payment
 from controller.secure_controller import cipher_minutiae_and_core_points
+from controller.transfer_controller import create_transfer_formatted, create_transfer_movement, \
+    save_type_auth_transfer_in_cache, get_type_of_required_authorization_to_transfer, \
+    save_paypal_id_order_into_transfer, execute_transfer
 from controller.user_controller import get_email_based_on_id_type
 from controller.withdraw_controller import create_withdraw_formatted, create_withdraw_movement, \
     save_type_auth_withdraw_in_cache, get_type_of_required_authorization_to_withdraw, execute_withdraw
@@ -262,7 +265,10 @@ async def create_summary_of_movement(
         else:
             raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.transfer:
-        pass
+        if validate_transfer_data_types(request):
+            summary = await create_transfer_formatted(db, request, user_data)
+        else:
+            raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.withdraw:
         if validate_withdraw_data_types(request):
             summary = await create_withdraw_formatted(db, request, user_data)
@@ -293,7 +299,10 @@ async def make_movement_based_on_type(
         else:
             raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.transfer:
-        pass
+        if validate_transfer_data_types(request):
+            movement = await create_transfer_movement(db, request, data_user)
+        else:
+            raise unexpected_error_exception
     elif t_movement_obj == TypeMovement.withdraw:
         if validate_withdraw_data_types(request):
             movement = await create_withdraw_movement(db, request, data_user)
@@ -368,6 +377,30 @@ def validate_payment_data_types(request: Union[MovementTypeRequest, MovementExtr
     return True
 
 
+def validate_transfer_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
+    if request.id_credit is None:
+        raise not_values_sent_exception
+
+    if not check_type_of_movement(request.type_movement, TypeMovement.transfer):
+        raise type_of_value_not_compatible
+
+    if isinstance(request, MovementTypeRequest):
+        if not check_type_of_money(request.type_submov, TypeMoney.credit):
+            raise type_of_value_not_compatible
+
+        if request.type_transfer is None or request.destination_credit is None:
+            raise not_values_sent_exception
+
+    elif isinstance(request, MovementExtraRequest):
+        if request.extra.destination_credit is None:
+            raise not_values_sent_exception
+
+    else:
+        raise type_of_value_not_compatible
+
+    return True
+
+
 def validate_withdraw_data_types(request: Union[MovementTypeRequest, MovementExtraRequest]) -> bool:
     if not check_type_of_movement(request.type_movement, TypeMovement.withdraw):
         raise type_of_value_not_compatible
@@ -415,8 +448,8 @@ async def save_type_authentication_in_cache(
         result = await save_type_auth_payment_in_cache(r, id_movement, act_ts_movement, performer_data)
 
     elif act_type_mov == TypeMovement.transfer:
-        # result = await save_type_auth_transfer_in_cache(r, id_movement, act_ts_movement, performer_data)
-        pass
+        result = await save_type_auth_transfer_in_cache(r, id_movement, act_ts_movement, performer_data)
+
     else:
         raise option_not_found_exception
 
@@ -445,8 +478,14 @@ async def execute_movement_from_controller(db: Session, r: Redis, id_movement: i
             raise operation_need_authorization_exception
 
     elif movement_db.type_movement == TypeMovement.transfer.value:
-        # execute_transfer
-        pass
+        type_auth = get_type_of_required_authorization_to_transfer(db, movement_db)
+        if await is_movement_authorized(r, id_movement, type_auth):
+            from_paypal = (type_auth == TypeAuthMovement.localPaypal)
+            movement = execute_transfer(db, movement_db, r, from_paypal)
+            await delete_authorized_data_based_on_type_auth(r, id_movement, type_auth)
+        else:
+            raise operation_need_authorization_exception
+
     elif movement_db.type_movement == TypeMovement.withdraw.value:
         type_auth = get_type_of_required_authorization_to_withdraw(movement_db)
         if await is_movement_authorized(r, id_movement, type_auth):
@@ -469,7 +508,7 @@ def save_paypal_order_into_sub_movement(db: Session, id_movement: int, paypal_or
     elif movement_db.type_movement == TypeMovement.payment.value:
         return save_paypal_id_order_into_payment(db, id_movement, paypal_order)
     elif movement_db.type_movement == TypeMovement.transfer.value:
-        pass
+        return save_paypal_id_order_into_transfer(db, id_movement, paypal_order)
     else:
         raise type_of_value_not_compatible
 

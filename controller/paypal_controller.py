@@ -32,6 +32,7 @@ from secure.cipher_secure import cipher_data, decipher_data
 
 
 BASE_QUANTITY = '1'
+MINIMUM_PAYPAL_AMOUNT: int = 5
 
 
 async def get_paypal_client_based_on_movement(
