@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from controller.test.test_sign_up import test_register_fingerprint
+from core.config import charge_settings
 from fingerprint_process.utils import utils as u_fin
 from fingerprint_process.utils.error_message import ErrorMessage
 from fingerprint_process.description.fingerprint import Fingerprint
@@ -134,6 +135,7 @@ def local_test():
 
 
 if __name__ == '__main__':
+    settings = charge_settings()
     while True:
         end_programme = local_test()
         if end_programme:
