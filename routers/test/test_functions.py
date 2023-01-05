@@ -4,6 +4,7 @@ from fastapi import APIRouter, Body, Request, Depends, Path, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from google.cloud.storage import Client
+from pydantic import EmailStr
 from redis.client import Redis
 from sqlalchemy.orm import Session
 from starlette import status
@@ -197,6 +198,38 @@ async def send_email(
         raise credentials_exception
 
     send_email_from_system('fintech75.official@gmail.com', 'Simple test', 'This is a simple test.\nPlease, not reply.')
+
+    return BasicResponse(
+        operation='Send Email',
+        successful=True
+    )
+
+
+@router.post(
+    path='/email/complete',
+    response_model=BasicResponse,
+    status_code=status.HTTP_200_OK,
+    tags=['email']
+)
+async def send_email_complete(
+        consignee: Optional[EmailStr] = Query(None),
+        subject: Optional[str] = Query(None, min_length=2, max_length=49),
+        content: Optional[str] = Query(None, min_length=2, max_length=149),
+        current_token: TokenSummary = Depends(get_current_token)
+):
+    if not check_type_user(current_token, is_a='admin'):
+        raise credentials_exception
+
+    if consignee is None:
+        consignee = 'fintech75.official@gmail.com'
+
+    if subject is None:
+        subject = 'Simple test'
+
+    if content is None:
+        content = 'This is a simple test.\nPlease, not reply.'
+
+    send_email_from_system(consignee, subject, content)
 
     return BasicResponse(
         operation='Send Email',
