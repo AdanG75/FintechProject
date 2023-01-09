@@ -174,7 +174,7 @@ async def secure_message(
     print(receive_data)
 
     send_data = MessageDisplay(
-        message="Receive message.\nWe will take the world.",
+        message="{}\nReceive message: We will take the world jajaja.".format(receive_data["message"]),
         datetime=get_current_utc_timestamp(),
         user="Server"
     )
