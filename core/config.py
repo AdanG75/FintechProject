@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from core.secret_manager import access_secret_version
 
 
-BOUND_TEST_ENTRYPOINTS: bool = True
+BOUND_TEST_ENTRYPOINTS: bool = False
 
 
 class Settings(object):
@@ -45,7 +45,7 @@ class Settings(object):
 
     def __init__(self):
         # Change value to True if app will being deployed to AppEngine
-        self.__ON_CLOUD = False
+        self.__ON_CLOUD = True
 
         if not self.__ON_CLOUD:
             env_path = Path('.') / '.env'
