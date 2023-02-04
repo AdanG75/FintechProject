@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Union, List, Iterable
+import re
+from typing import Union, List, Iterable, Tuple
 
 import numpy as np
 import cv2 as cv
@@ -450,6 +451,9 @@ class Fingerprint(ErrorMessage):
             if len(self._list_minutias) < self._min_minutiae:
                 return self._FEW_MINUTIAES
 
+            if len(self._list_core_points) < 1:
+                return self._FEW_MINUTIAES
+
             if neighbors_description:
                 if len(self._list_minutias) < (self._number_minutiae_neighbordings + 1):
                     return self._FEW_MINUTIAES
@@ -461,3 +465,54 @@ class Fingerprint(ErrorMessage):
 
         else:
             return self._VOID_FINGERPRINT
+
+    def get_good_quality_fingerprint(
+            self,
+            data_fingerprint: ndarray,
+            time: int,
+            angles_tolerance: int = 1,
+            name_sample: str = 'fingerprint',
+            base_path: str = './fingerprint_process/preprocessing_fingerprints/'
+    ) -> Tuple[int, bool, bool, bool]:
+        name_pattern: str = r"^\w{3,20}$"
+        auth_quality = False
+        reg_quality = False
+        spatial_quality = False
+
+        if re.match(name_pattern, name_sample) is None:
+            raise ValueError
+
+        self._name_fingerprint = "{}{}".format(name_sample, time)
+        path_where_saved = "{}{}/".format(base_path, name_sample)
+        self._address_image = path_where_saved
+
+        self.__reconstruction_fingerprint(data_fingerprint)
+        self.__get_quality_index()
+
+        if self._quality_index >= self._register_index_score:
+            auth_quality = True
+            reg_quality = True
+
+        elif self._quality_index >= self._authentication_index_score:
+            auth_quality = True
+
+        else:
+            return self._POOR_QUALITY, reg_quality, auth_quality, spatial_quality
+
+        self.__fingerprint_enhance()
+        if self._varian_index >= self._authentication_image_score:
+            spatial_quality = True
+        else:
+            return self._POOR_QUALITY, reg_quality, auth_quality, spatial_quality
+
+        self.__get_cells()
+
+        self.__get_minutias()
+        if len(self._list_minutias) < self._min_minutiae:
+            return self._FEW_MINUTIAES, reg_quality, auth_quality, spatial_quality
+
+        self.__get_corepoints(angles_tolerance)
+        if len(self._list_core_points) < 1:
+            return self._FEW_MINUTIAES, reg_quality, auth_quality, spatial_quality
+
+        return self.FINGERPRINT_OK, reg_quality, auth_quality, spatial_quality
