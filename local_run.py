@@ -25,6 +25,7 @@ def local_test():
     print('\tD.- Get fingerprint on Base64')
     print('\tE.- Create FingerprintSamples request within a json file')
     print('\tF.- Test of register fingerprint')
+    print('\tG.- Capture good quality fingerprints')
     print('\tX.- Exit the programme')
 
     print('\n')
@@ -121,6 +122,9 @@ def local_test():
 
     elif option.lower() == 'f':
         test_register_fingerprint()
+
+    elif option.lower() == 'g':
+        u_fin.capture_good_quality_fingerprints()
 
     elif option.lower() == 'x':
         return True

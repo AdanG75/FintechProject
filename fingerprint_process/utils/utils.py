@@ -1,5 +1,7 @@
 import base64
 import io
+import os.path
+import re
 from typing import List, Union, Optional
 
 import cv2 as cv
@@ -164,6 +166,67 @@ def get_description_fingerprint(
     else:
         fingerprint.show_message(process_message)
         return process_message
+
+
+def capture_good_quality_fingerprints() -> bool:
+    NO_ERROR_VALUE = 0
+    name_pattern: str = r"^\w{3,20}$"
+    name_fingerprint = input("Write the name of the fingerprint sample: ")
+    if re.match(name_pattern, name_fingerprint) is None:
+        print("Name no valid")
+        return False
+
+    int_pattern = r"^[1-9]\d{0,2}$"
+    times = input("Indicate the number of fingerprint samples to be captured: ")
+    if re.match(int_pattern, times) is not None:
+        times_int = int(times)
+    else:
+        print("Type of value no valid")
+        return False
+
+    lines = ["SAMPLE NAME,REGISTER VALUE,AUTH VALUE,SPATIAL VALUE\n"]
+
+    fingerprint = Fingerprint(
+        name_fingerprint=name_fingerprint,
+        show_result=False,
+        save_result=True
+    )
+
+    base_path = f"./fingerprint_process/preprocessing_fingerprints/best_fingerprints/{name_fingerprint}/"
+    if not os.path.isdir(base_path):
+        os.makedirs(base_path)
+
+    file_name = f"{name_fingerprint}_data.csv"
+
+    time = 0
+    while time < times_int:
+        data_fingerprint = get_data_fingerprint()
+        if isinstance(data_fingerprint, tuple):
+            pass
+
+        (result, reg_quality, auth_quality, spatial_quality) = fingerprint.get_good_quality_fingerprint(
+            data_fingerprint=data_fingerprint,
+            time=time,
+            name_sample=name_fingerprint,
+            base_path=base_path
+        )
+
+        text = f"Sample_{time},{reg_quality},{auth_quality},{spatial_quality}\n"
+        if result == NO_ERROR_VALUE:
+            print("Good quality fingerprint sample detected")
+            print(text)
+
+            lines.append(text)
+            time += 1
+        else:
+            print("Bad quality fingerprint :(")
+            print(text)
+
+    with open(base_path+file_name, "w+", encoding='utf-8') as f:
+        for line in lines:
+            f.write(line)
+
+    return True
 
 
 def match_index_and_base_fingerprints(

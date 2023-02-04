@@ -473,38 +473,41 @@ class Fingerprint(ErrorMessage):
             angles_tolerance: int = 1,
             name_sample: str = 'fingerprint',
             base_path: str = './fingerprint_process/preprocessing_fingerprints/'
-    ) -> Tuple[int, bool, bool, bool]:
+    ) -> Tuple[int, float, float, float]:
         name_pattern: str = r"^\w{3,20}$"
-        auth_quality = False
-        reg_quality = False
-        spatial_quality = False
+        auth_quality = 0
+        reg_quality = 0
+        spatial_quality = 0
 
         if re.match(name_pattern, name_sample) is None:
             raise ValueError
 
         self._name_fingerprint = "{}{}".format(name_sample, time)
-        path_where_saved = "{}{}/".format(base_path, name_sample)
-        self._address_image = path_where_saved
+
+        self._address_image = base_path
 
         self.__reconstruction_fingerprint(data_fingerprint)
         self.__get_quality_index()
 
         if self._quality_index >= self._register_index_score:
-            auth_quality = True
-            reg_quality = True
+            auth_quality = self._quality_index
+            reg_quality = self._quality_index
 
         elif self._quality_index >= self._authentication_index_score:
-            auth_quality = True
+            auth_quality = self._quality_index
 
         else:
             return self._POOR_QUALITY, reg_quality, auth_quality, spatial_quality
 
+        self.__save_raw_fingerprint()
         self.__fingerprint_enhance()
         if self._varian_index >= self._authentication_image_score:
-            spatial_quality = True
+            self._characteritic_point_thresh = self._register_cpthresh
+            spatial_quality = self._varian_index
         else:
             return self._POOR_QUALITY, reg_quality, auth_quality, spatial_quality
 
+        self.__ezquel_to_image()
         self.__get_cells()
 
         self.__get_minutias()
@@ -515,4 +518,4 @@ class Fingerprint(ErrorMessage):
         if len(self._list_core_points) < 1:
             return self._FEW_MINUTIAES, reg_quality, auth_quality, spatial_quality
 
-        return self.FINGERPRINT_OK, reg_quality, auth_quality, spatial_quality
+        return self._FINGERPRINT_OK, reg_quality, auth_quality, spatial_quality
