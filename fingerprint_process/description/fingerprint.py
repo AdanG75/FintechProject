@@ -90,28 +90,49 @@ class Fingerprint(ErrorMessage):
                 x += 1
 
     def __fingerprint_enhance(self):
-        preprocessing_fp = PreprocessingFingerprint(name_fingerprint=self._name_fingerprint,
-                                                    address_output=self._address_image,
-                                                    ridge_segment_thresh=self._ridge_segment_thresh)
-        (self._ezquel_fingerprint, self._roi, self._angles, self._varian_mask,
-         self._varian_index) = preprocessing_fp.enhance(img=self._raw_image, resize=False, return_as_image=False,
-                                                        show_fingerprints=self._show_result,
-                                                        save_fingerprints=self._save_result)
+        preprocessing_fp = PreprocessingFingerprint(
+            name_fingerprint=self._name_fingerprint,
+            address_output=self._address_image,
+            ridge_segment_thresh=self._ridge_segment_thresh
+        )
+
+        (
+            self._ezquel_fingerprint,
+            self._roi,
+            self._angles,
+            self._varian_mask,
+            self._varian_index
+        ) = preprocessing_fp.enhance(
+            img=self._raw_image,
+            resize=False,
+            return_as_image=False,
+            show_fingerprints=self._show_result,
+            save_fingerprints=self._save_result
+        )
+
         (self._rows, self._columns) = self._ezquel_fingerprint.shape
 
     def __get_quality_index(self):
-        quality_image = QualityFingerprint(number_filters=16, columns_image=self._figerprint_columns,
-                                           rows_image=self._fingerprint_rows, data_filters='dataFilter.txt',
-                                           show_graphs=self._show_result, address_output='./fingerprint_process/data/',
-                                           name_fingerprint=self._name_fingerprint)
+        quality_image = QualityFingerprint(
+            number_filters=16,
+            columns_image=self._figerprint_columns,
+            rows_image=self._fingerprint_rows,
+            data_filters='dataFilter.txt',
+            show_graphs=self._show_result,
+            address_output='./fingerprint_process/data/',
+            name_fingerprint=self._name_fingerprint
+        )
+
         self._quality_index = quality_image.getQualityFingerprint(self._raw_image, save_graphs=self._save_result)
 
     def __get_corepoints(self, angles_tolerance):
         for i in range(3, len(self._angles) - 2):  # Y
             for j in range(3, len(self._angles[i]) - 2):  # x
                 # mask any singularity outside the mask
-                mask_slice = self._roi[(i - 2) * self._size_window_core:(i + 3) * self._size_window_core,
-                             (j - 2) * self._size_window_core:(j + 3) * self._size_window_core]
+                mask_slice = self._roi[
+                                (i - 2) * self._size_window_core:(i + 3) * self._size_window_core,
+                                (j - 2) * self._size_window_core:(j + 3) * self._size_window_core
+                             ]
                 mask_flag = np.sum(mask_slice)
                 if mask_flag == (self._size_window_core * 5) ** 2:
                     self.__poincare_index_at(i, j, angles_tolerance)
@@ -182,7 +203,10 @@ class Fingerprint(ErrorMessage):
                     #     cv.destroyAllWindows()
 
                     # if self._save_result:
-                    #     cv.imwrite(self._address_image + 'minutiae_' +  self._name_fingerprint +'.bmp', (self._minutiae_map))
+                    #     cv.imwrite(
+                    #       self._address_image + 'minutiae_' +  self._name_fingerprint +'.bmp',
+                    #       (self._minutiae_map)
+                    #     )
 
     def __minutiae_at(self, j, i):
         """
