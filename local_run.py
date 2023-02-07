@@ -26,6 +26,8 @@ def local_test():
     print('\tE.- Create FingerprintSamples request within a json file')
     print('\tF.- Test of register fingerprint')
     print('\tG.- Capture good quality fingerprints')
+    print('\tH.- Evaluate preprocessing')
+    print('\tI.- Get quality of image')
     print('\tX.- Exit the programme')
 
     print('\n')
@@ -125,6 +127,13 @@ def local_test():
 
     elif option.lower() == 'g':
         u_fin.capture_good_quality_fingerprints()
+
+    elif option.lower() == 'h':
+        u_fin.evaluate_preprocessing()
+
+    elif option.lower() == 'i':
+        name_img = input("Write the name of the image to open: ")
+        u_fin.get_quality_image(name_img)
 
     elif option.lower() == 'x':
         return True

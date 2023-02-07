@@ -403,6 +403,21 @@ class Fingerprint(ErrorMessage):
             'spectral_index': spectral_index
         }
 
+    def get_indexes_of_fingerprint_image(self, img: Union[ndarray, Iterable]) -> Tuple[float, float]:
+        self._raw_image = np.asarray(img)
+        self.__get_quality_index()
+
+        preprocessing_fp = PreprocessingFingerprint(
+            name_fingerprint=self._name_fingerprint,
+            address_output=self._address_image,
+            ridge_segment_thresh=self._ridge_segment_thresh
+        )
+
+        spatial_index = preprocessing_fp.get_spatial_index(self._raw_image)
+        spectral_index = self._quality_index
+
+        return spectral_index, spatial_index
+
     def get_quality_of_fingerprint(self, indexes: dict, operation: str = 'register') -> str:
         """
         Function which return the quality of fingerprint based on the selected operation.
@@ -543,3 +558,36 @@ class Fingerprint(ErrorMessage):
             return self._FEW_MINUTIAES, reg_quality, auth_quality, spatial_quality
 
         return self._FINGERPRINT_OK, reg_quality, auth_quality, spatial_quality
+
+    def evaluate_enhance_process(self, img: Union[ndarray, Iterable], name_fingerprint: str):
+        valid_reg = 0
+        valid_auth = 0
+
+        self._name_fingerprint = name_fingerprint
+
+        self._raw_image = np.asarray(img)
+
+        self.__get_quality_index()
+        spectral_index = self._quality_index
+        if self._quality_index >= self._register_index_score:
+            valid_reg = 1
+            valid_auth = 1
+
+        elif self._quality_index >= self._authentication_index_score:
+            valid_auth = 1
+
+        else:
+            pass
+
+        self._save_result = True
+        self.__fingerprint_enhance()
+        spatial_index = self._varian_index
+        if self._varian_index < self._authentication_image_score:
+            valid_reg = 0
+            valid_auth = 0
+
+        # self.__ezquel_to_image()
+        # self.__save_sample_fingerprint(name_image='better_', image=self._ezquel_as_image)
+        self._save_result = False
+
+        return spectral_index, spatial_index, valid_reg, valid_auth

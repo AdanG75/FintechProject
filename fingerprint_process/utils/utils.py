@@ -1,6 +1,7 @@
 import base64
 import io
 import os.path
+import random
 import re
 from typing import List, Union, Optional
 
@@ -13,6 +14,7 @@ from db.orm.exceptions_orm import compile_exception
 from fingerprint_process.preprocessing.connect_sensor import ConnectSensor
 from fingerprint_process.preprocessing.fingerprint_raw import FingerprintRaw
 from fingerprint_process.description.fingerprint import Fingerprint
+from fingerprint_process.preprocessing.quality_image import QualityFingerprint
 from fingerprint_process.utils.bank_fingerprint_images import BankFingerprint
 from fingerprint_process.matching.match import match
 from fingerprint_process.utils.error_message import ErrorMessage
@@ -384,3 +386,115 @@ def show_fingerprint_form_base64(image_base64: bytes) -> None:
     img = Image.open(io.BytesIO(base64.b64decode(image_str)), formats=["BMP"])
 
     img.show("Fingerprint from Base64")
+
+
+def evaluate_preprocessing() -> None:
+    base_path = "/home/coffe/Documentos/fintech75_api/fingerprint_process/preprocessing_fingerprints/sampleImages/"
+    out_path = "/home/coffe/Documentos/fintech75_api/fingerprint_process/preprocessing_fingerprints/evaluate/"
+
+    change = input(f"Actual path to fetch: {base_path}\n\nChange path?:\n\t[Y]es\n\t[N]o\n\nResponse: ")
+    if change.lower().startswith("y"):
+        new_path = input("Write the new path: ")
+        if not os.path.isdir(new_path):
+            print("Not path found")
+            return None
+
+        if not new_path.endswith("/"):
+            new_path += "/"
+
+        base_path = new_path
+
+    else:
+        pass
+
+    int_pattern = r"^[1-9]\d{0,2}$"
+    num_samples_str = input("Write the number the samples to be captured: ")
+    if re.match(int_pattern, num_samples_str) is not None:
+        num_samples = int(num_samples_str)
+    else:
+        print("Type of value no valid")
+        return None
+
+    objects_in_path = os.listdir(base_path)
+    files_in_path = [obj for obj in objects_in_path if os.path.isfile(base_path + obj) and obj.endswith(".bmp")]
+
+    if num_samples > len(files_in_path):
+        print("There are not sufficient samples")
+        return None
+
+    fingerprints = random.sample(files_in_path, num_samples)
+    lines = [
+        "Sample,Base Spectral,Base Spatial,Valid Reg,Valid Auth,Better Spectral,Better Spatial,Diff Spectral,"
+        "Diff Spatial\n"
+    ]
+    name_fingerprint = "Sample"
+    f_obj = Fingerprint(
+        name_fingerprint=name_fingerprint,
+        show_result=False,
+        save_result=False,
+        address_image=out_path
+    )
+
+    for pos, fingerprint in enumerate(fingerprints):
+
+        actual_name = f"{name_fingerprint}_{pos}"
+        img = cv.imread(base_path + fingerprint, 0)
+
+        (base_spectral, base_spatial, valid_reg, valid_auth) = f_obj.evaluate_enhance_process(img, actual_name)
+
+        better_img = cv.imread(out_path + "binary_" + actual_name + ".bmp", 0)
+        (better_spectral, better_spatial) = f_obj.get_indexes_of_fingerprint_image(better_img)
+
+        diff_spectral = better_spectral - base_spectral
+        diff_spatial = better_spatial - base_spatial
+        d_str = f"{actual_name},{base_spectral},{base_spatial},{valid_reg},{valid_auth},{better_spectral}," \
+                f"{better_spatial},{diff_spectral},{diff_spatial}\n"
+        lines.append(d_str)
+
+    with open(out_path + "result.csv", "w+", encoding='utf-8') as f:
+        for line in lines:
+            f.write(line)
+
+    print("\n\nThe process have finished :)\n")
+
+    return None
+
+
+def get_quality_image(
+        img_name: str,
+        name_fingerprint: str = "sample_fingerprint",
+        show_result: bool = True,
+        save_result: bool = True
+) -> None:
+    base_path = "/home/coffe/Documentos/fintech75_api/fingerprint_process/preprocessing_fingerprints/evaluate/"
+
+    change = input(f"Actual path to fetch: {base_path}\n\nChange path?:\n\t[Y]es\n\t[N]o\n\nResponse: ")
+    if change.lower().startswith("y"):
+        new_path = input("Write the new path: ")
+        if not os.path.isdir(new_path):
+            print("Not path found")
+            return None
+
+        if not new_path.endswith("/"):
+            new_path += "/"
+
+        base_path = new_path
+
+    else:
+        pass
+
+    img_name += ".bmp" if not img_name.endswith(".bmp") else ""
+
+    img = cv.imread(base_path + img_name, 0)
+
+    quality_image = QualityFingerprint(
+        data_filters='dataFilter.txt',
+        address_output='./fingerprint_process/data/',
+        show_graphs=show_result,
+        name_fingerprint=name_fingerprint
+    )
+
+    quality_index = quality_image.getQualityFingerprint(img, save_graphs=save_result)
+    print(f"Spectral quality of the image: {quality_index}")
+
+    return None
