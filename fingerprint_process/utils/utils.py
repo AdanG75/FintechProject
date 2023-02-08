@@ -3,7 +3,7 @@ import io
 import os.path
 import random
 import re
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Iterable
 
 import cv2 as cv
 from PIL import Image
@@ -498,3 +498,165 @@ def get_quality_image(
     print(f"Spectral quality of the image: {quality_index}")
 
     return None
+
+
+def evaluate_match_tar():
+    base_path = "/home/coffe/Documentos/fintech75_api/fingerprint_process/preprocessing_fingerprints/match_test/"
+    samples_name = "same_finger"
+    base_file = "base.bmp"
+    if not os.path.isdir(base_path):
+        print("Not path found")
+        return None
+
+    objects_in_path = os.listdir(base_path)
+    dirs_in_path = [inner_dir for inner_dir in objects_in_path if os.path.isdir(base_path + inner_dir)]
+    # print(dirs_in_path)
+
+    lines = ["Sample,True acceptance,False reject,Bad quality\n"]
+    count_acceptance = 0
+    count_reject = 0
+    count_bad_quality = 0
+    for inner_dir in dirs_in_path:
+        base_finger_path = f"{base_path}{inner_dir}/{base_file}"
+        # print(base_finger_path)
+
+        img_base = cv.imread(base_finger_path, 0)
+        base_fingerprint = describe_fingerprint_image(img_base)
+
+        if base_fingerprint is None:
+            print("An error occurs :(")
+            break
+
+        dir_to_fetch = f"{base_path}{inner_dir}/{samples_name}/"
+        obj_in_path = os.listdir(dir_to_fetch)
+        files_in_path = [obj for obj in obj_in_path if os.path.isfile(dir_to_fetch + obj) and obj.endswith(".bmp")]
+
+        for input_sample in files_in_path:
+            # print(dir_to_fetch + input_sample)
+            img_input = cv.imread(dir_to_fetch + input_sample, 0)
+            input_fingerprint = describe_fingerprint_image(img_input)
+
+            if input_fingerprint is None:
+                count_bad_quality += 1
+                continue
+
+            if describe_match(base_fingerprint, input_fingerprint):
+                count_acceptance += 1
+            else:
+                count_reject += 1
+
+        lines.append(f"{inner_dir},{count_acceptance},{count_reject},{count_bad_quality}\n")
+        count_acceptance = 0
+        count_reject = 0
+        count_bad_quality = 0
+
+    with open(base_path + "results.csv", "w+", encoding='utf-8') as f:
+        for line in lines:
+            f.write(line)
+
+    print("\n\n\tThe match process has finished :)\n")
+
+    return None
+
+
+def evaluate_match_far():
+    base_path = "/home/coffe/Documentos/fintech75_api/fingerprint_process/preprocessing_fingerprints/match_test/"
+    samples_name = "others_fingers"
+    base_file = "base.bmp"
+    if not os.path.isdir(base_path):
+        print("Not path found")
+        return None
+
+    objects_in_path = os.listdir(base_path)
+    dirs_in_path = [inner_dir for inner_dir in objects_in_path if os.path.isdir(base_path + inner_dir)]
+    # print(dirs_in_path)
+
+    lines = ["Sample,True rejection,False acceptance,Bad quality\n"]
+    count_acceptance = 0
+    count_reject = 0
+    count_bad_quality = 0
+    for inner_dir in dirs_in_path:
+        base_finger_path = f"{base_path}{inner_dir}/{base_file}"
+        # print(base_finger_path)
+
+        img_base = cv.imread(base_finger_path, 0)
+        base_fingerprint = describe_fingerprint_image(img_base)
+
+        if base_fingerprint is None:
+            print("An error occurs :(")
+            break
+
+        dir_to_fetch = f"{base_path}{inner_dir}/{samples_name}/"
+        obj_in_path = os.listdir(dir_to_fetch)
+        files_in_path = [obj for obj in obj_in_path if os.path.isfile(dir_to_fetch + obj) and obj.endswith(".bmp")]
+
+        for input_sample in files_in_path:
+            # print(dir_to_fetch + input_sample)
+            img_input = cv.imread(dir_to_fetch + input_sample, 0)
+            input_fingerprint = describe_fingerprint_image(img_input)
+
+            if input_fingerprint is None:
+                count_bad_quality += 1
+                continue
+
+            if describe_match(base_fingerprint, input_fingerprint):
+                count_acceptance += 1
+            else:
+                count_reject += 1
+
+        lines.append(f"{inner_dir},{count_reject},{count_acceptance},{count_bad_quality}\n")
+        count_acceptance = 0
+        count_reject = 0
+        count_bad_quality = 0
+
+    with open(base_path + "results_far.csv", "w+", encoding='utf-8') as f:
+        for line in lines:
+            f.write(line)
+
+    print("\n\n\tThe match process has finished :)\n")
+
+    return None
+
+
+def describe_fingerprint_image(img: Union[ndarray, Iterable]) -> Optional[Fingerprint]:
+    fingerprint = Fingerprint(
+        characteritic_point_thresh=0.8,
+        name_fingerprint="fingerprint",
+        show_result=False,
+        save_result=False,
+        min_minutiae=12
+    )
+
+    process_message = fingerprint.describe_fingerprint(
+        angles_tolerance=1,
+        from_image=True,
+        fingerprint_image=img,
+        mode="auth",
+        neighbors_description=False
+    )
+
+    if process_message == fingerprint.FINGERPRINT_OK:
+        return fingerprint
+
+    fingerprint.show_message(process_message)
+
+    return None
+
+
+def describe_match(base_fingerprint: Fingerprint, input_fingerprint: Fingerprint) -> bool:
+    result = match_index_and_base_fingerprints(
+        base_name="base_fingerprint",
+        input_name="input_fingerprint",
+        mode='core',
+        source='api',
+        base_fingerprint=base_fingerprint,
+        input_fingerprint=input_fingerprint
+    )
+
+    if result is True:
+        return False
+
+    if result != base_fingerprint.MATCH_FINGERPRINT:
+        return False
+
+    return True

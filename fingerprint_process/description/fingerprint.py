@@ -448,7 +448,7 @@ class Fingerprint(ErrorMessage):
             angles_tolerance: int = 1,
             from_image: bool = False,
             fingerprint_image: Union[ndarray, Iterable, int, float, None] = None,
-            neighbors_description: bool = True,
+            neighbors_description: bool = False,
             mode: str = 'auth'
     ):
         if from_image:
@@ -472,13 +472,14 @@ class Fingerprint(ErrorMessage):
             self.__save_raw_fingerprint()
 
         self.__fingerprint_enhance()
+
+        if self._show_result:
+            print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
+
         if self._varian_index >= self._authentication_image_score:
             self._characteritic_point_thresh = self._register_cpthresh
         else:
             return self._POOR_QUALITY
-
-        if self._show_result:
-            print('Index quality: {}\nImage quality: {}'.format(self._quality_index, self._varian_index))
 
         self.__ezquel_to_image()
 

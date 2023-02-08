@@ -28,6 +28,8 @@ def local_test():
     print('\tG.- Capture good quality fingerprints')
     print('\tH.- Evaluate preprocessing')
     print('\tI.- Get quality of image')
+    print('\tJ.- Evaluate TAR in Match')
+    print('\tK.- Evaluate FAR in Match')
     print('\tX.- Exit the programme')
 
     print('\n')
@@ -134,6 +136,12 @@ def local_test():
     elif option.lower() == 'i':
         name_img = input("Write the name of the image to open: ")
         u_fin.get_quality_image(name_img)
+
+    elif option.lower() == 'j':
+        u_fin.evaluate_match_tar()
+
+    elif option.lower() == 'k':
+        u_fin.evaluate_match_far()
 
     elif option.lower() == 'x':
         return True
