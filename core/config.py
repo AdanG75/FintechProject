@@ -10,7 +10,7 @@ from core.secret_manager import access_secret_version
 
 
 BOUND_TEST_ENTRYPOINTS: bool = False
-ON_CLOUD: bool = False
+ON_CLOUD: bool = True
 
 
 class Settings(object):
