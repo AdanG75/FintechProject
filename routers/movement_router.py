@@ -69,8 +69,8 @@ async def get_movement_summary(
     if type_movement is None:
         type_movement = summary_request.type_movement
 
-    if request.id_credit is not None:
-        id_client, id_market = get_id_of_owners_of_credit(db, request.id_credit)
+    if summary_request.id_credit is not None:
+        id_client, id_market = get_id_of_owners_of_credit(db, summary_request.id_credit)
         id_requester = id_client
     else:
         id_requester = None
@@ -109,8 +109,8 @@ async def make_movement(
     if type_movement != movement_request.type_movement:
         raise type_of_value_not_compatible
 
-    if request.id_credit is not None:
-        id_client, id_market = get_id_of_owners_of_credit(db, request.id_credit)
+    if movement_request.id_credit is not None:
+        id_client, id_market = get_id_of_owners_of_credit(db, movement_request.id_credit)
         id_requester = id_client
     else:
         id_requester = None
@@ -118,7 +118,7 @@ async def make_movement(
     data_user = get_logged_user_to_make_movement(current_token)
     data_user.id_requester = id_requester
 
-    response = await make_movement_based_on_type(db, request, data_user, type_movement)
+    response = await make_movement_based_on_type(db, movement_request, data_user, type_movement)
 
     # Save type_of authorization and performer if a response is created
     try:
