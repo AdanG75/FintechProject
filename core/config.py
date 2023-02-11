@@ -10,6 +10,7 @@ from core.secret_manager import access_secret_version
 
 
 BOUND_TEST_ENTRYPOINTS: bool = False
+ON_CLOUD: bool = False
 
 
 class Settings(object):
@@ -45,7 +46,7 @@ class Settings(object):
 
     def __init__(self):
         # Change value to True if app will being deployed to AppEngine
-        self.__ON_CLOUD = False
+        self.__ON_CLOUD = ON_CLOUD
 
         if not self.__ON_CLOUD:
             env_path = Path('.') / '.env'
