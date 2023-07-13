@@ -1,5 +1,5 @@
 runtime: python39
-entrypoint: gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app
+entrypoint: gunicorn -w 1 -k uvicorn.workers.UvicornWorker main:app
 instance_class: F1
 
 env_variables:
@@ -37,9 +37,6 @@ handlers:
   - url: /.*
     script: main.app
     secure: always
-
-vpc_access_connector:
-    name: projects/fintech75/locations/us-central1/connectors/conector-fintech75
 
 inbound_services:
 - warmup
