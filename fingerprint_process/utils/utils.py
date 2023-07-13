@@ -370,7 +370,7 @@ def show_fingerprint_from_array(fingerprint_data, title: str = 'Fingerprint'):
 
 
 def get_data_of_fingerprint_from_sensor_in_base64(source: str = 'sensor') -> Union[str, tuple]:
-    connect_sensor = ConnectSensor(serial_port='/dev/ttyUSB0', baud_rate=57600, width=256, height=288)
+    connect_sensor = ConnectSensor(serial_port='/dev/ttyACM0', baud_rate=57600, width=256, height=288)
     data_fingerprint_raw = connect_sensor.catch_data_fingerprint_as_base64(return_mode='str')
 
     if isinstance(data_fingerprint_raw, tuple):
